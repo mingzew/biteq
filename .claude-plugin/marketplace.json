@@ -1,0 +1,13 @@
+{
+  "name": "biteq",
+  "owner": {
+    "name": "Mingze Wang"
+  },
+  "plugins": [
+    {
+      "name": "biteq",
+      "source": "./plugins/biteq",
+      "description": "Bite-size coding questions while Claude is thinking."
+    }
+  ]
+}

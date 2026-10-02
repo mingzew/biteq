@@ -1,0 +1,342 @@
+[
+  {
+    "id": "py-mutable-default",
+    "lang": "python",
+    "title": "Mutable default argument",
+    "prompt": "What does this print?",
+    "code": "def add(x, items=[]):\n    items.append(x)\n    return items\n\nadd(1)\nprint(add(2))",
+    "options": ["[2]", "[1, 2]", "TypeError", "None"],
+    "answer": 1,
+    "explanation": "Default values are evaluated once, when the function is defined, so every call shares the same list. Use items=None and create the list inside the function."
+  },
+  {
+    "id": "py-late-binding",
+    "lang": "python",
+    "title": "Closures in a loop",
+    "prompt": "What does this print?",
+    "code": "fs = [lambda: i for i in range(3)]\nprint([f() for f in fs])",
+    "options": ["[0, 1, 2]", "[2, 2, 2]", "[3, 3, 3]", "NameError"],
+    "answer": 1,
+    "explanation": "Closures look up i when they are called, not when they are created. By then the loop has finished with i == 2. Fix it with lambda i=i: i."
+  },
+  {
+    "id": "py-is-vs-eq",
+    "lang": "python",
+    "title": "== vs is",
+    "prompt": "What does this print?",
+    "code": "a = [1, 2]\nb = [1, 2]\nprint(a == b, a is b)",
+    "options": ["True True", "True False", "False False", "False True"],
+    "answer": 1,
+    "explanation": "== compares values. is compares identity, and these are two separate list objects."
+  },
+  {
+    "id": "py-dict-hash-collide",
+    "lang": "python",
+    "title": "Equal keys",
+    "prompt": "What does this print?",
+    "code": "d = {1: 'a', True: 'b', 1.0: 'c'}\nprint(d)",
+    "options": ["{1: 'a', True: 'b', 1.0: 'c'}", "{1: 'c'}", "{1.0: 'c'}", "{True: 'b'}"],
+    "answer": 1,
+    "explanation": "1, True and 1.0 are equal and have the same hash, so they count as one key. The first key object (1) is kept and the last value ('c') wins."
+  },
+  {
+    "id": "py-slice-step",
+    "lang": "python",
+    "title": "Negative slice step",
+    "prompt": "What does this print?",
+    "code": "s = \"abcdef\"\nprint(s[::-2])",
+    "options": ["\"fdb\"", "\"eca\"", "\"ace\"", "\"fedcba\""],
+    "answer": 0,
+    "explanation": "A negative step starts at the end (index 5, 'f') and moves back by 2: indexes 5, 3, 1, which are f, d, b."
+  },
+  {
+    "id": "py-generator-exhausted",
+    "lang": "python",
+    "title": "Generators run once",
+    "prompt": "What does this print?",
+    "code": "g = (x * x for x in range(3))\nprint(sum(g), sum(g))",
+    "options": ["5 5", "5 0", "0 0", "TypeError"],
+    "answer": 1,
+    "explanation": "A generator can only be consumed once. The first sum gets 0+1+4 = 5 and the second gets an empty iterator, which sums to 0."
+  },
+  {
+    "id": "py-finally-return",
+    "lang": "python",
+    "title": "return in finally",
+    "prompt": "What does f() return?",
+    "code": "def f():\n    try:\n        return 1\n    finally:\n        return 2",
+    "options": ["1", "2", "None", "SyntaxError"],
+    "answer": 1,
+    "explanation": "finally always runs, and a return inside it overrides the earlier return. It also swallows exceptions, which is why linters flag it."
+  },
+  {
+    "id": "py-floor-div-negative",
+    "lang": "python",
+    "title": "Floor division",
+    "prompt": "What does this print?",
+    "code": "print(-7 // 2, -7 % 2)",
+    "options": ["-3 -1", "-4 1", "-3 1", "-4 -1"],
+    "answer": 1,
+    "explanation": "// rounds toward negative infinity, so -3.5 becomes -4. % has the sign of the divisor: -7 == 2 * -4 + 1."
+  },
+  {
+    "id": "py-list-multiply-alias",
+    "lang": "python",
+    "title": "Nested list multiplication",
+    "prompt": "What does this print?",
+    "code": "a = [[0] * 2] * 2\na[0][0] = 1\nprint(a)",
+    "options": ["[[1, 0], [0, 0]]", "[[1, 0], [1, 0]]", "[[1, 1], [0, 0]]", "[[1, 1], [1, 1]]"],
+    "answer": 1,
+    "explanation": "The outer * 2 copies the reference, so both rows are the same list object. Use [[0] * 2 for _ in range(2)]."
+  },
+  {
+    "id": "py-mutate-while-iterating",
+    "lang": "python",
+    "title": "Removing while iterating",
+    "prompt": "What does this print?",
+    "code": "nums = [1, 2, 2, 3]\nfor n in nums:\n    if n == 2:\n        nums.remove(n)\nprint(nums)",
+    "options": ["[1, 3]", "[1, 2, 3]", "RuntimeError", "[1, 2, 2, 3]"],
+    "answer": 1,
+    "explanation": "Removing the first 2 shifts the list left, so the iterator skips the second 2. Lists don't raise an error here (dicts do). Build a new list instead."
+  },
+  {
+    "id": "py-regex-greedy",
+    "lang": "python",
+    "title": "Greedy regex",
+    "prompt": "What does this print?",
+    "code": "import re\nprint(re.findall(r\"a.*b\", \"a1b a2b\"))",
+    "options": ["['a1b', 'a2b']", "['a1b a2b']", "['a1b']", "[]"],
+    "answer": 1,
+    "explanation": ".* is greedy and matches as much as it can, up to the last b. Use .*? for a non-greedy match."
+  },
+  {
+    "id": "py-binary-search-bug",
+    "lang": "python",
+    "title": "Spot the bug",
+    "prompt": "What goes wrong when this binary search runs?",
+    "code": "def bs(a, t):\n    lo, hi = 0, len(a)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if a[mid] < t:\n            lo = mid\n        else:\n            hi = mid\n    return lo",
+    "options": ["IndexError on an empty list", "It can loop forever", "It returns the wrong index for duplicates", "Nothing, it's correct"],
+    "answer": 1,
+    "explanation": "When hi == lo + 1, mid == lo. If a[mid] < t, then lo = mid makes no progress. It should be lo = mid + 1."
+  },
+  {
+    "id": "js-var-settimeout",
+    "lang": "js",
+    "title": "var in a loop",
+    "prompt": "What gets logged?",
+    "code": "for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i));\n}",
+    "options": ["0 1 2", "3 3 3", "2 2 2", "undefined x3"],
+    "answer": 1,
+    "explanation": "var is function-scoped, so all three callbacks share one i, and it equals 3 by the time they run. let creates a new binding on each iteration."
+  },
+  {
+    "id": "js-default-sort",
+    "lang": "js",
+    "title": "Default sort",
+    "prompt": "What does this return?",
+    "code": "[10, 9, 1].sort()",
+    "options": ["[1, 9, 10]", "[1, 10, 9]", "[10, 9, 1]", "[9, 10, 1]"],
+    "answer": 1,
+    "explanation": "The default sort converts values to strings and compares them as text, so \"10\" sorts before \"9\". Use .sort((a, b) => a - b)."
+  },
+  {
+    "id": "js-typeof-null",
+    "lang": "js",
+    "title": "typeof",
+    "prompt": "What is typeof null?",
+    "code": "typeof null",
+    "options": ["\"null\"", "\"object\"", "\"undefined\"", "TypeError"],
+    "answer": 1,
+    "explanation": "This is a historical bug from the first version of JS that was never fixed. Check for null with x === null."
+  },
+  {
+    "id": "js-loose-equality",
+    "lang": "js",
+    "title": "Equality",
+    "prompt": "What gets logged?",
+    "code": "console.log(0 == \"\", null == undefined, NaN === NaN)",
+    "options": ["true true false", "false true false", "true false true", "false false false"],
+    "answer": 0,
+    "explanation": "\"\" is coerced to 0, and null only loosely equals undefined. NaN never equals anything, itself included, so use Number.isNaN."
+  },
+  {
+    "id": "js-event-loop-order",
+    "lang": "js",
+    "title": "Event loop",
+    "prompt": "In what order are the numbers logged?",
+    "code": "console.log(1);\nsetTimeout(() => console.log(2));\nPromise.resolve().then(() => console.log(3));\nconsole.log(4);",
+    "options": ["1 2 3 4", "1 4 2 3", "1 4 3 2", "1 3 4 2"],
+    "answer": 2,
+    "explanation": "Synchronous code runs first (1, 4). Then the microtask queue runs (promise callbacks, 3), and after that macrotasks such as setTimeout (2)."
+  },
+  {
+    "id": "js-async-foreach",
+    "lang": "js",
+    "title": "Spot the bug",
+    "prompt": "What does total(ids) resolve to? (price() is async and returns a positive number.)",
+    "code": "async function total(ids) {\n  let sum = 0;\n  ids.forEach(async (id) => {\n    sum += await price(id);\n  });\n  return sum;\n}",
+    "options": ["The sum of all prices", "0", "NaN", "It rejects"],
+    "answer": 1,
+    "explanation": "forEach ignores the promises the callback returns, so total returns before any await finishes. Use for...of with await, or Promise.all."
+  },
+  {
+    "id": "js-object-key-order",
+    "lang": "js",
+    "title": "Object key order",
+    "prompt": "What does this return?",
+    "code": "Object.keys({ b: 1, 2: 1, a: 1, 1: 1 })",
+    "options": ["[\"b\", \"2\", \"a\", \"1\"]", "[\"1\", \"2\", \"b\", \"a\"]", "[\"1\", \"2\", \"a\", \"b\"]", "[\"a\", \"b\", \"1\", \"2\"]"],
+    "answer": 1,
+    "explanation": "Integer-like keys come first in ascending order. All other string keys follow in insertion order."
+  },
+  {
+    "id": "js-map-parseint",
+    "lang": "js",
+    "title": "map + parseInt",
+    "prompt": "What does this return?",
+    "code": "[\"1\", \"2\", \"3\"].map(parseInt)",
+    "options": ["[1, 2, 3]", "[1, NaN, NaN]", "[NaN, NaN, NaN]", "[1, 2, NaN]"],
+    "answer": 1,
+    "explanation": "map passes (value, index), so this calls parseInt(\"2\", 1) and parseInt(\"3\", 2). Radix 1 is invalid, and 3 isn't a binary digit, so both give NaN."
+  },
+  {
+    "id": "js-freeze-shallow",
+    "lang": "js",
+    "title": "Object.freeze",
+    "prompt": "What gets logged?",
+    "code": "const o = Object.freeze({ inner: { v: 1 } });\no.inner.v = 2;\nconsole.log(o.inner.v);",
+    "options": ["1", "2", "TypeError", "undefined"],
+    "answer": 1,
+    "explanation": "freeze is shallow: o.inner can't be reassigned, but the nested object can still be changed. You have to freeze each nested object as well."
+  },
+  {
+    "id": "ts-discriminated-union",
+    "lang": "ts",
+    "title": "Narrowing",
+    "prompt": "What does the TypeScript compiler say?",
+    "code": "type A = { kind: \"a\"; x: number } | { kind: \"b\"; y: string };\n\nfunction f(v: A) {\n  if (v.kind === \"a\") return v.y;\n}",
+    "options": ["Compiles; returns undefined", "Error: Property 'y' does not exist", "Error: not all code paths return", "Compiles; return type is string"],
+    "answer": 1,
+    "explanation": "Checking v.kind narrows v to { kind: \"a\"; x: number }, which has no y. Discriminated unions make this check exact."
+  },
+  {
+    "id": "ts-unknown-vs-any",
+    "lang": "ts",
+    "title": "unknown vs any",
+    "prompt": "Which line fails to compile?",
+    "code": "const a: any = JSON.parse(s);\nconst u: unknown = JSON.parse(s);\na.foo();      // line 3\nu.foo();      // line 4",
+    "options": ["Line 3", "Line 4", "Both", "Neither"],
+    "answer": 1,
+    "explanation": "unknown requires you to narrow it before you use it. any switches type checking off, which is why unknown is the safer choice for untrusted data."
+  },
+  {
+    "id": "sql-left-join-where",
+    "lang": "sql",
+    "title": "LEFT JOIN + WHERE",
+    "prompt": "Users with zero orders: are they in the result?",
+    "code": "SELECT u.id, o.id\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id\nWHERE o.status = 'paid';",
+    "options": ["Yes, with o.id = NULL", "No", "Only if status is nullable", "Yes, once per order"],
+    "answer": 1,
+    "explanation": "For unmatched rows o.status is NULL, and NULL = 'paid' is not true, so WHERE removes them and the query behaves like an INNER JOIN. Put the condition in the ON clause instead."
+  },
+  {
+    "id": "sql-count-null",
+    "lang": "sql",
+    "title": "COUNT and NULL",
+    "prompt": "Table t has v values (1), (NULL), (3). What does this return?",
+    "code": "SELECT COUNT(*), COUNT(v) FROM t;",
+    "options": ["3, 3", "3, 2", "2, 2", "3, NULL"],
+    "answer": 1,
+    "explanation": "COUNT(*) counts rows. COUNT(col) counts only the non-NULL values in that column."
+  },
+  {
+    "id": "sql-not-in-null",
+    "lang": "sql",
+    "title": "NOT IN with NULL",
+    "prompt": "banned(user_id) contains (2) and (NULL). How many rows does this return from users with ids 1, 2, 3?",
+    "code": "SELECT id FROM users\nWHERE id NOT IN (SELECT user_id FROM banned);",
+    "options": ["2", "1", "0", "3"],
+    "answer": 2,
+    "explanation": "x NOT IN (2, NULL) means x <> 2 AND x <> NULL. Comparing with NULL gives unknown, so no row passes. Use NOT EXISTS."
+  },
+  {
+    "id": "git-reset-soft",
+    "lang": "git",
+    "title": "Undo a commit",
+    "prompt": "What does this do?",
+    "code": "git reset --soft HEAD~1",
+    "options": ["Deletes the last commit and its changes", "Undoes the last commit, keeps its changes staged", "Undoes the last commit, keeps its changes unstaged", "Creates a revert commit"],
+    "answer": 1,
+    "explanation": "--soft only moves HEAD. --mixed (the default) also unstages the changes, and --hard throws them away. git revert creates a new commit that undoes the old one."
+  },
+  {
+    "id": "bash-quotes",
+    "lang": "bash",
+    "title": "Quoting",
+    "prompt": "What does this print?",
+    "code": "x=5\necho \"$x\" '$x'",
+    "options": ["5 5", "5 $x", "$x $x", "$x 5"],
+    "answer": 1,
+    "explanation": "Double quotes expand variables. Single quotes keep the text exactly as written."
+  },
+  {
+    "id": "bash-set-e-pipe",
+    "lang": "bash",
+    "title": "set -e and pipes",
+    "prompt": "With only `set -e` (no pipefail), does the script stop here?",
+    "code": "set -e\nfalse | true\necho still running",
+    "options": ["Yes, it exits", "No, it prints \"still running\"", "Only in zsh", "It's a syntax error"],
+    "answer": 1,
+    "explanation": "A pipeline's exit status comes from its last command, which here is true. Add set -o pipefail to catch failures earlier in the pipe."
+  },
+  {
+    "id": "cs-bigo-doubling",
+    "lang": "cs",
+    "title": "Complexity",
+    "prompt": "What is the time complexity?",
+    "code": "i = 1\nwhile i < n:\n    for j in range(n):\n        work()\n    i *= 2",
+    "options": ["O(n)", "O(n log n)", "O(n²)", "O(log n)"],
+    "answer": 1,
+    "explanation": "The outer loop runs log₂ n times because i doubles each time. Each pass does n work, giving O(n log n)."
+  },
+  {
+    "id": "cs-in-list",
+    "lang": "cs",
+    "title": "Hidden quadratic",
+    "prompt": "allowed is a list with n items and items has n items. What is the complexity?",
+    "code": "result = [x for x in items if x in allowed]",
+    "options": ["O(n)", "O(n log n)", "O(n²)", "O(1)"],
+    "answer": 2,
+    "explanation": "x in list is a linear scan, and it runs n times. Converting allowed to a set first makes the whole thing O(n)."
+  },
+  {
+    "id": "cs-lru",
+    "lang": "cs",
+    "title": "Data structures",
+    "prompt": "Which combination gives an LRU cache O(1) get and put?",
+    "code": "",
+    "options": ["Hash map + min-heap", "Hash map + doubly linked list", "Sorted array + binary search", "Two stacks"],
+    "answer": 1,
+    "explanation": "The map finds a node in O(1). The doubly linked list moves that node to the front, or evicts the tail, in O(1)."
+  },
+  {
+    "id": "cs-race-counter",
+    "lang": "cs",
+    "title": "Concurrency",
+    "prompt": "Two threads each run this 100,000 times on a shared counter with no lock. What is the final value?",
+    "code": "counter += 1",
+    "options": ["Always 200,000", "At most 200,000, possibly less", "Possibly more than 200,000", "Always 100,000"],
+    "answer": 1,
+    "explanation": "+= is a read-modify-write, so two threads can read the same value and one update gets lost. Even in CPython with the GIL this isn't atomic. Use a lock or an atomic."
+  },
+  {
+    "id": "cs-http-idempotent",
+    "lang": "cs",
+    "title": "HTTP semantics",
+    "prompt": "Which method is NOT idempotent by spec?",
+    "code": "",
+    "options": ["GET", "PUT", "DELETE", "POST"],
+    "answer": 3,
+    "explanation": "Sending the same PUT or DELETE again leaves the server in the same state. POST makes no such promise, which is why retrying POST safely needs idempotency keys."
+  }
+]
