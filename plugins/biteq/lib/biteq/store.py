@@ -1,9 +1,9 @@
 """On-disk store in ~/.biteq (override with BITEQ_HOME): file paths, JSON helpers, sessions.
 
-Only the session status is persisted by this module (state.json). The other paths
+Only the session status is persisted by this module (sessions.json). The other paths
 (stats, config, events log) are defined here but written by quiz/pane, config and debug.
 
-state.json is the contract between the hooks (writers) and the pane (reader):
+sessions.json is the contract between the hooks (writers) and the pane (reader):
     {"sessions": {<session_id>: {"status", "since", "updated", "cwd"}}}
 """
 import fcntl
@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 HOME = Path(os.environ.get("BITEQ_HOME", str(Path.home() / ".biteq")))
-STATE = HOME / "state.json"
+SESSIONS = HOME / "sessions.json"
 STATS = HOME / "stats.json"
 CONFIG = HOME / "config.json"
 EVENTS_LOG = HOME / "events.log"
@@ -40,7 +40,7 @@ def set_status(session, status, cwd=""):
     HOME.mkdir(parents=True, exist_ok=True)
     with open(HOME / ".lock", "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        state = load_json(STATE, {})
+        state = load_json(SESSIONS, {})
         sessions = state.setdefault("sessions", {})
         now = time.time()
         for sid in [s for s, v in sessions.items() if now - v.get("updated", 0) > STALE_SECS]:
@@ -51,7 +51,7 @@ def set_status(session, status, cwd=""):
             cur = sessions.get(session, {})
             since = cur.get("since", now) if cur.get("status") == status else now
             sessions[session] = {"status": status, "since": since, "updated": now, "cwd": cwd}
-        save_json(STATE, state)
+        save_json(SESSIONS, state)
 
 
 def live_sessions(state):

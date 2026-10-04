@@ -128,7 +128,7 @@ def cmd_doctor(_):
                                            "" if v >= (3, 8) else "  <- need 3.8+"))
     print("state dir     %s (%s)" % (store.HOME, "writable" if _writable(store.HOME) else "NOT writable"))
     print("plugin        %s" % _plugin_installed())
-    sessions = store.load_json(store.STATE, {}).get("sessions", {})
+    sessions = store.load_json(store.SESSIONS, {}).get("sessions", {})
     if sessions:
         last = max(s.get("updated", 0) for s in sessions.values())
         print("last event    %s (%d session%s tracked)"
@@ -144,7 +144,7 @@ def cmd_doctor(_):
 
 
 def cmd_reset(args):
-    targets = [store.STATE]
+    targets = [store.SESSIONS]
     if args.all:
         targets += [store.STATS, store.CONFIG, store.EVENTS_LOG,
                     store.EVENTS_LOG.with_name("events.log.1")]

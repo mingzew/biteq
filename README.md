@@ -20,7 +20,7 @@ Bite-size coding questions that appear while your AI agent is thinking, so you p
 ## How it works
 
 ```
-Claude Code hooks ──► biteq hook ──► ~/.biteq/state.json ──► biteq pane (TUI)
+Claude Code hooks ──► biteq hook ──► ~/.biteq/sessions.json ──► biteq pane (TUI)
 (UserPromptSubmit, PostToolUse,      (one entry per session)   shows a question while thinking,
  Notification, Stop, SessionEnd)                               flashes when the AI is done
 ```
@@ -76,7 +76,7 @@ plugins/biteq/
 ├── hooks/hooks.json      Claude Code hook registration (Claude Code only; Cursor has its own hooks file)
 ├── lib/biteq/
 │   ├── cli.py            commands
-│   ├── store.py          ~/.biteq paths, JSON helpers, session status (state.json) with locking
+│   ├── store.py          ~/.biteq paths, JSON helpers, session status (sessions.json) with locking
 │   ├── claude.py         Claude Code hook payload -> status
 │   ├── cursor.py         STUB: Cursor native-agent adapter
 │   ├── pane.py           curses UI

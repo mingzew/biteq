@@ -1,4 +1,4 @@
-"""The quiz pane: a curses TUI that reads ~/.biteq/state.json and shows questions."""
+"""The quiz pane: a curses TUI that reads ~/.biteq/sessions.json and shows questions."""
 import curses
 import os
 import random
@@ -6,7 +6,7 @@ import textwrap
 import time
 
 from .quiz import load_stats
-from .store import STATE, STATS, aggregate, live_sessions, load_json, save_json
+from .store import SESSIONS, STATS, aggregate, live_sessions, load_json, save_json
 
 AGENT = os.environ.get("BITEQ_AGENT", "AI")
 
@@ -138,13 +138,13 @@ class Pane:
     def poll(self):
         """Returns True when any session just finished or needs input (so the UI can flash)."""
         try:
-            mtime = STATE.stat().st_mtime
+            mtime = SESSIONS.stat().st_mtime
         except FileNotFoundError:
             mtime = 0
         if mtime == self.mtime:
             return False
         self.mtime = mtime
-        state = load_json(STATE, {})
+        state = load_json(SESSIONS, {})
         self.status, self.since = aggregate(state)
         statuses = {sid: v.get("status") for sid, v in live_sessions(state).items()}
         prev, self.statuses = self.statuses, statuses
