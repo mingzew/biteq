@@ -32,9 +32,16 @@ AGENT = os.environ.get("BITEQ_AGENT", "AI")
 EVENT_STATUS = {
     "UserPromptSubmit": "thinking",
     "PostToolUse": "thinking",   # resumes "thinking" after a permission prompt
-    "Notification": "waiting",   # permission prompt / idle prompt
+    "PostToolUseFailure": "thinking",
     "Stop": "done",
     "SessionEnd": None,
+}
+# PreToolUse only matters for tools that block until the user responds
+WAIT_TOOLS = ("AskUserQuestion", "ExitPlanMode")
+# Notification events: notification_type -> session status (other types are ignored)
+NOTIFICATION_STATUS = {
+    "permission_prompt": "waiting",
+    "idle_prompt": "done",       # also clears an interrupted session; Stop doesn't fire on interrupt
 }
 STALE_SECS = 6 * 3600
 
@@ -78,11 +85,15 @@ def set_status(session, status, cwd=""):
         save_json(STATE, state)
 
 
+def live_sessions(state):
+    return {sid: v for sid, v in state.get("sessions", {}).items()
+            if time.time() - v.get("updated", 0) <= STALE_SECS}
+
+
 def aggregate(state):
     """Collapse all agent sessions into one (status, since) for the pane."""
-    sessions = [v for v in state.get("sessions", {}).values()
-                if time.time() - v.get("updated", 0) <= STALE_SECS]
-    for status in ("thinking", "waiting", "done"):
+    sessions = list(live_sessions(state).values())
+    for status in ("waiting", "thinking", "done"):   # most urgent first
         hits = [s["since"] for s in sessions if s.get("status") == status]
         if hits:
             return status, (min(hits) if status == "thinking" else max(hits))
@@ -120,6 +131,10 @@ def render(view, width):
         "done": (" ✓ %s is done, go review " % AGENT, "done"),
         "idle": (" ○ idle ", "idle"),
     }[status]
+    counts = view["counts"]
+    if sum(counts.values()) > 1:   # several sessions: show counts, colored by the most urgent
+        labels = (("thinking", "● %d thinking"), ("waiting", "! %d needs input"), ("done", "✓ %d done"))
+        banner = (" %s " % " · ".join(t % counts[k] for k, t in labels if counts.get(k)), banner[1])
     right = " streak %d · %d/%d " % (stats["streak"], stats["correct"], stats["answered"])
     gap = max(width - len(banner[0]) - len(right), 1)
     lines.append([banner, (" " * gap, ""), (right, "dim")])
@@ -174,6 +189,7 @@ class Pane:
         self.stats = dict(DEFAULT_STATS, **load_json(STATS, {}))
         self.q, self.picked, self.scroll = None, None, 0
         self.status, self.since, self.mtime = "idle", 0, None
+        self.statuses = {}   # session_id -> status at the last poll
         self.engaged = False
 
     def next_question(self):
@@ -215,7 +231,7 @@ class Pane:
         save_json(STATS, s)
 
     def poll(self):
-        """Returns True when the agent just finished (so the UI can flash)."""
+        """Returns True when any session just finished or needs input (so the UI can flash)."""
         try:
             mtime = STATE.stat().st_mtime
         except FileNotFoundError:
@@ -223,20 +239,30 @@ class Pane:
         if mtime == self.mtime:
             return False
         self.mtime = mtime
-        status, self.since = aggregate(load_json(STATE, {}))
-        prev, self.status = self.status, status
-        if status == prev:
-            return False
-        if status == "thinking" and prev != "waiting":
-            self.stats["waits"] += 1
-            self.engaged = False
-            save_json(STATS, self.stats)
-            if self.q is None or self.picked is not None:
-                self.next_question()
-        return status == "done" and prev in ("thinking", "waiting")
+        state = load_json(STATE, {})
+        self.status, self.since = aggregate(state)
+        statuses = {sid: v.get("status") for sid, v in live_sessions(state).items()}
+        prev, self.statuses = self.statuses, statuses
+        flash = False
+        for sid, status in statuses.items():
+            was = prev.get(sid)
+            if status == was:
+                continue
+            if status == "thinking" and was != "waiting":
+                self.stats["waits"] += 1
+                self.engaged = False
+                save_json(STATS, self.stats)
+                if self.q is None or self.picked is not None:
+                    self.next_question()
+            elif status == "waiting" or (status == "done" and was in ("thinking", "waiting")):
+                flash = True
+        return flash
 
     def view(self):
-        return {"status": self.status, "elapsed": time.time() - self.since,
+        counts = {}
+        for status in self.statuses.values():
+            counts[status] = counts.get(status, 0) + 1
+        return {"status": self.status, "elapsed": time.time() - self.since, "counts": counts,
                 "stats": self.stats, "q": self.q, "picked": self.picked}
 
     # -- curses
@@ -311,7 +337,14 @@ def cmd_hook(_):
     try:
         data = json.load(sys.stdin)
         event = data.get("hook_event_name", "")
-        if event in EVENT_STATUS:
+        if event == "Notification":
+            status = NOTIFICATION_STATUS.get(data.get("notification_type"))
+            if status:
+                set_status(data.get("session_id") or "default", status, data.get("cwd", ""))
+        elif event == "PreToolUse":
+            if data.get("tool_name") in WAIT_TOOLS:
+                set_status(data.get("session_id") or "default", "waiting", data.get("cwd", ""))
+        elif event in EVENT_STATUS:
             set_status(data.get("session_id") or "default", EVENT_STATUS[event], data.get("cwd", ""))
     except Exception:
         pass

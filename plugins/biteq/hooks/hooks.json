@@ -12,7 +12,31 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion|ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/bin/biteq\" hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/bin/biteq\" hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
       {
         "matcher": "*",
         "hooks": [
@@ -26,6 +50,7 @@
     ],
     "Notification": [
       {
+        "matcher": "permission_prompt|idle_prompt",
         "hooks": [
           {
             "type": "command",
