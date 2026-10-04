@@ -1,0 +1,235 @@
+"""The quiz pane: a curses TUI that reads ~/.biteq/sessions.json and shows questions."""
+import curses
+import os
+import random
+import textwrap
+import time
+
+from .quiz import load_stats
+from .store import SESSIONS, STATS, aggregate, live_sessions, load_json, save_json
+
+AGENT = os.environ.get("BITEQ_AGENT", "AI")
+
+
+# ---------------------------------------------------------------- rendering
+
+def fmt_secs(secs):
+    secs = int(max(secs, 0))
+    return "%d:%02d" % (secs // 60, secs % 60)
+
+
+def wrap(text, width, indent=""):
+    out = []
+    for para in text.split("\n"):
+        out += textwrap.wrap(para, max(width, 10), initial_indent=indent,
+                             subsequent_indent=indent) or [""]
+    return out
+
+
+def render(view, width):
+    """Pure layout: returns (body_lines, footer). A line is a list of (text, style)."""
+    width = max(width, 20)
+    lines = []
+    status, stats, q, picked = view["status"], view["stats"], view["q"], view["picked"]
+
+    banner = {
+        "thinking": (" ● %s is thinking  %s " % (AGENT, fmt_secs(view["elapsed"])), "think"),
+        "waiting": (" ! %s needs your input " % AGENT, "wait"),
+        "done": (" ✓ %s is done, go review " % AGENT, "done"),
+        "idle": (" ○ idle ", "idle"),
+    }[status]
+    counts = view["counts"]
+    if sum(counts.values()) > 1:   # several sessions: show counts, colored by the most urgent
+        labels = (("thinking", "● %d thinking"), ("waiting", "! %d needs input"), ("done", "✓ %d done"))
+        banner = (" %s " % " · ".join(t % counts[k] for k, t in labels if counts.get(k)), banner[1])
+    right = " streak %d · %d/%d " % (stats["streak"], stats["correct"], stats["answered"])
+    gap = max(width - len(banner[0]) - len(right), 1)
+    lines.append([banner, (" " * gap, ""), (right, "dim")])
+    lines.append([])
+
+    if not q:
+        for t in wrap("No question yet. Prompt your AI agent and one will appear here, "
+                      "or press n to practice now.", width):
+            lines.append([(t, "dim")])
+        return lines, "n question · q quit"
+
+    lines.append([("[%s] " % q["lang"], "tag"), (q.get("title", ""), "bold")])
+    for t in wrap(q["prompt"], width):
+        lines.append([(t, "")])
+    if q.get("code"):
+        lines.append([])
+        for c in q["code"].split("\n"):
+            lines.append([("  " + c, "code")])
+    lines.append([])
+
+    for i, opt in enumerate(q["options"]):
+        style, mark = "", "  "
+        if picked is not None:
+            if i == q["answer"]:
+                style, mark = "good", "✓ "
+            elif i == picked:
+                style, mark = "bad", "✗ "
+            else:
+                style = "dim"
+        label = "%s%s) " % (mark, "abcd"[i])
+        for j, t in enumerate(wrap(opt, width - len(label))):
+            lines.append([((label if j == 0 else " " * len(label)) + t, style)])
+
+    if picked is None:
+        return lines, "a-d answer · s skip · ↑↓ scroll · q quit"
+
+    ok = picked == q["answer"]
+    lines.append([])
+    lines.append([("Correct!" if ok else "Not quite.", "good" if ok else "bad")])
+    for t in wrap(q["explanation"], width):
+        lines.append([(t, "")])
+    return lines, "n/space next · ↑↓ scroll · q quit"
+
+
+# ---------------------------------------------------------------- pane
+
+class Pane:
+    def __init__(self, questions):
+        self.questions = questions   # already filtered to the chosen languages (non-empty)
+        self.stats = load_stats()
+        self.q, self.picked, self.scroll = None, None, 0
+        self.status, self.since, self.mtime = "idle", 0, None
+        self.statuses = {}   # session_id -> status at the last poll
+        self.engaged = False
+
+    def next_question(self):
+        cur = self.q["id"] if self.q else None
+        pool = [q for q in self.questions if q["id"] != cur] or self.questions
+        wrong = [q for q in pool if q["id"] in self.stats["wrong"]]
+        if wrong and random.random() < 0.3:      # light spaced repetition
+            self.q = random.choice(wrong)
+        else:
+            unseen = [q for q in pool if q["id"] not in self.stats["seen"]]
+            if not unseen:
+                self.stats["seen"] = []
+                unseen = pool
+            self.q = random.choice(unseen)
+        self.picked, self.scroll = None, 0
+
+    def answer(self, idx):
+        q, s = self.q, self.stats
+        if not q or self.picked is not None or idx >= len(q["options"]):
+            return
+        self.picked = idx
+        ok = idx == q["answer"]
+        s["answered"] += 1
+        s["correct"] += ok
+        s["streak"] = s["streak"] + 1 if ok else 0
+        s["best_streak"] = max(s["best_streak"], s["streak"])
+        lang = s["by_lang"].setdefault(q["lang"], [0, 0])
+        lang[0] += ok
+        lang[1] += 1
+        if q["id"] not in s["seen"]:
+            s["seen"].append(q["id"])
+        if ok and q["id"] in s["wrong"]:
+            s["wrong"].remove(q["id"])
+        elif not ok and q["id"] not in s["wrong"]:
+            s["wrong"].append(q["id"])
+        if self.status in ("thinking", "waiting") and not self.engaged:
+            self.engaged = True
+            s["engaged_waits"] += 1
+        save_json(STATS, s)
+
+    def poll(self):
+        """Returns True when any session just finished or needs input (so the UI can flash)."""
+        try:
+            mtime = SESSIONS.stat().st_mtime
+        except FileNotFoundError:
+            mtime = 0
+        if mtime == self.mtime:
+            return False
+        self.mtime = mtime
+        state = load_json(SESSIONS, {})
+        self.status, self.since = aggregate(state)
+        statuses = {sid: v.get("status") for sid, v in live_sessions(state).items()}
+        prev, self.statuses = self.statuses, statuses
+        flash = False
+        for sid, status in statuses.items():
+            was = prev.get(sid)
+            if status == was:
+                continue
+            if status == "thinking" and was != "waiting":
+                self.stats["waits"] += 1
+                self.engaged = False
+                save_json(STATS, self.stats)
+                if self.q is None or self.picked is not None:
+                    self.next_question()
+            elif status == "waiting" or (status == "done" and was in ("thinking", "waiting")):
+                flash = True
+        return flash
+
+    def view(self):
+        counts = {}
+        for status in self.statuses.values():
+            counts[status] = counts.get(status, 0) + 1
+        return {"status": self.status, "elapsed": time.time() - self.since, "counts": counts,
+                "stats": self.stats, "q": self.q, "picked": self.picked}
+
+    # -- curses
+    def run(self, scr):
+        curses.curs_set(0)
+        scr.timeout(250)
+        curses.start_color()
+        curses.use_default_colors()
+        palette = {"think": curses.COLOR_YELLOW, "wait": curses.COLOR_MAGENTA,
+                   "done": curses.COLOR_GREEN, "good": curses.COLOR_GREEN,
+                   "bad": curses.COLOR_RED, "code": curses.COLOR_CYAN, "tag": curses.COLOR_BLUE}
+        attrs = {"": curses.A_NORMAL, "bold": curses.A_BOLD, "dim": curses.A_DIM,
+                 "idle": curses.A_REVERSE | curses.A_DIM}
+        for n, (name, color) in enumerate(palette.items(), start=1):
+            curses.init_pair(n, color, -1)
+            attrs[name] = curses.color_pair(n)
+        for name in ("think", "wait", "done"):
+            attrs[name] |= curses.A_REVERSE | curses.A_BOLD
+        attrs["good"] |= curses.A_BOLD
+        attrs["bad"] |= curses.A_BOLD
+
+        while True:
+            if self.poll():
+                curses.flash()
+            self.paint(scr, attrs)
+            ch = scr.getch()
+            if ch == -1 or ch == curses.KEY_RESIZE:
+                continue
+            if ch == curses.KEY_DOWN:
+                self.scroll += 1
+            elif ch == curses.KEY_UP:
+                self.scroll = max(self.scroll - 1, 0)
+            elif 0 <= ch < 256:
+                k = chr(ch).lower()
+                if k == "q":
+                    return
+                if k in "abcd" and self.q:
+                    self.answer("abcd".index(k))
+                elif k in "1234" and self.q:
+                    self.answer(int(k) - 1)
+                elif k in "n " and (self.q is None or self.picked is not None):
+                    self.next_question()
+                elif k == "s":
+                    self.next_question()
+
+    def paint(self, scr, attrs):
+        h, w = scr.getmaxyx()
+        lines, footer = render(self.view(), w - 1)
+        body = lines[:1] + lines[1:][self.scroll:]   # banner stays pinned
+        scr.erase()
+        for row, segs in enumerate(body[:h - 1]):
+            x = 0
+            for text, style in segs:
+                if x >= w - 1:
+                    break
+                try:
+                    scr.addstr(row, x, text[:w - 1 - x], attrs.get(style, 0))
+                except curses.error:
+                    pass
+                x += len(text)
+        try:
+            scr.addstr(h - 1, 0, footer[:w - 1], attrs["dim"])
+        except curses.error:
+            pass
+        scr.refresh()

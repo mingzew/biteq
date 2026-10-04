@@ -1,0 +1,20 @@
+[
+  {
+    "id": "bash-quotes",
+    "title": "Quoting",
+    "prompt": "What does this print?",
+    "code": "x=5\necho \"$x\" '$x'",
+    "options": ["5 5", "5 $x", "$x $x", "$x 5"],
+    "answer": 1,
+    "explanation": "Double quotes expand variables. Single quotes keep the text exactly as written."
+  },
+  {
+    "id": "bash-set-e-pipe",
+    "title": "set -e and pipes",
+    "prompt": "With only `set -e` (no pipefail), does the script stop here?",
+    "code": "set -e\nfalse | true\necho still running",
+    "options": ["Yes, it exits", "No, it prints \"still running\"", "Only in zsh", "It's a syntax error"],
+    "answer": 1,
+    "explanation": "A pipeline's exit status comes from its last command, which here is true. Add set -o pipefail to catch failures earlier in the pipe."
+  }
+]
