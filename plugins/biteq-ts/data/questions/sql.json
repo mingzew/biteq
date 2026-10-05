@@ -1,0 +1,29 @@
+[
+  {
+    "id": "sql-left-join-where",
+    "title": "LEFT JOIN + WHERE",
+    "prompt": "Users with zero orders: are they in the result?",
+    "code": "SELECT u.id, o.id\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id\nWHERE o.status = 'paid';",
+    "options": ["Yes, with o.id = NULL", "No", "Only if status is nullable", "Yes, once per order"],
+    "answer": 1,
+    "explanation": "For unmatched rows o.status is NULL, and NULL = 'paid' is not true, so WHERE removes them and the query behaves like an INNER JOIN. Put the condition in the ON clause instead."
+  },
+  {
+    "id": "sql-count-null",
+    "title": "COUNT and NULL",
+    "prompt": "Table t has v values (1), (NULL), (3). What does this return?",
+    "code": "SELECT COUNT(*), COUNT(v) FROM t;",
+    "options": ["3, 3", "3, 2", "2, 2", "3, NULL"],
+    "answer": 1,
+    "explanation": "COUNT(*) counts rows. COUNT(col) counts only the non-NULL values in that column."
+  },
+  {
+    "id": "sql-not-in-null",
+    "title": "NOT IN with NULL",
+    "prompt": "banned(user_id) contains (2) and (NULL). How many rows does this return from users with ids 1, 2, 3?",
+    "code": "SELECT id FROM users\nWHERE id NOT IN (SELECT user_id FROM banned);",
+    "options": ["2", "1", "0", "3"],
+    "answer": 2,
+    "explanation": "x NOT IN (2, NULL) means x <> 2 AND x <> NULL. Comparing with NULL gives unknown, so no row passes. Use NOT EXISTS."
+  }
+]

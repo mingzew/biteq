@@ -1,0 +1,7 @@
+{
+  "name": "biteq-ts",
+  "version": "0.1.0",
+  "description": "Bite-size coding questions in a Claude Code pane while Claude is working (in-engine prototype).",
+  "author": { "name": "Mingze Wang" },
+  "types": "./types/index.d.ts"
+}
