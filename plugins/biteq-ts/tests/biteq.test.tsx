@@ -28,7 +28,8 @@ const DONE = { reason: 'answer', answer: 'done', durationMs: 1, isAborted: false
 
 // Everything beneath the plugin: question banks, an in-memory store, no env, and the engine's answers.
 // Calls on $ answer { value } (or { deny }); events answer their own result.
-function world(on: On, banks: Record<string, unknown[]> = BANKS) {
+function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal') {
+  const opened: { focus?: true }[] = []
   const clock = mock.clock(on, { now: 1_000_000 })
   mock.store(on)
   mock.env(on, {})
@@ -39,67 +40,75 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS) {
   on('fs.read', ($, e) => ({ value: JSON.stringify(banks[String(e.path).split('/').pop()!.replace('.json', '')] ?? []) }))
   on('fs.write', () => ({ value: undefined }))
   on('command.register', () => ({ value: undefined }) as never)
-  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.open', ($, e) => {
+    opened.push(e)
+    return { value: { isPlaced: true } }
+  })
   on('ui.close', () => ({ value: undefined }) as never)
   on('ui.toast', () => ({ value: undefined }))
   on('session.version', () => ({ value: { version: '2.1.x', base: '2.1.x' } }) as never)
-  on('session.surface', () => ({ value: 'terminal' }) as never)
+  on('session.surface', () => ({ value: surface }) as never)
   on('classic.Notification', () => ({}) as never)
   on('prompt.submit', ($, e) => ({ text: e.text }))
   on('command.run', () => ({ text: '' }))
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
-  return clock
+  return { clock, opened }
 }
 
 // The pane's Buttons are keyed by action and question (`answer:0:python-a`, `next:python-a`),
 // so tests find them by label and press the key they carry.
 type Drawing = Mounted<'terminal' | 'desktop' | 'vscode', 'Pane'>
 const OPTION = (letter: string) => new RegExp(`^${letter}\\) `)
+const inQuiz = (ui: Drawing) => (ui.surface === 'desktop' ? { in: 'quiz' } : {})
+async function find(ui: Drawing, query: { type?: string; text?: RegExp }) {
+  return ui.find({ ...query, ...inQuiz(ui) })
+}
 async function keyOf(ui: Drawing, label: RegExp): Promise<string> {
-  const el = await ui.find({ type: 'Button', text: label })
+  const el = await find(ui, { type: 'Button', text: label })
   if (!el?.key) throw new Error(`no button ${label}`)
   return el.key
 }
 async function click(ui: Drawing, label: RegExp) {
-  return ui.press({ key: await keyOf(ui, label) })
+  return ui.press({ key: await keyOf(ui, label), ...inQuiz(ui) })
 }
 
 describe('pane', () => {
   for (const surface of ['terminal', 'desktop', 'vscode'] as const) {
     test(`${surface}: a prompt serves a question; answer, verdict, done, next`, async ($, on) => {
-      world(on)
+      world(on, BANKS, surface)
       await $.session.start({ cwd: '.', surface, isInteractive: true })
       const ui = await $.ui.mount({ plugin: 'biteq-ts', surface, ...PANE })
-      expect(await ui.find({ text: /idle/ })).toBeDefined()
+      expect(await find(ui, { text: /idle/ })).toBeDefined()
 
       await $.turn.start({ text: 'fix the bug', turnId: 't1' })
-      expect(await ui.find({ text: /Claude is thinking/ })).toBeDefined()
-      expect(await ui.find({ text: /\[python\]/ })).toBeDefined()   // default language, as in Python
+      expect(await find(ui, { text: /Claude is thinking/ })).toBeDefined()
+      expect(await find(ui, { text: /\[python\]/ })).toBeDefined()   // default language, as in Python
 
       await click(ui, OPTION('a'))
-      expect(await ui.find({ text: /Correct!|Not quite\./ })).toBeDefined()
-      expect(await ui.find({ text: /streak \d+ · \d\/1/ })).toBeDefined()
+      expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeDefined()
+      expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
+      expect(await find(ui, { type: 'Button', text: /[✓✗] a\) / })).toBeDefined()
 
       await $.turn.complete(DONE)
-      expect(await ui.find({ text: /Claude is done/ })).toBeDefined()
+      expect(await find(ui, { text: /Claude is done/ })).toBeDefined()
 
       await click(ui, /^Next$/)
-      expect(await ui.find({ type: 'Button', text: /^Skip$/ })).toBeDefined()
+      expect(await find(ui, { type: 'Button', text: /^Skip$/ })).toBeDefined()
     })
   }
 })
 
 describe('presses', () => {
   test('two clicks on one drawing record one answer', async ($, on) => {
-    world(on)
+    world(on, BANKS, 'desktop')
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     const [a, b] = [await keyOf(ui, OPTION('a')), await keyOf(ui, OPTION('b'))]
-    await Promise.allSettled([ui.press({ key: a }), ui.press({ key: b })])
-    expect(await ui.find({ text: /streak \d+ · \d\/1$/ })).toBeDefined()   // answered once, not twice
+    await Promise.allSettled([ui.press({ key: a, ...inQuiz(ui) }), ui.press({ key: b, ...inQuiz(ui) })])
+    expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()   // answered once, not twice
   })
 
   test('hotkeys only in the terminal; the desktop keeps its keys in the message box', async ($, on) => {
@@ -109,14 +118,40 @@ describe('presses', () => {
     const term = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
     expect((await term.find({ type: 'Button', text: OPTION('a') }))?.props.hotkey).toBe('a')
     const desk = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
-    expect((await desk.find({ type: 'Button', text: OPTION('a') }))?.props.hotkey).toBeUndefined()
-    expect((await desk.find({ type: 'Button', text: /^Skip$/ }))?.props.hotkey).toBeUndefined()
+    expect((await find(desk, { type: 'Button', text: OPTION('a') }))?.props.hotkey).toBeUndefined()
+    expect((await find(desk, { type: 'Button', text: /^Skip$/ }))?.props.hotkey).toBeUndefined()
+  })
+
+  test('desktop: a wait asks the pane for focus; boot does not', async ($, on) => {
+    const { opened } = world(on, BANKS, 'desktop')
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    expect(opened.some(o => o.focus)).toBe(false)
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    expect(opened.some(o => o.focus === true)).toBe(true)
+  })
+
+  test('terminal: a wait does not take the keyboard', async ($, on) => {
+    const { opened } = world(on, BANKS, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    expect(opened.some(o => o.focus)).toBe(false)
+  })
+
+  test('desktop: answering keeps option Buttons and still records', async ($, on) => {
+    world(on, BANKS, 'desktop')
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPTION('a'))
+    expect(await find(ui, { type: 'Button', text: /[✓✗] a\) / })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /^Next$/ })).toBeDefined()
+    expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
   })
 
   test('the thinking timer counts while Claude works', async ($, on) => {
-    const clock = world(on)
-    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    const { clock } = world(on, BANKS, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     expect(await ui.find({ text: /thinking\s+0:00/ })).toBeDefined()
     await clock.advance(65_000)
@@ -167,7 +202,7 @@ describe('/biteq commands', () => {
 
   for (const surface of ['desktop', 'terminal'] as const) {
     test(`${surface}: typing /biteq opens the pane and never reaches Claude`, async ($, on) => {
-      world(on)
+      world(on, BANKS, surface)
       await $.session.start({ cwd: '.', surface, isInteractive: true })
       const res = await $.prompt.submit({ text: '/biteq', wait: false } as never)
       expect(res).toEqual({ drop: expect.stringContaining('2 questions (python)') } as never)

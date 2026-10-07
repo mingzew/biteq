@@ -14,15 +14,28 @@ export async function enabled(io: Io): Promise<boolean> {
 export async function logEvent(io: Io, source: string, payload: unknown): Promise<void> {
   try {
     if (!(await enabled(io))) return
-    const path = await eventsLog(io)
-    let text = (await io.exists(path)) ? await io.read(path) : ''
-    if (text.length > MAX_BYTES) {
-      await io.write(`${path}.1`, text)
-      text = ''
-    }
-    const line = `${new Date().toISOString().slice(0, 19)}\t${source}\t${JSON.stringify(payload)}\n`
-    await io.write(path, text + line)
+    await write(io, source, payload)
   } catch {
     // a debug log must never break a hook
   }
+}
+
+/** Same file as logEvent, but always writes. Used to verify the desktop click build. */
+export async function logAlways(io: Io, source: string, payload: unknown): Promise<void> {
+  try {
+    await write(io, source, payload)
+  } catch {
+    // a debug log must never break a hook
+  }
+}
+
+async function write(io: Io, source: string, payload: unknown): Promise<void> {
+  const path = await eventsLog(io)
+  let text = (await io.exists(path)) ? await io.read(path) : ''
+  if (text.length > MAX_BYTES) {
+    await io.write(`${path}.1`, text)
+    text = ''
+  }
+  const line = `${new Date().toISOString().slice(0, 19)}\t${source}\t${JSON.stringify(payload)}\n`
+  await io.write(path, text + line)
 }

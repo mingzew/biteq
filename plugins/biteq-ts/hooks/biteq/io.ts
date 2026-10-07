@@ -33,7 +33,7 @@ export type Io = {
   // the pane and notices
   openPane: (focus: boolean) => Promise<boolean>   // false: the surface can't place it yet
   closePane: () => Promise<void>
-  toast: (text: string) => void
+  focus: (key: string) => Promise<void>   // move the pane's focus ring; a deny is ignored
   redraw: () => void   // draw the pane again, though no state changed (the thinking timer)
 
   // the engine's clock (a test can move it), in milliseconds

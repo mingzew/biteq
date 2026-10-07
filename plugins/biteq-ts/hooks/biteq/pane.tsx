@@ -7,12 +7,12 @@
 // surface's elements and the button actions.
 import type { Elements, RenderSurface } from 'claude-code'
 
-import type { Question, Stats, Status } from '../../types'
+import type { Question, Status } from '../../types'
+import { drawQuiz, keys, type PaneView } from './draw'
 import type { Io } from './io'
 import { loadStats, saveStats } from './quiz'
 
-const AGENT = 'Claude'
-const LETTERS = 'abcd'
+export type { PaneView } from './draw'
 
 // Already filtered to the chosen languages; set by boot, which runs again on every reload
 let questions: Question[] = []
@@ -55,6 +55,8 @@ export async function next(io: Io, qid: string): Promise<void> {
   const c = await io.get('current')
   if ((c.question?.id ?? '') !== qid) return   // already moved on
   await advance(io, c.question, await io.get('stats'))
+  const now = (await io.get('current')).question
+  if (now) await io.focus(keys.answer(now, 0))
 }
 
 async function nextQuestion(io: Io): Promise<void> {
@@ -90,9 +92,10 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
     }
   })
   await io.set('stats', () => s)
+  await io.focus(keys.next(q))
 }
 
-/** Python's Pane.poll, for one session: count the wait, serve a question, flash. */
+/** Python's Pane.poll, for one session: count the wait, serve a question. */
 export async function onStatus(io: Io, was: Status, now: Status): Promise<void> {
   if (now === was) return
   if (now === 'thinking' && was !== 'waiting') {
@@ -101,16 +104,18 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
     await io.set('stats', () => s)
     const c = await io.get('current')
     if (c.question === null || c.picked !== null) await advance(io, c.question, s)
-    if (!(await io.get('dismissed'))) void io.openPane(false)   // no-op when already open
-  } else if (now === 'waiting') {
-    io.toast(`biteq: ${AGENT} needs your input`)
-  } else if (now === 'done' && (was === 'thinking' || was === 'waiting')) {
-    io.toast(`biteq: ${AGENT} is done, go review`)
+    if (!(await io.get('dismissed'))) {
+      // Desktop: ask for the pane's keyboard now that the composer is empty, so the
+      // first click on an option is a press. Terminal keeps ctrl+x tab. A grant is
+      // refused if the composer has text; boot still opens without focus.
+      void io.openPane((await io.surface()) === 'desktop')
+    }
   }
 }
 
 /** Once a second: redraw while thinking, so the timer counts (Python repaints every 250 ms). */
 export async function tick(io: Io): Promise<void> {
+  if ((await io.surface()) === 'desktop') return   // desktop Client counts on its own frame clock
   if ((await io.get('status')) === 'thinking') io.redraw()
 }
 
@@ -134,14 +139,6 @@ export async function close(io: Io): Promise<void> {
 
 // ---------------------------------------------------------------- presses
 
-// Button keys: what a press does, and for which question
-const keys = {
-  answer: (q: Question, idx: number) => `answer:${idx}:${q.id}`,
-  next: (q: Question | null) => `next:${q?.id ?? ''}`,
-  skip: (q: Question) => `skip:${q.id}`,
-  close: 'close',
-}
-
 /**
  * A press on the pane, by its Button's key (register.ts's ui.press hook).
  *
@@ -158,20 +155,15 @@ export async function press(io: Io, key: string): Promise<void> {
 
 // ---------------------------------------------------------------- drawing
 
-export type PaneView = {
-  status: Status
-  elapsedMs: number
-  question: Question | null
-  picked: number | null
-  stats: Stats
-}
-
 /** Everything render() needs, read from the session's state (this subscribes the pane to it). */
 export async function view(io: Io): Promise<PaneView> {
   const { question, picked } = await io.get('current')
+  const since = await io.get('since')
   return {
     status: await io.get('status'),
-    elapsedMs: (await io.now()) - (await io.get('since')),
+    since,
+    elapsedMs: (await io.now()) - since,
+    bank: questions.length,
     question,
     picked,
     stats: await io.get('stats'),
@@ -179,80 +171,7 @@ export async function view(io: Io): Promise<PaneView> {
 }
 
 export function render(v: PaneView, el: Elements[RenderSurface], surface: RenderSurface) {
-  const { Box, Text, Button } = el
-  const { question: q, picked: p, stats: s } = v
-  // Keys reach the pane only while it has the keyboard: ctrl+x tab in the terminal. The desktop
-  // app keeps the keys in the message box, so there the buttons are for clicking, without hints.
-  const key = (k: string) => (surface === 'terminal' ? k : undefined)
-  const handled = () => {}   // presses are taken by key in press(), before a handler is looked up
-  const banner = {
-    thinking: { text: `● ${AGENT} is thinking  ${fmtSecs(v.elapsedMs)}`, color: 'yellow' },
-    waiting: { text: `! ${AGENT} needs your input`, color: 'magenta' },
-    done: { text: `✓ ${AGENT} is done, go review`, color: 'green' },
-    idle: { text: '○ idle', color: 'gray' },
-  }[v.status]
-
-  return (
-    <Box flexDirection="column" gap={1}>
-      <Box justifyContent="space-between">
-        <Text color={banner.color} bold>{banner.text}</Text>
-        <Text dimColor>streak {s.streak} · {s.correct}/{s.answered}</Text>
-      </Box>
-
-      {q === null ? (
-        <Box flexDirection="column" gap={1}>
-          <Text dimColor>
-            {questions.length
-              ? 'No question yet. Prompt Claude and one will appear here, or practice now.'
-              : 'No questions for the selected languages. Try /biteq langs.'}
-          </Text>
-          {questions.length > 0 && <Button key={keys.next(null)} label="Practice now" hotkey={key('n')} onPress={handled} />}
-        </Box>
-      ) : (
-        <Box flexDirection="column" gap={1}>
-          <Text>
-            <Text color="blue">[{q.lang}] </Text>
-            <Text bold>{q.title ?? ''}</Text>
-          </Text>
-          <Text>{q.prompt}</Text>
-          {q.code ? <Text color="cyan">{q.code}</Text> : null}
-          <Box flexDirection="column">
-            {q.options.map((opt, i) => {
-              const label = `${LETTERS[i]}) ${opt}`
-              if (p === null) {
-                return <Button key={keys.answer(q, i)} label={label} hotkey={key(LETTERS[i] ?? '')} plain onPress={handled} />
-              }
-              const right = i === q.answer
-              const mine = i === p
-              return (
-                <Text key={keys.answer(q, i)} color={right ? 'green' : mine ? 'red' : undefined} dimColor={!right && !mine}>
-                  {right ? '✓ ' : mine ? '✗ ' : '  '}{label}
-                </Text>
-              )
-            })}
-          </Box>
-          {p !== null && (
-            <Box flexDirection="column">
-              <Text color={p === q.answer ? 'green' : 'red'} bold>{p === q.answer ? 'Correct!' : 'Not quite.'}</Text>
-              <Text>{q.explanation}</Text>
-            </Box>
-          )}
-        </Box>
-      )}
-
-      <Box gap={2}>
-        {q !== null && (p !== null
-          ? <Button key={keys.next(q)} label="Next" hotkey={key('n')} variant="primary" onPress={handled} />
-          : <Button key={keys.skip(q)} label="Skip" hotkey={key('s')} onPress={handled} />)}
-        <Button key={keys.close} label="Close" hotkey={key('q')} role="dismiss" dimColor onPress={handled} />
-      </Box>
-    </Box>
-  )
-}
-
-function fmtSecs(ms: number): string {
-  const secs = Math.max(0, Math.floor(ms / 1000))
-  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`
+  return drawQuiz(v, el, surface, () => {})
 }
 
 function randomOf<T>(list: T[]): T | null {
