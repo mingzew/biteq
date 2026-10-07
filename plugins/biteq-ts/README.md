@@ -89,5 +89,11 @@ claude plugin test plugins/biteq-ts       # tests/*.test.tsx against the engine 
 ```
 
 `tsconfig.json` extends `.claude-plugin/types/tsconfig.json`, which Claude Code writes (gitignored)
-when it loads the plugin; run `/plugin-types` in a session to regenerate it. Then
-`npx -p typescript@5 tsc -p plugins/biteq-ts/tsconfig.json` type-checks everything.
+when it loads the plugin. Until it exists, `from 'claude-code'` shows as unresolved in the editor.
+To generate it, start a session with the plugin loaded (there is no separate command):
+
+```bash
+claude --plugin-dir ./plugins/biteq-ts
+```
+
+Then `npx -p typescript@5 tsc -p plugins/biteq-ts/tsconfig.json` type-checks everything.

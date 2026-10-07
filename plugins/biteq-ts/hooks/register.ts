@@ -27,7 +27,9 @@ import { DEFAULT_STATS } from './biteq/quiz'
 const PANE = 'biteq'
 
 // The session's state, one atom per key of the contract in types/index.d.ts. The engine wants
-// every read and write to name its atom directly, hence the switches in io() below.
+// every read and write to name its atom directly, hence the switches in io() below
+// Human explanation: We are initializing these variables with the default values that will be stored in Claude's engine session on first read or update.
+// Note these are session variables and will be swiped when a user closes the session. Also if the user has multiple sessions, there will be another set of variables.
 const status = atom({ plugin: 'biteq-ts', key: 'status' } as const, 'idle')
 const since = atom({ plugin: 'biteq-ts', key: 'since' } as const, 0)
 const current = atom({ plugin: 'biteq-ts', key: 'current' } as const, { question: null, picked: null })
