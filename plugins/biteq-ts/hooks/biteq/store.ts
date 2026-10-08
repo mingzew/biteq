@@ -1,12 +1,11 @@
-// Storage: the store keys (what ~/.biteq/*.json is in the Python version), JSON helpers,
+// Storage: the plugin store's keys, JSON helpers,
 // and this session's status.
 //
 // Only the session status is written by this module. The other keys (stats, config) are
 // defined here but written by quiz and config; the debug log is a file, written by debug.
 //
-// Python keeps every session in one sessions.json that the pane polls. Here each Claude Code
-// session runs its own copy of the plugin and draws its own pane, so the status is one value
-// in the session's state (which also survives a hot reload).
+// Each Claude Code session runs its own copy of the plugin and draws its own pane, so the status
+// is one value in the session's state (which also survives a hot reload).
 import type { Status } from '../../types'
 import type { Io } from './io'
 
@@ -14,7 +13,7 @@ import type { Io } from './io'
 export const STATS = 'stats'
 export const CONFIG = 'config'
 
-/** The debug log stays a real file, beside the Python version's ~/.biteq/events.log. */
+/** The debug log is a real file, under ~/.biteq (or BITEQ_HOME). */
 export async function eventsLog(io: Io): Promise<string> {
   const home = (await io.env('BITEQ_HOME'))
     ?? `${(await io.env('HOME')) ?? (await io.env('USERPROFILE')) ?? '.'}/.biteq`

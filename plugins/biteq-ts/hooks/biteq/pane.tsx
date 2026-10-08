@@ -1,10 +1,9 @@
 // The quiz pane: drawn by Claude Code beside the conversation (terminal, desktop Code tab,
-// VS Code/Cursor extension) instead of the Python version's separate curses window.
+// VS Code/Cursor extension).
 //
-// Python's Pane polls sessions.json; here the status arrives through onStatus (from
-// cli.signal). What the pane draws lives in the session's state, so a change redraws it.
-// render() is pure layout like Python's render(): register.ts hands it the data, the
-// surface's elements and the button actions.
+// The status arrives through onStatus (from cli.signal). What the pane draws lives in the
+// session's state, so a change redraws it. render() is pure layout: register.ts hands it the
+// data and the surface's elements.
 import type { Elements, RenderSurface } from 'claude-code'
 
 import type { Question, Stats, Status } from '../../types'
@@ -34,7 +33,7 @@ export async function boot(io: Io, chosen: Question[]): Promise<void> {
 /**
  * The next question: one language at a time. The first language (in serving order) that still
  * has unseen questions is the current one; it's served until all of its questions are answered,
- * then the next language starts. Within it, Python's next_question(): usually a random unseen
+ * then the next language starts. Within it: usually a random unseen
  * question, 30% of the time one you missed in that language. Once every language is done, the
  * cycle restarts from the first.
  */
@@ -118,7 +117,7 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
   await io.focus(keys.next(q))
 }
 
-/** Python's Pane.poll, for one session: count the wait, serve a question. */
+/** This session's status changed: count a new wait, serve a question, reopen the pane. */
 export async function onStatus(io: Io, was: Status, now: Status): Promise<void> {
   if (now === was) return
   if (now === 'thinking' && was !== 'waiting') {
@@ -136,7 +135,7 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
   }
 }
 
-/** Once a second: redraw while thinking, so the timer counts (Python repaints every 250 ms). */
+/** Once a second: redraw while thinking, so the timer counts. */
 export async function tick(io: Io): Promise<void> {
   if ((await io.surface()) === 'desktop') return   // desktop Client counts on its own frame clock
   if ((await io.get('status')) === 'thinking') io.redraw()

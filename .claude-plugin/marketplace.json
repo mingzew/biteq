@@ -5,14 +5,9 @@
   },
   "plugins": [
     {
-      "name": "biteq",
-      "source": "./plugins/biteq",
-      "description": "Bite-size coding questions while Claude is thinking."
-    },
-    {
       "name": "biteq-ts",
       "source": "./plugins/biteq-ts",
-      "description": "Bite-size-ts coding questions while Claude is thinking."
+      "description": "Bite-size coding questions while Claude is thinking."
     }
   ]
 }

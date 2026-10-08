@@ -1,4 +1,2 @@
-__pycache__/
-*.pyc
 .DS_Store
 plugins/biteq-ts/.claude-plugin/types/

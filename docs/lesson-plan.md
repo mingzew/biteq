@@ -40,9 +40,8 @@ plugins/biteq-ts/
 └── data/questions/*.json        8 banks: bash cs git js python ruby sql ts
 ```
 
-The layout mirrors the Python plugin in `plugins/biteq/lib`, one module per module, which is why
-the names look the way they do. `io.ts` is the single exception — it has no Python counterpart, and
-step 3 explains why it has to exist here.
+Each module has one job, named after it. `io.ts` is the odd one out: it holds no logic of its own, and
+step 3 explains why it has to exist.
 
 The rule worth memorising now, because it shapes everything else: **only `register.ts` touches
 `$`**, the engine handle. Every other module is handed an `io` object instead and never imports
@@ -295,7 +294,7 @@ means the surface has nowhere to put the pane yet, typically a terminal that is 
 The pane appears later when the window is widened.
 
 Then, if no question is on screen, it picks one. Note this happens at boot rather than at the first
-prompt, which is a deliberate difference from the Python version.
+prompt.
 
 The `placed` result flows back to `cmdPane`, which turns it into one of two messages: the "pane will
 show up once this window is wide enough" warning, or a line telling the user how to interact —
@@ -455,10 +454,9 @@ Claude is working, for a counter.
 The guard matters: when the status is anything other than `thinking`, `tick` costs a single read and
 stops. An idle session is nearly free.
 
-The comment on `register.ts:102` notes "Python repaints every 250 ms". The Python pane owned its own
-terminal and could repaint as often as it liked. Here, a repaint is a round trip, so the port
-rewrote the refresh rate down to once a second. The counter stays correct either way — `elapsedMs`
-is computed from `since`, not accumulated — it just steps more coarsely.
+The timer redraws once a second, not more often, because each repaint is a round trip to the
+engine. The counter stays correct either way — `elapsedMs` is computed from `since`, not
+accumulated — it just steps once a second.
 
 This is the part of `biteq` a `Client` surface module would most improve, by running the counter on
 the surface's own frame clock with no dispatch at all. That is a future option, not a defect.
@@ -634,7 +632,7 @@ worth keeping already went to `$.store` at the moment it changed.
 
 ## Where to go next
 
-- `docs/flow.md` — the same journey as a timeline table, plus the Python version's trace.
+- `docs/flow.md` — the same journey as a timeline table.
 - `docs/review-notes.md` — things found while reading this code that may warrant a change.
 - `plugins/biteq-ts/.claude-plugin/types/claude-code/index.d.ts` — the engine's own API docs, which
   the engine rewrites on every update. The authority for anything in this document.

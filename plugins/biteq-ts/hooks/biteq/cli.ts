@@ -1,9 +1,7 @@
 // biteq commands: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | reset [--all] | start | stop
 //
-// Same subcommands as the Python CLI. `/biteq` alone opens the pane (Python: bare `biteq`).
-// `hook` has no equivalent: register.ts hands engine events to claude.parse directly.
-// `signal` is the path every status takes (Python: hook_main -> store.set_status, then the
-// pane's poll).
+// `/biteq` alone opens the pane. `signal` is the path every status takes: register.ts hands
+// engine events to claude.parse, and the status goes to store.setStatus, then pane.onStatus.
 import type { Status } from '../../types'
 import { getLangs, setLangs } from './config'
 import { enabled as debugEnabled } from './debug'
@@ -25,7 +23,7 @@ export async function signal(io: Io, status: Status | null): Promise<void> {
   await onStatus(io, was, status)
 }
 
-/** Session start (and every reload): Python's `biteq pane` at boot, without taking the keys. */
+/** Session start (and every reload): open the pane, without taking the keys. */
 export async function boot(io: Io): Promise<void> {
   await cmdPane(io, undefined, false)
 }
