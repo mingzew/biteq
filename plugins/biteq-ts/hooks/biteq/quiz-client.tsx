@@ -59,7 +59,7 @@ export function drawQuiz(
       </Box>
       <Box justifyContent="space-between">
         <Text color={banner.color} bold>{banner.text}</Text>
-        <Text dimColor>  streak {s.streak} · {s.correct}/{s.answered}</Text>
+        <Text dimColor>  streak {s.streak} · best {s.best_streak}</Text>
       </Box>
 
       {q === null ? (

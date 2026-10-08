@@ -6,7 +6,7 @@
     "code": "puts 0 ? \"yes\" : \"no\"",
     "options": ["yes", "no", "TypeError", "(nothing)"],
     "answer": 0,
-    "explanation": "Only nil and false are falsy in Ruby. 0, \"\" and [] are all truthy, unlike Python or JavaScript."
+    "explanation": "Only nil and false are falsy in Ruby.\n\n0 ? \"yes\" : \"no\"  # => \"yes\"\n\"\" ? \"yes\" : \"no\" # => \"yes\"\n[] ? \"yes\" : \"no\" # => \"yes\"\n\nPython and JavaScript treat 0 as falsy. Ruby does not."
   },
   {
     "id": "ruby-array-new-shared",
@@ -24,7 +24,7 @@
     "code": "h = { \"name\" => \"Ada\" }\np h[:name]",
     "options": ["\"Ada\"", "nil", "KeyError", ":name"],
     "answer": 1,
-    "explanation": "\"name\" and :name are different keys.\n Hash#[] returns nil for a missing key.\n Hash#fetch would raise KeyError."
+    "explanation": "\"name\" and :name are different keys.\n\nh = { \"name\" => \"Ada\" }\nh[:name]   # => nil   — missing key, not a misspelling\nh[\"name\"]  # => \"Ada\"\n\nHash#[] returns nil for a missing key. Hash#fetch would raise KeyError."
   },
   {
     "id": "ruby-or-equals-false",
@@ -33,7 +33,7 @@
     "code": "enabled = false\nenabled ||= true\np enabled",
     "options": ["false", "true", "nil", "SyntaxError"],
     "answer": 1,
-    "explanation": "a ||= b assigns when a is falsy, and false is falsy. That makes ||= the wrong tool for defaulting a boolean that may legitimately be false."
+    "explanation": "a ||= b assigns when a is falsy. false is falsy, so it gets replaced:\n\nenabled = false\nenabled ||= true  # same as enabled = enabled || true\n# enabled is now true\n\nDo not use ||= to default a boolean that may legitimately be false."
   },
   {
     "id": "ruby-block-return",
@@ -42,7 +42,7 @@
     "code": "def find_big\n  [1, 2, 3].each { |x| return x * 10 if x == 2 }\n  :none\nend\np find_big",
     "options": ["20", ":none", "[1, 2, 3]", "LocalJumpError"],
     "answer": 0,
-    "explanation": "return inside a block returns from the enclosing method, not just from the block.\n\nSo when x == 2, return x * 10 exits find_big immediately with 20 \n the :none line is never reached."
+    "explanation": "return inside a block returns from the enclosing method, not just from the block.\n\n[1, 2, 3].each { |x| return x * 10 if x == 2 }\n# when x == 2, this exits find_big with 20\n# :none is never reached"
   },
   {
     "id": "ruby-string-shovel-alias",
@@ -51,16 +51,16 @@
     "code": "a = \"hi\"\nb = a\nb << \"!\"\np a",
     "options": ["\"hi\"", "\"hi!\"", "nil", "FrozenError"],
     "answer": 1,
-    "explanation": "a and b refer to the same String, and << appends in place. b += \"!\" would build a new string and leave a as \"hi\"."
+    "explanation": "a and b are the same String object. << mutates it in place:\n\na = \"hi\"\nb = a       # b is a, not a copy\nb << \"!\"    # mutates that one string\n# a is now \"hi!\"\n\nb += \"!\" would build a new string and leave a as \"hi\"."
   },
   {
     "id": "ruby-integer-division",
     "title": "Integer division",
     "prompt": "What does this print?",
-    "code": "p 7 / 2",
-    "options": ["3.5", "3", "4", "3r"],
-    "answer": 1,
-    "explanation": "Dividing two Integers gives an Integer, rounded toward negative infinity.\n Make one side a Float (7 / 2.0 or 7.fdiv(2)) to get 3.5."
+    "code": "p -7 / 2",
+    "options": ["-3.5", "-3", "-4", "3"],
+    "answer": 2,
+    "explanation": "Dividing two Integers gives an Integer, rounded toward negative infinity — not toward zero.\n\n-7 / 2    # => -4   (not -3)\n7 / 2     # => 3\n\nMake one side a Float (-7 / 2.0 or -7.fdiv(2)) to get -3.5."
   },
   {
     "id": "ruby-id-local",
@@ -69,7 +69,7 @@
     "code": "1  $flag = true\n2  class Box\n3    @label = \"x\"\n4    def pack\n5      size = 1\n6      @size = size\n7    end\n8  end",
     "options": ["1", "3", "5", "6"],
     "answer": 2,
-    "explanation": "size on line 5 is a local. $flag is global, @label on the class body is a class instance variable, and @size is an instance variable of each Box."
+    "explanation": "size on line 5 is a local.\n\n1  $flag = true   # global\n3  @label = \"x\"   # class instance variable (on Box itself)\n5  size = 1       # local\n6  @size = size   # instance variable of each Box"
   },
   {
     "id": "ruby-id-ivar",
@@ -78,7 +78,7 @@
     "code": "1  class Box\n2    @@n = 0\n3    def initialize(name)\n4      @name = name\n5      tag = :ok\n6    end\n7  end",
     "options": ["2", "3", "4", "5"],
     "answer": 2,
-    "explanation": "@name on line 4 lives on each Box instance. @@n is a class variable. name on line 3 is a local (the parameter), and tag is a local."
+    "explanation": "@name on line 4 lives on each Box instance.\n\n2  @@n = 0        # class variable, shared by the class\n3  initialize(name)  # name is a local (the parameter)\n4  @name = name   # instance variable of each Box\n5  tag = :ok      # local"
   },
   {
     "id": "ruby-id-class-var",
@@ -87,7 +87,7 @@
     "code": "1  class Box\n2    @@n = 0\n3    @n = 0\n4    def reset\n5      @n = 0\n6    end\n7  end",
     "options": ["2", "3", "4", "5"],
     "answer": 0,
-    "explanation": "@@n is the class variable. @n on line 3 is a class instance variable (on Box itself). @n on line 5 is an instance variable of each Box object."
+    "explanation": "@@n is the class variable. The two @n assignments are different objects:\n\n2  @@n = 0   # class variable, shared by Box and its subclasses\n3  @n = 0    # class instance variable, on Box itself\n5  @n = 0    # instance variable of each Box object"
   },
   {
     "id": "ruby-id-class-ivar",
@@ -96,7 +96,7 @@
     "code": "1  class Box\n2    @@n = 0\n3    @n = 0\n4    def reset\n5      @n = 0\n6    end\n7  end",
     "options": ["2", "3", "4", "5"],
     "answer": 1,
-    "explanation": "@n in the class body (line 3) sits on the Box object, not on instances. @@n is shared class state. @n inside reset belongs to each instance."
+    "explanation": "@n in the class body sits on the Box object, not on instances.\n\n2  @@n = 0   # shared class state (Box and subclasses)\n3  @n = 0    # class instance variable — this is the one\n5  @n = 0    # instance variable of each Box, a different @n"
   },
   {
     "id": "ruby-id-global",
@@ -105,7 +105,7 @@
     "code": "1  count = 0\n2  $count = 0\n3  class App\n4    @count = 0\n5  end",
     "options": ["1", "2", "4", "5"],
     "answer": 1,
-    "explanation": "$count is global. count on line 1 is a local. @count on line 4 is a class instance variable of App."
+    "explanation": "$count is global.\n\n1  count = 0    # local\n2  $count = 0   # global\n4  @count = 0   # class instance variable of App"
   },
   {
     "id": "ruby-id-symbol",
@@ -114,7 +114,7 @@
     "code": "1  name = \"Ada\"\n2  key = :ada\n3  $key = name\n4  @key = key",
     "options": ["1", "2", "3", "4"],
     "answer": 1,
-    "explanation": ":ada is a Symbol. \"Ada\" is a String. $key is a global, @key an instance variable (of main at top level)."
+    "explanation": ":ada is a Symbol.\n\n1  name = \"Ada\"  # String\n2  key = :ada    # Symbol\n3  $key = name   # global, still holding a String\n4  @key = key    # instance variable (of main at top level)"
   },
   {
     "id": "ruby-id-param-is-local",
@@ -123,25 +123,25 @@
     "code": "1  $name = \"x\"\n2  class User\n3    def initialize(name)\n4      @name = name\n5    end\n6  end",
     "options": ["1", "2", "3", "4"],
     "answer": 2,
-    "explanation": "A method parameter is a local. Line 3 introduces name. Line 4 reads that local into @name. $name is a different, global name."
+    "explanation": "A method parameter is a local. Line 3 is where name comes into scope.\n\n1  $name = \"x\"           # a different, global name\n3  def initialize(name)  # introduces the local\n4  @name = name          # reads that local into an instance variable"
   },
   {
     "id": "ruby-id-symbol-key",
-    "title": "Symbol as a hash key",
+    "title": "Quoted hash label",
     "prompt": "Which line uses a symbol?",
-    "code": "1  h = { \"id\" => 1 }\n2  h[:id] = 2\n3  id = 3\n4  h[id] = 4",
+    "code": "1  h = { \"id\" => 1 }\n2  h = { \"id\": 1 }\n3  id = 3\n4  h[id] = 4",
     "options": ["1", "2", "3", "4"],
     "answer": 1,
-    "explanation": ":id on line 2 is a Symbol. Line 1 uses the string \"id\". Line 3's id is a local Integer, and line 4 uses that integer as the key."
+    "explanation": "The quotes on line 2 are a label, not a String key. That label still becomes a Symbol:\n\n{ \"id\" => 1 }  # String key \"id\"\n{ \"id\": 1 }    # same as { id: 1 } — key is :id\n{ id: 1 }      # also :id\n\nLine 3's id is a local Integer. Line 4 uses that integer as the key."
   },
   {
     "id": "ruby-id-global-read",
-    "title": "Reading a global",
+    "title": "Constants that look global",
     "prompt": "Which line reads a global variable?",
-    "code": "1  def debug\n2    out = []\n3    out << $stderr\n4    out << @log\n5  end",
-    "options": ["2", "3", "4", "5"],
+    "code": "1  p ARGV\n2  p $0\n3  p ENV[\"PATH\"]\n4  p STDIN",
+    "options": ["1", "2", "3", "4"],
     "answer": 1,
-    "explanation": "$stderr is a global. out is a local. @log is an instance variable."
+    "explanation": "ARGV, ENV and STDIN are constants, not globals. $0 is a global (the program name).\n\nARGV         # constant, the argument Array\n$0           # global\nENV[\"PATH\"]  # constant, the environment Hash\nSTDIN        # constant (related to $stdin, which is the global)"
   },
   {
     "id": "ruby-id-class-var-shared",
@@ -150,6 +150,159 @@
     "code": "1  class Animal\n2    @@legs = 4\n3    @kind = \"x\"\n4  end\n5  class Dog < Animal\n6    def kind\n7      @kind\n8    end\n9  end",
     "options": ["2", "3", "6", "7"],
     "answer": 0,
-    "explanation": "@@legs is one variable for Animal and Dog together. @kind on line 3 lives only on Animal. @kind on line 7 is Dog's instance variable, a third name."
+    "explanation": "@@legs is one variable for Animal and Dog together.\n\n2  @@legs = 4   # shared class variable — this is the one\n3  @kind = \"x\"  # class instance variable, only on Animal\n7  @kind        # Dog's instance variable, a third name"
+  },
+  {
+    "id": "ruby-and-assignment",
+    "title": "and vs &&",
+    "prompt": "What does this print?",
+    "code": "x = true and false\np x",
+    "options": ["true", "false", "nil", "SyntaxError"],
+    "answer": 0,
+    "explanation": "and binds looser than assignment. The line is (x = true) and false, so x stays true.\n\nx = true and false  # => (x = true) and false\n# x is true\n\nx = true && false   # => x = (true && false)\n# x would be false\n\nUse && / || in expressions. Use and / or for control flow."
+  },
+  {
+    "id": "ruby-hash-default-shared",
+    "title": "Hash.new with a default object",
+    "prompt": "What does this print?",
+    "code": "h = Hash.new([])\nh[:a] << 1\np h",
+    "options": ["{:a=>[1]}", "{}", "{:a=>[1], :b=>[1]}", "NoMethodError"],
+    "answer": 1,
+    "explanation": "h[:a] returns the shared default array without storing it under :a. << mutates that default; the hash stays empty.\n\nh = Hash.new([])\nh[:a] << 1  # mutates the default, does not write :a\np h         # => {}\nh[:b]       # => [1]  — same default array\n\nUse Hash.new { |hash, k| hash[k] = [] } to store a fresh array per key."
+  },
+  {
+    "id": "ruby-lambda-return",
+    "title": "return inside a lambda",
+    "prompt": "What does this print?",
+    "code": "def wrap\n  f = -> { return 20 }\n  f.call\n  :none\nend\np wrap",
+    "options": ["20", ":none", "nil", "LocalJumpError"],
+    "answer": 1,
+    "explanation": "return in a lambda leaves only the lambda. wrap keeps going.\n\nf = -> { return 20 }\nf.call   # => 20, back in wrap\n:none    # this still runs\n\nA block's return would have exited wrap with 20. Lambdas do not."
+  },
+  {
+    "id": "ruby-case-equality",
+    "title": "=== is not symmetric",
+    "prompt": "What does this print?",
+    "code": "p [Integer === 1, 1 === Integer]",
+    "options": ["[true, true]", "[true, false]", "[false, false]", "[false, true]"],
+    "answer": 1,
+    "explanation": "=== is case-equality. Integer === 1 asks \"is 1 an Integer?\" The other way around, Integer is not an Integer instance.\n\nInteger === 1  # => true   — used by case/when Integer\n1 === Integer  # => false  — 1.=== is just ==\n\ncase uses when_value === target, so when Integer matches 1."
+  },
+  {
+    "id": "ruby-block-param-scope",
+    "title": "Block parameters are local",
+    "prompt": "What does this print?",
+    "code": "x = 1\n[2].each { |x| }\np x",
+    "options": ["1", "2", "nil", "NameError"],
+    "answer": 0,
+    "explanation": "A block parameter is local to the block. It does not overwrite the outer x.\n\nx = 1\n[2].each { |x| }  # this x is a new local\np x               # => 1\n\nfor x in [2] would assign the outer x (see the for-loop question)."
+  },
+  {
+    "id": "ruby-for-leaks",
+    "title": "for assigns the outer variable",
+    "prompt": "What does this print?",
+    "code": "x = 1\nfor x in [2]\nend\np x",
+    "options": ["1", "2", "nil", "NameError"],
+    "answer": 1,
+    "explanation": "for is not a block scope. It assigns the same x that already exists:\n\nx = 1\nfor x in [2]\nend\np x  # => 2\n\n[2].each { |x| } would leave the outer x as 1."
+  },
+  {
+    "id": "ruby-super-empty",
+    "title": "super vs super()",
+    "prompt": "What does this print?",
+    "code": "class A\n  def f(n)\n    n\n  end\nend\nclass B < A\n  def f(n)\n    super()\n  end\nend\np B.new.f(2)",
+    "options": ["2", "nil", "ArgumentError", "0"],
+    "answer": 2,
+    "explanation": "Bare super forwards the current arguments. super() forwards none.\n\nB.new.f(2)\nsuper()  # calls A#f with no args — ArgumentError (given 0, expected 1)\nsuper    # would call A#f(2) and return 2"
+  },
+  {
+    "id": "ruby-eql-equal",
+    "title": "== vs eql? vs equal?",
+    "prompt": "What does this print?",
+    "code": "a = \"x\"\nb = \"x\"\np [a == b, a.eql?(b), a.equal?(b)]",
+    "options": ["[true, true, true]", "[true, true, false]", "[true, false, false]", "[false, false, false]"],
+    "answer": 1,
+    "explanation": "== and eql? compare value. equal? compares identity (the same object).\n\na = \"x\"\nb = \"x\"           # a second string with the same contents\na == b            # => true   value\na.eql?(b)         # => true   value (Hash uses this)\na.equal?(b)       # => false  different objects\n\nFor numbers, 1 == 1.0 is true but 1.eql?(1.0) is false, so they are different Hash keys."
+  },
+  {
+    "id": "ruby-nested-hash-nil",
+    "title": "Nested Hash#[] on a miss",
+    "prompt": "What does this print?",
+    "code": "h = {}\np h[:a][:b]",
+    "options": ["nil", "{}", "NoMethodError", "KeyError"],
+    "answer": 2,
+    "explanation": "h[:a] is nil for a missing key. Then nil[:b] raises.\n\nh = {}\nh[:a]       # => nil\nh[:a][:b]   # => NoMethodError  (nil has no [])\n\nh.dig(:a, :b)  # => nil  — this is the safe walk"
+  },
+  {
+    "id": "ruby-gsub-bang-nil",
+    "title": "gsub! when nothing matches",
+    "prompt": "What does this print?",
+    "code": "s = \"ab\"\np s.gsub!(/x/, \"y\")",
+    "options": ["\"ab\"", "nil", "\"xy\"", "false"],
+    "answer": 1,
+    "explanation": "gsub! returns nil when it changes nothing — not the original string.\n\ns = \"ab\"\ns.gsub!(/x/, \"y\")  # => nil  (no match)\n# s is still \"ab\"\n\ns.gsub!(/a/, \"z\")  # => \"zb\" when it does change\n\nChaining s.gsub!(...).upcase blows up on nil. Use gsub (no bang) or check the return."
+  },
+  {
+    "id": "ruby-int-div-zero",
+    "title": "Integer divided by zero",
+    "prompt": "What does this print?",
+    "code": "p 1 / 0",
+    "options": ["0", "Infinity", "NaN", "ZeroDivisionError"],
+    "answer": 3,
+    "explanation": "Integer division by zero raises.\n\n1 / 0    # => ZeroDivisionError\n1.0 / 0  # => Infinity   (Float, IEEE)\n\nThe two / operators look the same. The class of the operands decides."
+  },
+  {
+    "id": "ruby-float-div-zero",
+    "title": "Float divided by zero",
+    "prompt": "What does this print?",
+    "code": "p 1.0 / 0",
+    "options": ["0.0", "Infinity", "NaN", "ZeroDivisionError"],
+    "answer": 1,
+    "explanation": "Float division follows IEEE 754, so dividing by 0.0 is Infinity, not an error.\n\n1.0 / 0    # => Infinity\n1 / 0      # => ZeroDivisionError  (Integer)\n0.0 / 0.0  # => NaN"
+  },
+  {
+    "id": "ruby-include-vs-prepend",
+    "title": "include vs prepend",
+    "prompt": "What does this print?",
+    "code": "module M\n  def hi; \"M\"; end\nend\nclass A\n  include M\n  def hi; \"A\"; end\nend\nclass B\n  prepend M\n  def hi; \"B\"; end\nend\np [A.new.hi, B.new.hi]",
+    "options": ["[\"A\", \"B\"]", "[\"A\", \"M\"]", "[\"M\", \"M\"]", "[\"M\", \"B\"]"],
+    "answer": 1,
+    "explanation": "include puts the module behind the class. prepend puts it in front.\n\nA.ancestors  # [A, M, ...]  so A#hi wins => \"A\"\nB.ancestors  # [M, B, ...]  so M#hi wins => \"M\"\n\np [A.new.hi, B.new.hi]  # => [\"A\", \"M\"]"
+  },
+  {
+    "id": "ruby-dup-clone-freeze",
+    "title": "dup vs clone on a frozen string",
+    "prompt": "What does this print?",
+    "code": "a = \"x\".freeze\np [a.dup.frozen?, a.clone.frozen?]",
+    "options": ["[false, true]", "[true, true]", "[false, false]", "[true, false]"],
+    "answer": 0,
+    "explanation": "clone copies freeze (and singleton methods). dup does not.\n\na = \"x\".freeze\na.dup.frozen?    # => false  — a thawed copy\na.clone.frozen?  # => true   — still frozen\n\nNeither copies the original; both are new objects."
+  },
+  {
+    "id": "ruby-nil-to-i",
+    "title": "nil.to_i",
+    "prompt": "What does this print?",
+    "code": "p nil.to_i",
+    "options": ["0", "nil", "NoMethodError", "NaN"],
+    "answer": 0,
+    "explanation": "nil.to_i is 0, not an error. Empty string is the same:\n\nnil.to_i  # => 0\n\"\".to_i   # => 0\n\"9\".to_i  # => 9\n\nSilent 0 from a missing value is a common bug. Check for nil instead of converting it."
+  },
+  {
+    "id": "ruby-bare-rescue",
+    "title": "Bare rescue",
+    "prompt": "What does this print?",
+    "code": "begin\n  raise Exception.new(\"x\")\nrescue\n  p :ok\nend",
+    "options": [":ok", "nil", "Exception", "RuntimeError"],
+    "answer": 2,
+    "explanation": "A bare rescue catches StandardError and its subclasses. Exception is above that, so it is not caught.\n\nraise \"x\"                  # RuntimeError < StandardError — caught\nraise Exception.new(\"x\")   # not a StandardError — not caught\n\nrescue Exception would catch it, but that also swallows NoMemoryError and Interrupt."
+  },
+  {
+    "id": "ruby-kwargs-hash",
+    "title": "Keyword args vs a Hash",
+    "prompt": "What does this print?",
+    "code": "def f(a:)\n  a\nend\np f({ a: 1 })",
+    "options": ["1", "{:a=>1}", "ArgumentError", "TypeError"],
+    "answer": 2,
+    "explanation": "Ruby 3 does not treat a positional Hash as keywords.\n\ndef f(a:)\n  a\nend\n\nf({ a: 1 })  # ArgumentError — given 1 positional, missing keyword a\nf(a: 1)      # => 1\nf(**{ a: 1 })  # => 1  — splat makes it keywords"
   }
 ]
