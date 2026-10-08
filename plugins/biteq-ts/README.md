@@ -21,7 +21,7 @@ hints there.)
 
 | Command | What it does (same as the Python CLI) |
 |---|---|
-| `/biteq [--lang a,b]` | Open the pane; `--lang` is validated and remembered (default `python`) |
+| `/biteq [--lang a,b]` | Open the pane; `--lang` is validated and remembered (default `ruby`). Those languages are served first, one at a time: every question in a language before the next, then the other banks A-Z |
 | `/biteq langs` | List question banks and the selected languages |
 | `/biteq check` | Validate the question banks |
 | `/biteq stats` | Your stats |

@@ -14,7 +14,8 @@ import { loadStats, saveStats } from './quiz'
 
 export type { PaneView } from './draw'
 
-// Already filtered to the chosen languages; set by boot, which runs again on every reload
+// Every question, grouped by language in the order they're served (quiz.languageOrder);
+// set by boot, which runs again on every reload
 let questions: Question[] = []
 
 export async function boot(io: Io, chosen: Question[]): Promise<void> {
@@ -30,14 +31,26 @@ export async function boot(io: Io, chosen: Question[]): Promise<void> {
 // that question is still on screen: a second click can't count an answer twice or skip two
 // questions. The one write that redraws the pane comes first; stats are saved after.
 
-/** Python's next_question(): usually a random unseen one, 30% of the time one you missed. */
+/**
+ * The next question: one language at a time. The first language (in serving order) that still
+ * has unseen questions is the current one; it's served until all of its questions are answered,
+ * then the next language starts. Within it, Python's next_question(): usually a random unseen
+ * question, 30% of the time one you missed in that language. Once every language is done, the
+ * cycle restarts from the first.
+ */
 function pick(s: Stats, cur: Question | null): { q: Question | null; restart: boolean } {
-  const pool = questions.filter(q => q.id !== cur?.id)
-  const from = pool.length ? pool : questions
+  const langs = [...new Set(questions.map(q => q.lang))]
+  const unseenIn = (lang: string) => questions.filter(q => q.lang === lang && q.id !== cur?.id && !s.seen.includes(q.id))
+  let lang = langs.find(l => unseenIn(l).length)
+  const restart = lang === undefined
+  lang ??= langs[0]
+  const inLang = questions.filter(q => q.lang === lang)
+  const pool = inLang.filter(q => q.id !== cur?.id)
+  const from = pool.length ? pool : inLang
   const wrong = from.filter(q => s.wrong.includes(q.id))
-  if (wrong.length && Math.random() < 0.3) return { q: randomOf(wrong), restart: false }   // light spaced repetition
-  const unseen = from.filter(q => !s.seen.includes(q.id))
-  return unseen.length ? { q: randomOf(unseen), restart: false } : { q: randomOf(from), restart: true }
+  if (wrong.length && Math.random() < 0.3) return { q: randomOf(wrong), restart }   // light spaced repetition
+  const unseen = restart ? from : from.filter(q => !s.seen.includes(q.id))
+  return { q: randomOf(unseen.length ? unseen : from), restart }
 }
 
 /** Move on from `from` (the question on screen), unless something already moved on. */

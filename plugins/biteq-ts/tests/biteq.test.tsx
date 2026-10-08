@@ -9,10 +9,14 @@ import type { Engine, Mounted } from 'claude-code/testing'
 const BANKS: Record<string, unknown[]> = {
   python: [
     { id: 'python-a', title: 'A', prompt: 'Pick a', options: ['a1', 'a2'], answer: 0, explanation: 'because' },
-    { id: 'python-b', title: 'B', prompt: 'Pick b', options: ['b1', 'b2'], answer: 1, explanation: 'because' },
+    { id: 'python-b', title: 'B', prompt: 'Pick b', options: ['b1', 'b2'], answer: 0, explanation: 'because' },
   ],
   js: [{ id: 'js-a', title: 'J', prompt: 'Pick j', options: ['j1', 'j2'], answer: 0, explanation: 'because' }],
-  ruby: [],
+  ruby: [
+    { id: 'ruby-a', title: 'R', prompt: 'Pick r', options: ['r1', 'r2'], answer: 0, explanation: 'because' },
+    { id: 'ruby-b', title: 'S', prompt: 'Pick s', options: ['s1', 's2'], answer: 0, explanation: 'because' },
+  ],
+  go: [],
 }
 
 const PANE = {
@@ -86,7 +90,7 @@ describe('pane', () => {
 
       await $.turn.start({ text: 'fix the bug', turnId: 't1' })
       expect(await find(ui, { text: /Claude is thinking/ })).toBeDefined()
-      expect(await find(ui, { text: /\[python\]/ })).toBeDefined()   // default language, as in Python
+      expect(await find(ui, { text: /\[ruby\]/ })).toBeDefined()   // the default language
 
       await click(ui, OPTION('a'))
       expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeDefined()
@@ -161,6 +165,24 @@ describe('presses', () => {
   })
 })
 
+describe('serving order', () => {
+  test('every question in a language is served before the next language starts', async ($, on) => {
+    world(on, BANKS, 'desktop')
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    const served: string[] = []
+    for (let i = 0; i < 5; i++) {
+      served.push((await find(ui, { text: /^\[[a-z]+\] $/ }))?.text.trim() ?? '?')
+      await click(ui, OPTION('a'))   // every fixture answer is a), so nothing comes back as missed
+      await click(ui, /^Next$/)
+    }
+    // ruby (the default) twice, then the others A-Z (go has no questions), then the cycle restarts
+    expect(served).toEqual(['[ruby]', '[ruby]', '[js]', '[python]', '[python]'])
+    expect(await find(ui, { text: /^\[ruby\] $/ })).toBeDefined()
+  })
+})
+
 describe('claude events', () => {
   test('AskUserQuestion shows waiting while it blocks, then thinking', async ($, on) => {
     world(on)
@@ -207,7 +229,7 @@ describe('/biteq commands', () => {
       world(on, BANKS, surface)
       await $.session.start({ cwd: '.', surface, isInteractive: true })
       const res = await $.prompt.submit({ text: '/biteq', wait: false } as never)
-      expect(res).toEqual({ drop: expect.stringContaining('2 questions (python)') } as never)
+      expect(res).toEqual({ drop: expect.stringContaining('ruby 2 first, then the other languages (5 questions)') } as never)
       const wrapped = await $.prompt.submit({ text: '<system-reminder>\nnote\n</system-reminder>\n/biteq', wait: false } as never)
       expect(wrapped).toEqual({ drop: expect.stringContaining('questions') } as never)
       const plain = await $.prompt.submit({ text: 'fix /biteq-related bug', wait: false } as never)
@@ -218,12 +240,14 @@ describe('/biteq commands', () => {
   test('--lang is validated and remembered; langs marks the selection', async ($, on) => {
     world(on)
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    expect(await run($, '--lang go')).toContain('unknown language go')
-    expect(await run($, '--lang ruby')).toContain('no questions for ruby')
-    expect(await run($, '--lang python,js')).toContain('3 questions (python, js)')
+    expect(await run($, '--lang cobol')).toContain('unknown language cobol')
+    expect(await run($, '--lang go')).toContain('no go questions yet: the other languages')
+    expect(await run($, '--lang python,js')).toContain('python 2, js 1 first')
     const langs = await run($, 'langs')
     expect(langs).toMatch(/js\s+1 questions\s+<- selected/)
-    expect(langs).toMatch(/ruby\s+0 questions$/m)
+    expect(langs).toMatch(/ruby\s+2 questions$/m)
+    // in serving order: the selected languages first, then the rest A-Z
+    expect(langs.split('\n').map(l => l.split(/\s+/)[0])).toEqual(['python', 'js', 'go', 'ruby'])
   })
 
   test('stats, check, doctor, reset', async ($, on) => {
@@ -236,8 +260,8 @@ describe('/biteq commands', () => {
     const stats = await run($, 'stats')
     expect(stats).toContain('answered      1')
     expect(stats).toContain('AI waits      1  (you practiced during 100% of them)')
-    expect(await run($, 'check')).toBe('3 questions in 3 banks: js 1, python 2, ruby 0')
-    expect(await run($, 'doctor')).toContain('selected      python')
+    expect(await run($, 'check')).toBe('5 questions in 4 banks: go 0, js 1, python 2, ruby 2')
+    expect(await run($, 'doctor')).toContain('selected      ruby')
     expect(await run($, 'reset --all')).toContain('removed: status, stats, config')
     expect(await run($, 'stats')).toContain('answered      0')
   })

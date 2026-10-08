@@ -2,7 +2,7 @@
 import type { Io } from './io'
 import { CONFIG, loadJson, saveJson } from './store'
 
-export const DEFAULT_LANGS = ['python']
+export const DEFAULT_LANGS = ['ruby']
 
 type Config = { langs?: string[] }
 
