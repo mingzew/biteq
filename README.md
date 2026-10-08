@@ -3,7 +3,7 @@
 Bite-size coding questions that appear while your AI agent is thinking, so you practice instead of reaching for your phone.
 
 ```
-BiteQ - Bite Sized Coding Questions
+BiteQ - Bite Size Coding Questions
 ● Claude is thinking  0:42                              streak 3 · 12/15
 [ruby] Hash.new with a default array
 What does `p h` print?

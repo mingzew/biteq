@@ -99,7 +99,7 @@ describe('pane', () => {
       await $.session.start({ cwd: '.', surface, isInteractive: true })
       const ui = await $.ui.mount({ plugin: 'biteq-ts', surface, ...PANE })
       expect(await find(ui, { text: /^BiteQ$/ })).toBeDefined()
-      expect(await find(ui, { text: /^ - Bite Sized Coding Questions$/ })).toBeDefined()
+      expect(await find(ui, { text: /^ - Bite Size Coding Questions$/ })).toBeDefined()
       expect(await find(ui, { text: /idle/ })).toBeDefined()
 
       await $.turn.start({ text: 'fix the bug', turnId: 't1' })

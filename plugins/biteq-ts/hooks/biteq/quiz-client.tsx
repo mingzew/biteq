@@ -8,7 +8,7 @@ import type { Question, Stats, Status } from '../../types'
 
 const AGENT = 'Claude'
 const NAME = 'BiteQ'
-const TAGLINE = 'Bite Sized Coding Questions'
+const TAGLINE = 'Bite Size Coding Questions'
 const LETTERS = 'abcd'
 const BUILD = 'client-4'
 
