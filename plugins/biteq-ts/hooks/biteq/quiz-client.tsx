@@ -8,7 +8,7 @@ import type { Question, Stats, Status } from '../../types'
 
 const AGENT = 'Claude'
 const LETTERS = 'abcd'
-const BUILD = 'client-4'
+const BUILD = 'client-6'
 
 export const keys = {
   answer: (q: Question, idx: number) => `answer:${idx}:${q.id}`,
@@ -43,6 +43,7 @@ export function drawQuiz(
   const { question: q, picked: p, stats: s } = v
   const key = (k: string) => (surface === 'terminal' ? k : undefined)
   const ring = surface === 'desktop' ? true as const : undefined
+  const align = surface === 'desktop' ? 'flex-start' as const : undefined
   const banner = {
     thinking: { text: `● ${AGENT} is thinking  ${fmtSecs(v.elapsedMs)}`, color: 'yellow' },
     waiting: { text: `! ${AGENT} needs your input`, color: 'magenta' },
@@ -51,10 +52,10 @@ export function drawQuiz(
   }[v.status]
 
   return (
-    <Box flexDirection="column" gap={1}>
+    <Box flexDirection="column" gap={1} alignItems={align}>
       <Box justifyContent="space-between">
         <Text color={banner.color} bold>{banner.text}</Text>
-        <Text dimColor>streak {s.streak} · {s.correct}/{s.answered}{mark}</Text>
+        <Text dimColor>  streak {s.streak} · {s.correct}/{s.answered}{mark}</Text>
       </Box>
 
       {q === null ? (
@@ -74,7 +75,7 @@ export function drawQuiz(
           </Box>
           <Text>{q.prompt}</Text>
           {q.code ? <Text color="cyan">{q.code}</Text> : null}
-          <Box flexDirection="column">
+          <Box flexDirection="column" alignItems={align}>
             {q.options.map((opt, i) => {
               const base = `${LETTERS[i]}) ${opt}`
               if (p === null) {

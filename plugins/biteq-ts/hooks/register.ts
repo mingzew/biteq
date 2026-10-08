@@ -26,7 +26,7 @@ import { DEFAULT_STATS } from './biteq/quiz'
 
 const PANE = 'biteq'
 const QUIZ = 'quiz'
-const BUILD = 'client-4'
+const BUILD = 'client-5'
 
 // Desktop Client failed: fall back to the pane hook's own tree (ui.fault).
 let clientOk = true
