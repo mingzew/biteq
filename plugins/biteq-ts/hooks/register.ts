@@ -19,19 +19,16 @@ import type { EngineInterface, Register, RenderElement } from 'claude-code'
 import { parse } from './biteq/claude'
 import type { ClaudeEvent } from './biteq/claude'
 import { COMMAND, boot, run, signal, typedArgs } from './biteq/cli'
-import { logAlways, logEvent } from './biteq/debug'
+import { logEvent } from './biteq/debug'
 import type { Io, View } from './biteq/io'
 import { closed, press, render, tick, view } from './biteq/pane'
 import { DEFAULT_STATS } from './biteq/quiz'
 
 const PANE = 'biteq'
 const QUIZ = 'quiz'
-const BUILD = 'client-5'
 
 // Desktop Client failed: fall back to the pane hook's own tree (ui.fault).
 let clientOk = true
-let lastClickAt = 0
-let lastRenderPath = ''
 
 // The session's state, one atom per key of the contract in types/index.d.ts. The engine wants
 // every read and write to name its atom directly, hence the switches in io() below
@@ -109,8 +106,6 @@ export const register: Register = on => {
     await $.command.register(COMMAND)
     await boot(io($))
     $.clock.every(1000, () => void tick(io($)))   // the thinking timer (Python repaints every 250 ms)
-    const it = io($)
-    void logAlways(it, 'click', { event: 'boot', build: BUILD, surface: await it.surface() })
     return next(e)
   })
 
@@ -161,33 +156,18 @@ export const register: Register = on => {
     // remount the pane webview, and the next click only focuses it.
     if (e.surface === 'desktop' && clientOk && hasClient) {
       try {
-        if (lastRenderPath !== 'client') {
-          lastRenderPath = 'client'
-          void logAlways(io($), 'click', { event: 'render', path: 'client', build: BUILD, hasClient })
-        }
         const { Box, Client } = el
         const tree = h(Box, { flexDirection: 'column', flexGrow: 1 },
           h(Client, { key: QUIZ, module: './biteq/quiz-client.tsx', props: v, flexGrow: 1 }))
         if (tree) return tree as RenderElement
         clientOk = false
-        void logAlways(io($), 'click', { event: 'render-throw', build: BUILD, message: 'Client tree empty' })
-      } catch (err) {
+      } catch {
         clientOk = false
-        void logAlways(io($), 'click', { event: 'render-throw', build: BUILD, message: String(err) })
       }
-    }
-    if (lastRenderPath !== 'fallback') {
-      lastRenderPath = 'fallback'
-      void logAlways(io($), 'click', {
-        event: 'render', path: 'fallback', build: BUILD, surface: e.surface, clientOk, hasClient,
-      })
     }
     return render(v, el, e.surface)
   }).catch(async ($, e, next) => {
     clientOk = false
-    void logAlways(io($), 'click', {
-      event: 'render-catch', build: BUILD, kind: next.error.kind, message: next.error.message,
-    })
     if (next.called) return next(e)
     return render(await view(io($)), $.ui.resolve(e), e.surface)
   })
@@ -195,10 +175,6 @@ export const register: Register = on => {
   on('ui.message', async ($, e) => {
     const data = e.data
     const key = data && typeof data === 'object' && 'key' in data ? String((data as { key: unknown }).key) : ''
-    const now = Date.now()
-    const gapMs = lastClickAt ? now - lastClickAt : null
-    lastClickAt = now
-    void logAlways(io($), 'click', { event: 'client-post', build: BUILD, key, gapMs })
     if (!key || key.startsWith('debug:')) return {}
     await press(io($), key)
     return { props: await view(io($)) }
@@ -206,9 +182,6 @@ export const register: Register = on => {
 
   on('ui.fault', async ($, e, next) => {
     if (e.element === QUIZ) clientOk = false
-    void logAlways(io($), 'click', {
-      event: 'client-fault', build: BUILD, phase: e.phase, reason: e.reason, module: e.module, element: e.element,
-    })
     return next(e)
   })
 
@@ -216,10 +189,6 @@ export const register: Register = on => {
   // from a drawing that was just replaced (the timer redraws every second) still lands.
   on('ui.press', async ($, e, next) => {
     if (e.plugin !== 'biteq-ts' || e.requestId !== PANE) return next(e)
-    const now = Date.now()
-    const gapMs = lastClickAt ? now - lastClickAt : null
-    lastClickAt = now
-    void logAlways(io($), 'click', { event: 'ui-press', build: BUILD, key: e.element, gapMs })
     await press(io($), e.element)
     return { element: e.element }
   })

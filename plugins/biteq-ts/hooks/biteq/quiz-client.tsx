@@ -8,7 +8,6 @@ import type { Question, Stats, Status } from '../../types'
 
 const AGENT = 'Claude'
 const LETTERS = 'abcd'
-const BUILD = 'client-6'
 
 export const keys = {
   answer: (q: Question, idx: number) => `answer:${idx}:${q.id}`,
@@ -37,7 +36,6 @@ export function drawQuiz(
   el: QuizElements,
   surface: 'terminal' | 'desktop' | 'vscode' | 'mobile',
   onPress: (key: string) => void,
-  mark = '',
 ) {
   const { Box, Text, Button } = el
   const { question: q, picked: p, stats: s } = v
@@ -55,7 +53,7 @@ export function drawQuiz(
     <Box flexDirection="column" gap={1} alignItems={align}>
       <Box justifyContent="space-between">
         <Text color={banner.color} bold>{banner.text}</Text>
-        <Text dimColor>  streak {s.streak} · {s.correct}/{s.answered}{mark}</Text>
+        <Text dimColor>  streak {s.streak} · {s.correct}/{s.answered}</Text>
       </Box>
 
       {q === null ? (
@@ -77,7 +75,7 @@ export function drawQuiz(
           {q.code ? <Text color="cyan">{q.code}</Text> : null}
           <Box flexDirection="column" alignItems={align}>
             {q.options.map((opt, i) => {
-              const lettered = `${LETTERS[i]}) ${opt}`
+              const lettered = `${LETTERS[i]}${surface === 'desktop' ? ':' : ')'} ${opt}`
               if (p === null) {
                 // Terminal `plain` already paints the hotkey as "a: "; don't also prefix "a)".
                 return <Button key={keys.answer(q, i)} label={surface === 'terminal' ? opt : lettered} hotkey={key(LETTERS[i] ?? '')} plain autoFocus={i === 0 ? ring : undefined} onPress={() => onPress(keys.answer(q, i))} />
@@ -124,7 +122,7 @@ const Quiz: ClientModule<PaneView, Clock> = (v, surface) => {
   }
   const extra = surface.state?.since === v.since ? surface.state.extra : 0
   const elapsedMs = v.status === 'thinking' ? Math.max(v.elapsedMs, extra) : v.elapsedMs
-  return drawQuiz({ ...v, elapsedMs }, surface.elements, 'desktop', key => surface.post({ key }), ` · ${BUILD}`)
+  return drawQuiz({ ...v, elapsedMs }, surface.elements, 'desktop', key => surface.post({ key }))
 }
 
 export default Quiz

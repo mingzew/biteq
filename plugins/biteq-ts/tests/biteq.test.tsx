@@ -60,13 +60,17 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
 // The pane's Buttons are keyed by action and question (`answer:0:python-a`, `next:python-a`),
 // so tests find them by label and press the key they carry.
 type Drawing = Mounted<'terminal' | 'desktop' | 'vscode', 'Pane'>
-const OPTION = (letter: string) => new RegExp(`^${letter}\\) `)
+const OPTION = (letter: string, surface?: string) =>
+  new RegExp(`^${letter}${surface === 'desktop' ? ':' : '\\)'} `)
 // Terminal unanswered labels are the option text (hotkey paints "a:"); BANKS use a1/a2, b1/b2, j1/j2.
 const OPEN = (ui: Drawing, letter: string) => {
-  if (ui.surface !== 'terminal') return OPTION(letter)
-  const n = 'abcd'.indexOf(letter) + 1
-  return new RegExp(`^[abj]${n}$`)
+  if (ui.surface === 'terminal') {
+    const n = 'abcd'.indexOf(letter) + 1
+    return new RegExp(`^[abj]${n}$`)
+  }
+  return OPTION(letter, ui.surface)
 }
+const ANSWERED = (ui: Drawing) => (ui.surface === 'desktop' ? /[✓✗] a: / : /[✓✗] a\) /)
 const inQuiz = (ui: Drawing) => (ui.surface === 'desktop' ? { in: 'quiz' } : {})
 async function find(ui: Drawing, query: { type?: string; text?: RegExp }) {
   return ui.find({ ...query, ...inQuiz(ui) })
@@ -95,7 +99,7 @@ describe('pane', () => {
       await click(ui, OPEN(ui, 'a'))
       expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeDefined()
       expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
-      expect(await find(ui, { type: 'Button', text: /[✓✗] a\) / })).toBeDefined()
+      expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
 
       await $.turn.complete(DONE)
       expect(await find(ui, { text: /Claude is done/ })).toBeDefined()
@@ -112,7 +116,7 @@ describe('presses', () => {
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    const [a, b] = [await keyOf(ui, OPTION('a')), await keyOf(ui, OPTION('b'))]
+    const [a, b] = [await keyOf(ui, OPTION('a', 'desktop')), await keyOf(ui, OPTION('b', 'desktop'))]
     await Promise.allSettled([ui.press({ key: a, ...inQuiz(ui) }), ui.press({ key: b, ...inQuiz(ui) })])
     expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()   // answered once, not twice
   })
@@ -124,7 +128,7 @@ describe('presses', () => {
     const term = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
     expect((await term.find({ type: 'Button', text: OPEN(term, 'a') }))?.props.hotkey).toBe('a')
     const desk = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
-    expect((await find(desk, { type: 'Button', text: OPTION('a') }))?.props.hotkey).toBeUndefined()
+    expect((await find(desk, { type: 'Button', text: OPTION('a', 'desktop') }))?.props.hotkey).toBeUndefined()
     expect((await find(desk, { type: 'Button', text: /^Skip$/ }))?.props.hotkey).toBeUndefined()
   })
 
@@ -148,8 +152,8 @@ describe('presses', () => {
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    await click(ui, OPTION('a'))
-    expect(await find(ui, { type: 'Button', text: /[✓✗] a\) / })).toBeDefined()
+    await click(ui, OPTION('a', 'desktop'))
+    expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
     expect(await find(ui, { type: 'Button', text: /^Next$/ })).toBeDefined()
     expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
   })

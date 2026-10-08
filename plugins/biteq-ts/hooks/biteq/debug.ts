@@ -20,15 +20,6 @@ export async function logEvent(io: Io, source: string, payload: unknown): Promis
   }
 }
 
-/** Same file as logEvent, but always writes. Used to verify the desktop click build. */
-export async function logAlways(io: Io, source: string, payload: unknown): Promise<void> {
-  try {
-    await write(io, source, payload)
-  } catch {
-    // a debug log must never break a hook
-  }
-}
-
 async function write(io: Io, source: string, payload: unknown): Promise<void> {
   const path = await eventsLog(io)
   let text = (await io.exists(path)) ? await io.read(path) : ''
