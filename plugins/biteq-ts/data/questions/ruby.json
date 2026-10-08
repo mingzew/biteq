@@ -13,8 +13,8 @@
     "title": "Array.new with a default object",
     "prompt": "What does this print?",
     "code": "a = Array.new(3, [])\na[0] << 1\np a",
-    "options": ["[[1], [], []]", "[[1], [1], [1]]", "[1, [], []]", "NoMethodError"],
-    "answer": 1,
+    "options": ["[[1], [], []]", "[1, [], []]", "[[1], [1], [1]]", "NoMethodError"],
+    "answer": 2,
     "explanation": "All three slots share one [] object:\n\na = Array.new(3, [])  # [[], [], []] — same object in every slot\na[0] << 1             # mutates that one array\n# a is now [[1], [1], [1]]\n\nUse Array.new(3) { [] } for a fresh array per slot."
   },
   {
@@ -22,8 +22,8 @@
     "title": "Symbol and string keys",
     "prompt": "What does this print?",
     "code": "h = { \"name\" => \"Ada\" }\np h[:name]",
-    "options": ["\"Ada\"", "nil", "KeyError", ":name"],
-    "answer": 1,
+    "options": ["\"Ada\"", ":name", "KeyError", "nil"],
+    "answer": 3,
     "explanation": "\"name\" and :name are different keys.\n\nh = { \"name\" => \"Ada\" }\nh[:name]   # => nil   — missing key, not a misspelling\nh[\"name\"]  # => \"Ada\"\n\nHash#[] returns nil for a missing key. Hash#fetch would raise KeyError."
   },
   {
@@ -49,8 +49,8 @@
     "title": "<< mutates a shared string",
     "prompt": "What does this print?",
     "code": "a = \"hi\"\nb = a\nb << \"!\"\np a",
-    "options": ["\"hi\"", "\"hi!\"", "nil", "FrozenError"],
-    "answer": 1,
+    "options": ["\"hi\"", "nil", "\"hi!\"", "FrozenError"],
+    "answer": 2,
     "explanation": "a and b are the same String object. << mutates it in place:\n\na = \"hi\"\nb = a       # b is a, not a copy\nb << \"!\"    # mutates that one string\n# a is now \"hi!\"\n\nb += \"!\" would build a new string and leave a as \"hi\"."
   },
   {
@@ -58,8 +58,8 @@
     "title": "Integer division",
     "prompt": "What does this print?",
     "code": "p -7 / 2",
-    "options": ["-3.5", "-3", "-4", "3"],
-    "answer": 2,
+    "options": ["-3.5", "-3", "3", "-4"],
+    "answer": 3,
     "explanation": "Dividing two Integers gives an Integer, rounded toward negative infinity — not toward zero.\n\n-7 / 2    # => -4   (not -3)\n7 / 2     # => 3\n\nMake one side a Float (-7 / 2.0 or -7.fdiv(2)) to get -3.5."
   },
   {
@@ -67,8 +67,8 @@
     "title": "Spot the local variable",
     "prompt": "Which line assigns a local variable?",
     "code": "1  $flag = true\n2  class Box\n3    @label = \"x\"\n4    def pack\n5      size = 1\n6      @size = size\n7    end\n8  end",
-    "options": ["1", "3", "5", "6"],
-    "answer": 2,
+    "options": ["1", "5", "3", "6"],
+    "answer": 1,
     "explanation": "size on line 5 is a local.\n\n1  $flag = true   # global\n3  @label = \"x\"   # class instance variable (on Box itself)\n5  size = 1       # local\n6  @size = size   # instance variable of each Box"
   },
   {
@@ -76,8 +76,8 @@
     "title": "Spot the instance variable",
     "prompt": "Which line assigns an instance variable of each object?",
     "code": "1  class Box\n2    @@n = 0\n3    def initialize(name)\n4      @name = name\n5      tag = :ok\n6    end\n7  end",
-    "options": ["2", "3", "4", "5"],
-    "answer": 2,
+    "options": ["4", "3", "2", "5"],
+    "answer": 0,
     "explanation": "@name on line 4 lives on each Box instance.\n\n2  @@n = 0        # class variable, shared by the class\n3  initialize(name)  # name is a local (the parameter)\n4  @name = name   # instance variable of each Box\n5  tag = :ok      # local"
   },
   {
@@ -85,8 +85,8 @@
     "title": "Spot the class variable",
     "prompt": "Which line assigns a class variable?",
     "code": "1  class Box\n2    @@n = 0\n3    @n = 0\n4    def reset\n5      @n = 0\n6    end\n7  end",
-    "options": ["2", "3", "4", "5"],
-    "answer": 0,
+    "options": ["4", "3", "2", "5"],
+    "answer": 2,
     "explanation": "@@n is the class variable. The two @n assignments are different objects:\n\n2  @@n = 0   # class variable, shared by Box and its subclasses\n3  @n = 0    # class instance variable, on Box itself\n5  @n = 0    # instance variable of each Box object"
   },
   {
@@ -94,27 +94,9 @@
     "title": "Spot the class instance variable",
     "prompt": "Which line assigns a class instance variable?",
     "code": "1  class Box\n2    @@n = 0\n3    @n = 0\n4    def reset\n5      @n = 0\n6    end\n7  end",
-    "options": ["2", "3", "4", "5"],
-    "answer": 1,
+    "options": ["2", "5", "4", "3"],
+    "answer": 3,
     "explanation": "@n in the class body sits on the Box object, not on instances.\n\n2  @@n = 0   # shared class state (Box and subclasses)\n3  @n = 0    # class instance variable — this is the one\n5  @n = 0    # instance variable of each Box, a different @n"
-  },
-  {
-    "id": "ruby-id-global",
-    "title": "Spot the global variable",
-    "prompt": "Which line assigns a global variable?",
-    "code": "1  count = 0\n2  $count = 0\n3  class App\n4    @count = 0\n5  end",
-    "options": ["1", "2", "4", "5"],
-    "answer": 1,
-    "explanation": "$count is global.\n\n1  count = 0    # local\n2  $count = 0   # global\n4  @count = 0   # class instance variable of App"
-  },
-  {
-    "id": "ruby-id-symbol",
-    "title": "Spot the symbol",
-    "prompt": "Which line uses a symbol?",
-    "code": "1  name = \"Ada\"\n2  key = :ada\n3  $key = name\n4  @key = key",
-    "options": ["1", "2", "3", "4"],
-    "answer": 1,
-    "explanation": ":ada is a Symbol.\n\n1  name = \"Ada\"  # String\n2  key = :ada    # Symbol\n3  $key = name   # global, still holding a String\n4  @key = key    # instance variable (of main at top level)"
   },
   {
     "id": "ruby-id-param-is-local",
@@ -130,8 +112,9 @@
     "title": "Quoted hash label",
     "prompt": "Which line uses a symbol?",
     "code": "1  h = { \"id\" => 1 }\n2  h = { \"id\": 1 }\n3  id = 3\n4  h[id] = 4",
-    "options": ["1", "2", "3", "4"],
-    "answer": 1,
+    "options": ["1", "4", "3", "2"],
+    "hard": true,
+    "answer": 3,
     "explanation": "The quotes on line 2 are a label, not a String key. That label still becomes a Symbol:\n\n{ \"id\" => 1 }  # String key \"id\"\n{ \"id\": 1 }    # same as { id: 1 } — key is :id\n{ id: 1 }      # also :id\n\nLine 3's id is a local Integer. Line 4 uses that integer as the key."
   },
   {
@@ -150,15 +133,16 @@
     "code": "1  class Animal\n2    @@legs = 4\n3    @kind = \"x\"\n4  end\n5  class Dog < Animal\n6    def kind\n7      @kind\n8    end\n9  end",
     "options": ["2", "3", "6", "7"],
     "answer": 0,
-    "explanation": "@@legs is one variable for Animal and Dog together.\n\n2  @@legs = 4   # shared class variable — this is the one\n3  @kind = \"x\"  # class instance variable, only on Animal\n7  @kind        # Dog's instance variable, a third name"
+    "explanation": "@@legs is one variable for Animal and Dog together.\n\n2  @@legs = 4   # shared class variable — this is the one\n3  @kind = \"x\"  # class instance variable, only on Animal\n7  @kind        # same name, different variable: the Dog instance's @kind (nil here)"
   },
   {
     "id": "ruby-and-assignment",
     "title": "and vs &&",
     "prompt": "What does this print?",
     "code": "x = true and false\np x",
-    "options": ["true", "false", "nil", "SyntaxError"],
-    "answer": 0,
+    "options": ["nil", "false", "true", "SyntaxError"],
+    "hard": true,
+    "answer": 2,
     "explanation": "and binds looser than assignment. The line is (x = true) and false, so x stays true.\n\nx = true and false  # => (x = true) and false\n# x is true\n\nx = true && false   # => x = (true && false)\n# x would be false\n\nUse && / || in expressions. Use and / or for control flow."
   },
   {
@@ -166,8 +150,9 @@
     "title": "Hash.new with a default object",
     "prompt": "What does this print?",
     "code": "h = Hash.new([])\nh[:a] << 1\np h",
-    "options": ["{:a=>[1]}", "{}", "{:a=>[1], :b=>[1]}", "NoMethodError"],
-    "answer": 1,
+    "options": ["{:a=>[1]}", "NoMethodError", "{:a=>[1], :b=>[1]}", "{}"],
+    "hard": true,
+    "answer": 3,
     "explanation": "h[:a] returns the shared default array without storing it under :a. << mutates that default; the hash stays empty.\n\nh = Hash.new([])\nh[:a] << 1  # mutates the default, does not write :a\np h         # => {}\nh[:b]       # => [1]  — same default array\n\nUse Hash.new { |hash, k| hash[k] = [] } to store a fresh array per key."
   },
   {
@@ -184,8 +169,8 @@
     "title": "=== is not symmetric",
     "prompt": "What does this print?",
     "code": "p [Integer === 1, 1 === Integer]",
-    "options": ["[true, true]", "[true, false]", "[false, false]", "[false, true]"],
-    "answer": 1,
+    "options": ["[true, false]", "[true, true]", "[false, false]", "[false, true]"],
+    "answer": 0,
     "explanation": "=== is case-equality. Integer === 1 asks \"is 1 an Integer?\" The other way around, Integer is not an Integer instance.\n\nInteger === 1  # => true   — used by case/when Integer\n1 === Integer  # => false  — 1.=== is just ==\n\ncase uses when_value === target, so when Integer matches 1."
   },
   {
@@ -193,8 +178,8 @@
     "title": "Block parameters are local",
     "prompt": "What does this print?",
     "code": "x = 1\n[2].each { |x| }\np x",
-    "options": ["1", "2", "nil", "NameError"],
-    "answer": 0,
+    "options": ["nil", "2", "1", "NameError"],
+    "answer": 2,
     "explanation": "A block parameter is local to the block. It does not overwrite the outer x.\n\nx = 1\n[2].each { |x| }  # this x is a new local\np x               # => 1\n\nfor x in [2] would assign the outer x (see the for-loop question)."
   },
   {
@@ -202,8 +187,8 @@
     "title": "for assigns the outer variable",
     "prompt": "What does this print?",
     "code": "x = 1\nfor x in [2]\nend\np x",
-    "options": ["1", "2", "nil", "NameError"],
-    "answer": 1,
+    "options": ["1", "NameError", "nil", "2"],
+    "answer": 3,
     "explanation": "for is not a block scope. It assigns the same x that already exists:\n\nx = 1\nfor x in [2]\nend\np x  # => 2\n\n[2].each { |x| } would leave the outer x as 1."
   },
   {
@@ -211,8 +196,8 @@
     "title": "super vs super()",
     "prompt": "What does this print?",
     "code": "class A\n  def f(n)\n    n\n  end\nend\nclass B < A\n  def f(n)\n    super()\n  end\nend\np B.new.f(2)",
-    "options": ["2", "nil", "ArgumentError", "0"],
-    "answer": 2,
+    "options": ["2", "ArgumentError", "nil", "0"],
+    "answer": 1,
     "explanation": "Bare super forwards the current arguments. super() forwards none.\n\nB.new.f(2)\nsuper()  # calls A#f with no args — ArgumentError (given 0, expected 1)\nsuper    # would call A#f(2) and return 2"
   },
   {
@@ -220,8 +205,8 @@
     "title": "== vs eql? vs equal?",
     "prompt": "What does this print?",
     "code": "a = \"x\"\nb = \"x\"\np [a == b, a.eql?(b), a.equal?(b)]",
-    "options": ["[true, true, true]", "[true, true, false]", "[true, false, false]", "[false, false, false]"],
-    "answer": 1,
+    "options": ["[true, true, false]", "[true, true, true]", "[true, false, false]", "[false, false, false]"],
+    "answer": 0,
     "explanation": "== and eql? compare value. equal? compares identity (the same object).\n\na = \"x\"\nb = \"x\"           # a second string with the same contents\na == b            # => true   value\na.eql?(b)         # => true   value (Hash uses this)\na.equal?(b)       # => false  different objects\n\nFor numbers, 1 == 1.0 is true but 1.eql?(1.0) is false, so they are different Hash keys."
   },
   {
@@ -238,8 +223,8 @@
     "title": "gsub! when nothing matches",
     "prompt": "What does this print?",
     "code": "s = \"ab\"\np s.gsub!(/x/, \"y\")",
-    "options": ["\"ab\"", "nil", "\"xy\"", "false"],
-    "answer": 1,
+    "options": ["\"ab\"", "false", "\"xy\"", "nil"],
+    "answer": 3,
     "explanation": "gsub! returns nil when it changes nothing — not the original string.\n\ns = \"ab\"\ns.gsub!(/x/, \"y\")  # => nil  (no match)\n# s is still \"ab\"\n\ns.gsub!(/a/, \"z\")  # => \"zb\" when it does change\n\nChaining s.gsub!(...).upcase blows up on nil. Use gsub (no bang) or check the return."
   },
   {
@@ -247,8 +232,8 @@
     "title": "Integer divided by zero",
     "prompt": "What does this print?",
     "code": "p 1 / 0",
-    "options": ["0", "Infinity", "NaN", "ZeroDivisionError"],
-    "answer": 3,
+    "options": ["0", "ZeroDivisionError", "NaN", "Infinity"],
+    "answer": 1,
     "explanation": "Integer division by zero raises.\n\n1 / 0    # => ZeroDivisionError\n1.0 / 0  # => Infinity   (Float, IEEE)\n\nThe two / operators look the same. The class of the operands decides."
   },
   {
@@ -256,45 +241,27 @@
     "title": "Float divided by zero",
     "prompt": "What does this print?",
     "code": "p 1.0 / 0",
-    "options": ["0.0", "Infinity", "NaN", "ZeroDivisionError"],
-    "answer": 1,
-    "explanation": "Float division follows IEEE 754, so dividing by 0.0 is Infinity, not an error.\n\n1.0 / 0    # => Infinity\n1 / 0      # => ZeroDivisionError  (Integer)\n0.0 / 0.0  # => NaN"
-  },
-  {
-    "id": "ruby-include-vs-prepend",
-    "title": "include vs prepend",
-    "prompt": "What does this print?",
-    "code": "module M\n  def hi; \"M\"; end\nend\nclass A\n  include M\n  def hi; \"A\"; end\nend\nclass B\n  prepend M\n  def hi; \"B\"; end\nend\np [A.new.hi, B.new.hi]",
-    "options": ["[\"A\", \"B\"]", "[\"A\", \"M\"]", "[\"M\", \"M\"]", "[\"M\", \"B\"]"],
-    "answer": 1,
-    "explanation": "include puts the module behind the class. prepend puts it in front.\n\nA.ancestors  # [A, M, ...]  so A#hi wins => \"A\"\nB.ancestors  # [M, B, ...]  so M#hi wins => \"M\"\n\np [A.new.hi, B.new.hi]  # => [\"A\", \"M\"]"
+    "options": ["Infinity", "0.0", "NaN", "ZeroDivisionError"],
+    "answer": 0,
+    "explanation": "Float division follows IEEE 754, so dividing by 0 is Infinity, not an error.\n\n1.0 / 0    # => Infinity\n1 / 0      # => ZeroDivisionError  (Integer)\n0.0 / 0.0  # => NaN"
   },
   {
     "id": "ruby-dup-clone-freeze",
     "title": "dup vs clone on a frozen string",
     "prompt": "What does this print?",
     "code": "a = \"x\".freeze\np [a.dup.frozen?, a.clone.frozen?]",
-    "options": ["[false, true]", "[true, true]", "[false, false]", "[true, false]"],
-    "answer": 0,
-    "explanation": "clone copies freeze (and singleton methods). dup does not.\n\na = \"x\".freeze\na.dup.frozen?    # => false  — a thawed copy\na.clone.frozen?  # => true   — still frozen\n\nNeither copies the original; both are new objects."
+    "options": ["[true, false]", "[true, true]", "[false, false]", "[false, true]"],
+    "answer": 3,
+    "explanation": "clone copies freeze (and singleton methods). dup does not.\n\na = \"x\".freeze\na.dup.frozen?    # => false  — a thawed copy\na.clone.frozen?  # => true   — still frozen\n\nBoth return a new object, never a itself."
   },
   {
     "id": "ruby-nil-to-i",
     "title": "nil.to_i",
     "prompt": "What does this print?",
     "code": "p nil.to_i",
-    "options": ["0", "nil", "NoMethodError", "NaN"],
-    "answer": 0,
+    "options": ["nil", "0", "NoMethodError", "NaN"],
+    "answer": 1,
     "explanation": "nil.to_i is 0, not an error. Empty string is the same:\n\nnil.to_i  # => 0\n\"\".to_i   # => 0\n\"9\".to_i  # => 9\n\nSilent 0 from a missing value is a common bug. Check for nil instead of converting it."
-  },
-  {
-    "id": "ruby-bare-rescue",
-    "title": "Bare rescue",
-    "prompt": "What does this print?",
-    "code": "begin\n  raise Exception.new(\"x\")\nrescue\n  p :ok\nend",
-    "options": [":ok", "nil", "Exception", "RuntimeError"],
-    "answer": 2,
-    "explanation": "A bare rescue catches StandardError and its subclasses. Exception is above that, so it is not caught.\n\nraise \"x\"                  # RuntimeError < StandardError — caught\nraise Exception.new(\"x\")   # not a StandardError — not caught\n\nrescue Exception would catch it, but that also swallows NoMemoryError and Interrupt."
   },
   {
     "id": "ruby-kwargs-hash",
@@ -304,5 +271,136 @@
     "options": ["1", "{:a=>1}", "ArgumentError", "TypeError"],
     "answer": 2,
     "explanation": "Ruby 3 does not treat a positional Hash as keywords.\n\ndef f(a:)\n  a\nend\n\nf({ a: 1 })  # ArgumentError — given 1 positional, missing keyword a\nf(a: 1)      # => 1\nf(**{ a: 1 })  # => 1  — splat makes it keywords"
+  },
+  {
+    "id": "ruby-rails-erb-output",
+    "title": "ERB output tags",
+    "prompt": "What does this view insert into the HTML?",
+    "code": "<% \"Ada\" %>",
+    "options": ["Ada", "NameError", "<% \"Ada\" %>", "(nothing)"],
+    "answer": 3,
+    "explanation": "<% %> runs Ruby and prints nothing. <%= %> runs it and writes the result into the template.\n\n<% \"Ada\" %>   # runs, no output\n<%= \"Ada\" %>  # inserts Ada\n\nUse <% %> for assigns and if/each. Use <%= %> to show a value."
+  },
+  {
+    "id": "ruby-rails-find-by",
+    "title": "find vs find_by",
+    "prompt": "A User with id 0 does not exist. What does this return?",
+    "code": "User.find_by(id: 0)",
+    "options": ["nil", "ActiveRecord::RecordNotFound", "[]", "false"],
+    "answer": 0,
+    "explanation": "find_by returns nil when nothing matches. find raises.\n\nUser.find_by(id: 0)  # => nil\nUser.find(0)         # => ActiveRecord::RecordNotFound\n\nfind_by! is the bang version of find_by (also raises)."
+  },
+  {
+    "id": "ruby-rails-save-bang",
+    "title": "save!",
+    "prompt": "name is required. What does this do?",
+    "code": "class User < ApplicationRecord\n  validates :name, presence: true\nend\nUser.new.save!",
+    "options": ["returns false", "returns true", "ActiveRecord::RecordInvalid", "saves a user with name nil"],
+    "answer": 2,
+    "explanation": "save returns false on a failed validation. save! raises.\n\nUser.new.save   # => false\nUser.new.save!  # => ActiveRecord::RecordInvalid\n\ncreate! / update! follow the same bang rule."
+  },
+  {
+    "id": "ruby-rails-not-null-vs-presence",
+    "title": "NOT NULL is not presence",
+    "prompt": "What happens here?",
+    "code": "create_table :users do |t|\n  t.string :name, null: false\nend\n\nclass User < ApplicationRecord\n  validates :name, presence: true\nend\n\nUser.insert_all([{ name: \"\" }])",
+    "options": ["ActiveRecord::RecordInvalid", "ActiveRecord::NotNullViolation", "inserts a row with name \"\"", "nothing — insert_all skips the row"],
+    "answer": 2,
+    "explanation": "insert_all skips validations, so presence never runs. The database only checks NOT NULL, and \"\" is not NULL.\n\nUser.insert_all([{ name: nil }])  # NotNullViolation — the DB catches NULL\nUser.insert_all([{ name: \"\" }])   # inserted — \"\" passes NOT NULL\nUser.create!(name: \"\")            # RecordInvalid — presence catches \"\"\n\nnull: false is not \"required\". To block blanks at the DB level, add a CHECK constraint: check_constraint \"name <> ''\""
+  },
+  {
+    "id": "ruby-rails-where-relation",
+    "title": "where returns a relation",
+    "prompt": "What does this return?",
+    "code": "User.where(admin: true)",
+    "options": ["an Array of Users", "an ActiveRecord::Relation", "a User or nil", "a SQL string"],
+    "answer": 1,
+    "explanation": "where is lazy. It returns a relation, not a loaded array, and does not hit the database yet.\n\nUser.where(admin: true)  # ActiveRecord::Relation\n# SQL runs on .to_a, .each, .count, .first, ...\n\nUser.find_by(admin: true)  # one User or nil, queries now"
+  },
+  {
+    "id": "ruby-rails-blank",
+    "title": "blank?",
+    "prompt": "What does this print?",
+    "code": "p [\"\".blank?, \" \".blank?, nil.blank?]",
+    "options": ["[true, true, true]", "[true, false, true]", "[true, false, false]", "NoMethodError"],
+    "answer": 0,
+    "explanation": "ActiveSupport's blank? is true for nil, false, empty strings, whitespace-only strings, and empty arrays/hashes.\n\n\"\".blank?    # => true\n\" \".blank?   # => true   (empty? is false here)\nnil.blank?   # => true\n\nnil.empty? would raise. Prefer blank? / present? in Rails."
+  },
+  {
+    "id": "ruby-rails-update-column",
+    "title": "update_column",
+    "prompt": "User has an after_save that sends email. What does this do?",
+    "code": "user.update_column(:name, \"Ada\")",
+    "options": ["saves, validates, sends email", "raises if invalid", "returns false if invalid", "saves, skips validations and callbacks"],
+    "answer": 3,
+    "explanation": "update_column writes SQL and skips the ActiveRecord lifecycle.\n\nuser.update(name: \"Ada\")         # validations, callbacks, updated_at\nuser.update_column(:name, \"Ada\") # SQL only — no validations, no after_save, no email\n\nupdate_all on a relation is the same idea for many rows."
+  },
+  {
+    "id": "ruby-rails-redirect-ivar",
+    "title": "redirect_to starts a new request",
+    "prompt": "Will the show view see @post from create?",
+    "code": "def create\n  @post = Post.create!(post_params)\n  redirect_to @post\nend",
+    "options": ["yes, @post is still set", "no, show is a new request", "only if render :show follows", "only in development"],
+    "answer": 1,
+    "explanation": "redirect_to sends a 302. The browser starts a new request (show). Instance variables do not survive that.\n\ndef create\n  @post = Post.create!(post_params)\n  redirect_to @post   # new GET /posts/:id — @post is gone\nend\n\nrender :show would reuse this request and keep @post. That is why create usually redirects, not renders show."
+  },
+  {
+    "id": "ruby-class-eval-constants",
+    "title": "class_eval constants",
+    "hard": true,
+    "prompt": "What does this print?",
+    "code": "X = :outer\nclass C\n  X = :inner\nend\np C.class_eval { X }",
+    "options": ["NameError", ":inner", ":outer", ":inner then :outer"],
+    "answer": 2,
+    "explanation": "A block passed to class_eval is lexical. X is the outer X, not C's.\n\nC.class_eval { X }  # => :outer  — the block closes over the outer scope\nC.class_eval \"X\"    # => :inner  — a string is evaluated inside C\n\nself is C either way. Constants in a block are not."
+  },
+  {
+    "id": "ruby-nested-class-constants",
+    "title": "class M::C nesting",
+    "hard": true,
+    "prompt": "What does this print?",
+    "code": "module M\n  X = 1\nend\nclass M::C\n  p X\nend",
+    "options": ["1", "M", "nil", "NameError"],
+    "answer": 3,
+    "explanation": "class M::C sets the name, but it does not nest the body in M for constant lookup.\n\nmodule M\n  class C\n    p X  # => 1  — nested in M, sees M::X\n  end\nend\n\nclass M::C\n  p X    # => NameError  — looks in M::C, then Object, not in M\nend"
+  },
+  {
+    "id": "ruby-rails-insert-all",
+    "title": "insert_all vs validates",
+    "prompt": "The name column allows NULL. Who stops this?",
+    "code": "create_table :users do |t|\n  t.string :name\nend\n\nclass User < ApplicationRecord\n  validates :name, presence: true\nend\nUser.insert_all([{ name: nil }])",
+    "options": ["Active Record", "Nobody (it inserts)", "Action Controller", "The database"],
+    "answer": 1,
+    "explanation": "insert_all writes SQL and skips Active Record validations and callbacks.\n\nUser.new.save!                 # AR: RecordInvalid, no INSERT\nUser.insert_all([{ name: nil }])  # INSERT ... — validates never runs\n\nThe database only stops it if the column is NOT NULL. validates does not add that. No constraint, the row goes in."
+  },
+  {
+    "id": "ruby-rails-after-save-rollback",
+    "title": "after_save and rollback",
+    "hard": true,
+    "prompt": "after_save does Mailer.welcome.deliver_now. What is true after this block?",
+    "code": "User.transaction do\n  User.new(name: \"Ada\").save!\n  raise ActiveRecord::Rollback\nend",
+    "options": ["User row exists, email sent", "User row exists, no email", "No User row, no email", "No User row, email sent"],
+    "answer": 3,
+    "explanation": "after_save runs inside the transaction; deliver_now sends immediately. Rollback undoes the INSERT, not the email.\n\nUser.new(...).save!          # INSERT + after_save + deliver_now\nraise ActiveRecord::Rollback # database undoes the row; transaction swallows this exception\n# email already left the process\n\nafter_commit { Mailer.welcome.deliver_later } waits for a real commit, so a rollback sends nothing."
+  },
+  {
+    "id": "ruby-rails-includes-where-filter",
+    "title": "includes with a where on the association",
+    "hard": true,
+    "prompt": "Post 1 has 3 comments; 1 is approved. What does this print?",
+    "code": "post = Post.includes(:comments)\n           .where(comments: { approved: true })\n           .find(1)\np post.comments.size",
+    "options": ["3", "1", "0", "NoMethodError"],
+    "answer": 1,
+    "explanation": "A where on the included table turns includes into a JOIN (eager_load). Only matching comments get loaded, and post.comments is now that filtered set.\n\nPost.includes(:comments).where(comments: { approved: true })\n# one JOINed query — post.comments has 1 record, not 3\n\npost.comments.size    # => 1  (already loaded, uses the array)\npost.comments.count   # => 3  (COUNT query, ignores the preload)\npost.comments.reload.size  # => 3\n\nTo filter posts but keep all comments: Post.where(id: Comment.where(approved: true).select(:post_id)).includes(:comments)"
+  },
+  {
+    "id": "ruby-float-sum-vs-add",
+    "title": "sum vs +=",
+    "hard": true,
+    "prompt": "What does this print?",
+    "code": "prices = [0.1, 0.2, 0.3]\n\ntotal = 0.0\nprices.each { |price| total += price }\n\np [prices.sum == 0.6, total == 0.6]",
+    "options": ["[true, false]", "[false, false]", "[true, true]", "[false, true]"],
+    "answer": 0,
+    "explanation": "+= uses ordinary Float addition. 0.1 cannot be stored exactly in binary (same idea as 1/3 in decimal), so each add rounds again and the error stacks:\n\n0.1 + 0.2                 # => 0.30000000000000004\n0.30000000000000004 + 0.3 # => 0.6000000000000001\ntotal == 0.6              # => false\n\nArray#sum on floats does compensated (Kahan) summation: it tracks the rounding lost at each step and adds it back, so it lands on 0.6:\n\n[0.1, 0.2, 0.3].sum  # => 0.6\nprices.sum == 0.6    # => true"
   }
 ]
