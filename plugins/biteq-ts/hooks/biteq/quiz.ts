@@ -55,11 +55,19 @@ export async function languageCounts(io: Io): Promise<Record<string, number>> {
   return counts
 }
 
-/** All questions for the given languages (unknown/empty/broken languages contribute none). */
+/** The order languages are served in: the selected ones as given, then every other bank A-Z. */
+export function languageOrder(selected: string[], available: string[]): string[] {
+  const first = selected.filter(l => available.includes(l))
+  return [...first, ...available.filter(l => !first.includes(l)).sort()]
+}
+
+/** All questions for the given languages, in that order (unknown/empty/broken languages contribute none). */
 export async function loadQuestions(io: Io, langs: string[]): Promise<Question[]> {
+  const files = await bankFiles(io)
   const out: Question[] = []
-  for (const { lang, path } of await bankFiles(io)) {
-    if (langs.includes(lang)) out.push(...(await loadBank(io, lang, path).catch(() => [])))
+  for (const lang of langs) {
+    const file = files.find(f => f.lang === lang)
+    if (file) out.push(...(await loadBank(io, lang, file.path).catch(() => [])))
   }
   return out
 }

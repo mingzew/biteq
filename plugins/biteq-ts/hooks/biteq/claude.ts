@@ -1,16 +1,16 @@
 // Claude Code adapter: engine event -> session status.
 //
-// Same contract as the Python claude.py's parse(): null to ignore the event, else the status.
+// parse(): null to ignore the event, else the status.
 // register.ts hands it the engine's events (Claude Code CLI, desktop app, and the extension
 // inside VS Code/Cursor all raise them) and sends what it returns to cli.signal.
 import type { Status } from '../../types'
 
 export type ClaudeEvent =
-  | { event: 'turn.start' }                                        // Python: UserPromptSubmit
-  | { event: 'turn.complete'; agentId?: string }                   // Python: Stop (this also fires on interrupt)
-  | { event: 'tool.before'; tool: string }                         // Python: PreToolUse
-  | { event: 'tool.after'; tool: string }                          // Python: PostToolUse / PostToolUseFailure
-  | { event: 'notification'; notification_type?: string }          // Python: Notification
+  | { event: 'turn.start' }                                        // settings hook: UserPromptSubmit
+  | { event: 'turn.complete'; agentId?: string }                   // settings hook: Stop (but this also fires on interrupt)
+  | { event: 'tool.before'; tool: string }                         // settings hook: PreToolUse
+  | { event: 'tool.after'; tool: string }                          // settings hook: PostToolUse / PostToolUseFailure
+  | { event: 'notification'; notification_type?: string }          // settings hook: Notification
 
 // Tools that block until the person responds: "waiting" while they run
 export const WAIT_TOOLS = ['AskUserQuestion', 'ExitPlanMode']

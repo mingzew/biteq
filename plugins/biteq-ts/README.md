@@ -4,8 +4,7 @@ biteq as a Claude Code **function-hooks** plugin. It runs inside Claude Code's o
 install nothing (no Python, Node or binary), and Claude Code draws the quiz pane itself: in the
 terminal, in the desktop app's Code tab, and in the VS Code / Cursor extension.
 
-This is the migration target for `plugins/biteq` (Python). Both live side by side until the move is
-finished. Claude Code labels this plugin API early access ("may change between releases").
+Claude Code labels this plugin API early access ("may change between releases").
 
 ## Try it
 
@@ -19,9 +18,9 @@ otherwise inline; `ctrl+x tab` gives it the keyboard: `a`–`d` answer, `n` next
 Esc back to the prompt. (The desktop app keeps its keys in the message box, so the pane shows no key
 hints there.)
 
-| Command | What it does (same as the Python CLI) |
+| Command | What it does |
 |---|---|
-| `/biteq [--lang a,b]` | Open the pane; `--lang` is validated and remembered (default `python`) |
+| `/biteq [--lang a,b]` | Open the pane; `--lang` is validated and remembered (default `ruby`). Those languages are served first, one at a time: every question in a language before the next, then the other banks A-Z |
 | `/biteq langs` | List question banks and the selected languages |
 | `/biteq check` | Validate the question banks |
 | `/biteq stats` | Your stats |
@@ -37,24 +36,22 @@ Debugging: `BITEQ_DEBUG=1` in the environment Claude Code runs in records each e
 
 ## Layout
 
-One module per Python module, same responsibilities, so changes on either side map 1:1.
-
 ```
 plugins/biteq-ts/
 ├── hooks/hooks.json         names the hooks module
-├── hooks/register.ts        entry (Python: bin/biteq + hooks/hooks.json): the ONLY file that touches `$`
+├── hooks/register.ts        entry: registers every event; the ONLY file that touches `$`
 ├── hooks/biteq/
 │   ├── cli.ts               /biteq subcommands; signal(): every status goes through it
 │   ├── store.ts             store keys, JSON helpers, this session's status
-│   ├── claude.ts            engine event -> status: parse(), like claude.py
-│   ├── pane.tsx             questions, answering, onStatus (Python: poll), press(), render()
+│   ├── claude.ts            engine event -> status: parse()
+│   ├── pane.tsx             questions, answering, onStatus, press(), render()
 │   ├── quiz.ts              question banks, stats, validate
 │   ├── config.ts            remembered languages
 │   ├── debug.ts             BITEQ_DEBUG event log
 │   ├── macos.ts             STUBS: notify, focusApp
-│   └── io.ts                NEW: the operations modules get from the engine (see below)
+│   └── io.ts                the operations modules get from the engine (see below)
 ├── types/index.d.ts         the session state's contract (what the pane draws from)
-├── data/questions/          one JSON file per language (copied from plugins/biteq)
+├── data/questions/          one JSON file per language
 └── tests/biteq.test.tsx     claude plugin test
 ```
 
@@ -65,21 +62,21 @@ object of small closures over `$`, and the modules take `io` instead of calling 
 themselves. A module that needs a new engine capability adds it to `Io` and to `io()` in
 `register.ts`.
 
-## Differences from the Python version
+## How it works
 
-| Python (`plugins/biteq`) | Here |
+Each Claude Code session runs its own copy of the plugin and draws its own pane, so there's no state
+file, lock or polling. Engine events set the session's status:
+
+| Event | Status |
 |---|---|
-| hook process → `~/.biteq/sessions.json` → separate curses pane | one process per Claude Code session; no state file or lock |
-| one pane aggregates all sessions | each session has its own pane |
-| `UserPromptSubmit` / `Stop` | `turn.start` / `turn.complete` (fires on interrupt too; subagent turns ignored) |
-| `PreToolUse` + `PostToolUse` | `tool.call` wraps the tool: waiting while AskUserQuestion/ExitPlanMode block, thinking after |
-| `~/.biteq/stats.json`, `config.json` | Claude Code's plugin store (`~/.claude/plugins/store/`), same shapes |
-| `~/.biteq/events.log` | `~/.biteq/events-ts.log` |
-| `biteq hook --source cursor` (stub) | not here: Cursor's own agent only runs command hooks, so it stays on the Python side |
-| `macos.open_pane_window` (stub) | not needed: Claude Code draws the pane |
+| `turn.start` | thinking: count the wait, serve a question, open the pane |
+| `turn.complete` | done (also on interrupt; a subagent's turn is ignored) |
+| `tool.call` for AskUserQuestion / ExitPlanMode | waiting while the tool blocks, thinking once it returns |
+| `classic.Notification` | waiting on `permission_prompt`, done on `idle_prompt` |
 
-Question banks are a copy of `plugins/biteq/data/questions`: until the Python plugin is retired,
-edit both (or edit here and copy back).
+Stats and the remembered languages live in Claude Code's plugin store (`~/.claude/plugins/store/`),
+shared by every session. Cursor's own agent isn't supported: it only runs command hooks, not
+in-engine modules (the Claude Code extension inside Cursor works).
 
 ## Develop
 

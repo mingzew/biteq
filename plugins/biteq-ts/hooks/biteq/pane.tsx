@@ -1,10 +1,9 @@
 // The quiz pane: drawn by Claude Code beside the conversation (terminal, desktop Code tab,
-// VS Code/Cursor extension) instead of the Python version's separate curses window.
+// VS Code/Cursor extension).
 //
-// Python's Pane polls sessions.json; here the status arrives through onStatus (from
-// cli.signal). What the pane draws lives in the session's state, so a change redraws it.
-// render() is pure layout like Python's render(): register.ts hands it the data, the
-// surface's elements and the button actions.
+// The status arrives through onStatus (from cli.signal). What the pane draws lives in the
+// session's state, so a change redraws it. render() is pure layout: register.ts hands it the
+// data and the surface's elements.
 import type { Elements, RenderSurface } from 'claude-code'
 
 import type { Question, Stats, Status } from '../../types'
@@ -14,7 +13,8 @@ import { loadStats, saveStats } from './quiz'
 
 export type { PaneView } from './draw'
 
-// Already filtered to the chosen languages; set by boot, which runs again on every reload
+// Every question, grouped by language in the order they're served (quiz.languageOrder);
+// set by boot, which runs again on every reload
 let questions: Question[] = []
 
 export async function boot(io: Io, chosen: Question[]): Promise<void> {
@@ -30,14 +30,26 @@ export async function boot(io: Io, chosen: Question[]): Promise<void> {
 // that question is still on screen: a second click can't count an answer twice or skip two
 // questions. The one write that redraws the pane comes first; stats are saved after.
 
-/** Python's next_question(): usually a random unseen one, 30% of the time one you missed. */
+/**
+ * The next question: one language at a time. The first language (in serving order) that still
+ * has unseen questions is the current one; it's served until all of its questions are answered,
+ * then the next language starts. Within it: usually a random unseen
+ * question, 30% of the time one you missed in that language. Once every language is done, the
+ * cycle restarts from the first.
+ */
 function pick(s: Stats, cur: Question | null): { q: Question | null; restart: boolean } {
-  const pool = questions.filter(q => q.id !== cur?.id)
-  const from = pool.length ? pool : questions
+  const langs = [...new Set(questions.map(q => q.lang))]
+  const unseenIn = (lang: string) => questions.filter(q => q.lang === lang && q.id !== cur?.id && !s.seen.includes(q.id))
+  let lang = langs.find(l => unseenIn(l).length)
+  const restart = lang === undefined
+  lang ??= langs[0]
+  const inLang = questions.filter(q => q.lang === lang)
+  const pool = inLang.filter(q => q.id !== cur?.id)
+  const from = pool.length ? pool : inLang
   const wrong = from.filter(q => s.wrong.includes(q.id))
-  if (wrong.length && Math.random() < 0.3) return { q: randomOf(wrong), restart: false }   // light spaced repetition
-  const unseen = from.filter(q => !s.seen.includes(q.id))
-  return unseen.length ? { q: randomOf(unseen), restart: false } : { q: randomOf(from), restart: true }
+  if (wrong.length && Math.random() < 0.3) return { q: randomOf(wrong), restart }   // light spaced repetition
+  const unseen = restart ? from : from.filter(q => !s.seen.includes(q.id))
+  return { q: randomOf(unseen.length ? unseen : from), restart }
 }
 
 /** Move on from `from` (the question on screen), unless something already moved on. */
@@ -50,17 +62,27 @@ async function advance(io: Io, from: Question | null, s: Stats): Promise<void> {
   }
 }
 
+/**
+ * The stats from the store, which every Claude session shares, copied into this session's
+ * state. Picking from the session's copy could serve a question answered in another session.
+ */
+async function freshStats(io: Io): Promise<Stats> {
+  const s = await loadStats(io)
+  await io.set('stats', () => s)
+  return s
+}
+
 /** Next / Skip / Practice now: move on from `qid` ('' when no question was on screen). */
 export async function next(io: Io, qid: string): Promise<void> {
   const c = await io.get('current')
   if ((c.question?.id ?? '') !== qid) return   // already moved on
-  await advance(io, c.question, await io.get('stats'))
+  await advance(io, c.question, await freshStats(io))
   const now = (await io.get('current')).question
   if (now) await io.focus(keys.answer(now, 0))
 }
 
 async function nextQuestion(io: Io): Promise<void> {
-  await advance(io, (await io.get('current')).question, await io.get('stats'))
+  await advance(io, (await io.get('current')).question, await freshStats(io))
 }
 
 export async function answer(io: Io, qid: string, idx: number): Promise<void> {
@@ -95,7 +117,7 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
   await io.focus(keys.next(q))
 }
 
-/** Python's Pane.poll, for one session: count the wait, serve a question. */
+/** This session's status changed: count a new wait, serve a question, reopen the pane. */
 export async function onStatus(io: Io, was: Status, now: Status): Promise<void> {
   if (now === was) return
   if (now === 'thinking' && was !== 'waiting') {
@@ -113,7 +135,7 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
   }
 }
 
-/** Once a second: redraw while thinking, so the timer counts (Python repaints every 250 ms). */
+/** Once a second: redraw while thinking, so the timer counts. */
 export async function tick(io: Io): Promise<void> {
   if ((await io.surface()) === 'desktop') return   // desktop Client counts on its own frame clock
   if ((await io.get('status')) === 'thinking') io.redraw()

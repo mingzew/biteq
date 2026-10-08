@@ -1,6 +1,6 @@
 // macOS helpers. STUBS: not implemented yet, nothing calls these.
 //
-// Same plan as the Python macos.py (osascript / open); they'll need a `run` command in Io.
+// Planned through osascript / open; they'll need a `run` command in Io.
 // open_pane_window has no equivalent: Claude Code draws the pane itself.
 import type { Io } from './io'
 
