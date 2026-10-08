@@ -15,16 +15,7 @@
     "code": "a = Array.new(3, [])\na[0] << 1\np a",
     "options": ["[[1], [], []]", "[[1], [1], [1]]", "[1, [], []]", "NoMethodError"],
     "answer": 1,
-    "explanation": "Array.new(3, []) puts the same array object in every slot, so appending to one shows up in all three. Use Array.new(3) { [] } to get a fresh array per slot."
-  },
-  {
-    "id": "ruby-hash-default-shared",
-    "title": "Hash.new with a default array",
-    "prompt": "What does `p h` print?",
-    "code": "h = Hash.new([])\nh[:a] << 1\np h",
-    "options": ["{:a=>[1]}", "{}", "{:a=>[]}", "KeyError"],
-    "answer": 1,
-    "explanation": "h[:a] returns the shared default array without storing it under :a, so << mutates the default and the hash stays empty (h[:b] is now [1]). Use Hash.new { |hash, k| hash[k] = [] }."
+    "explanation": "All three slots share one [] object:\n\na = Array.new(3, [])  # [[], [], []] — same object in every slot\na[0] << 1             # mutates that one array\n# a is now [[1], [1], [1]]\n\nUse Array.new(3) { [] } for a fresh array per slot."
   },
   {
     "id": "ruby-symbol-vs-string-key",
@@ -33,7 +24,7 @@
     "code": "h = { \"name\" => \"Ada\" }\np h[:name]",
     "options": ["\"Ada\"", "nil", "KeyError", ":name"],
     "answer": 1,
-    "explanation": "\"name\" and :name are different keys. Hash#[] returns nil for a missing key; Hash#fetch would raise KeyError."
+    "explanation": "\"name\" and :name are different keys.\n Hash#[] returns nil for a missing key.\n Hash#fetch would raise KeyError."
   },
   {
     "id": "ruby-or-equals-false",
@@ -51,7 +42,7 @@
     "code": "def find_big\n  [1, 2, 3].each { |x| return x * 10 if x == 2 }\n  :none\nend\np find_big",
     "options": ["20", ":none", "[1, 2, 3]", "LocalJumpError"],
     "answer": 0,
-    "explanation": "return in a block returns from the method the block was written in, so find_big returns 20 at once. (In a lambda, return only leaves the lambda.)"
+    "explanation": "return inside a block returns from the enclosing method, not just from the block.\n\nSo when x == 2, return x * 10 exits find_big immediately with 20 \n the :none line is never reached."
   },
   {
     "id": "ruby-string-shovel-alias",
@@ -69,6 +60,96 @@
     "code": "p 7 / 2",
     "options": ["3.5", "3", "4", "3r"],
     "answer": 1,
-    "explanation": "Dividing two Integers gives an Integer, rounded toward negative infinity. Make one side a Float (7 / 2.0 or 7.fdiv(2)) to get 3.5."
+    "explanation": "Dividing two Integers gives an Integer, rounded toward negative infinity.\n Make one side a Float (7 / 2.0 or 7.fdiv(2)) to get 3.5."
+  },
+  {
+    "id": "ruby-id-local",
+    "title": "Spot the local variable",
+    "prompt": "Which line assigns a local variable?",
+    "code": "1  $flag = true\n2  class Box\n3    @label = \"x\"\n4    def pack\n5      size = 1\n6      @size = size\n7    end\n8  end",
+    "options": ["1", "3", "5", "6"],
+    "answer": 2,
+    "explanation": "size on line 5 is a local. $flag is global, @label on the class body is a class instance variable, and @size is an instance variable of each Box."
+  },
+  {
+    "id": "ruby-id-ivar",
+    "title": "Spot the instance variable",
+    "prompt": "Which line assigns an instance variable of each object?",
+    "code": "1  class Box\n2    @@n = 0\n3    def initialize(name)\n4      @name = name\n5      tag = :ok\n6    end\n7  end",
+    "options": ["2", "3", "4", "5"],
+    "answer": 2,
+    "explanation": "@name on line 4 lives on each Box instance. @@n is a class variable. name on line 3 is a local (the parameter), and tag is a local."
+  },
+  {
+    "id": "ruby-id-class-var",
+    "title": "Spot the class variable",
+    "prompt": "Which line assigns a class variable?",
+    "code": "1  class Box\n2    @@n = 0\n3    @n = 0\n4    def reset\n5      @n = 0\n6    end\n7  end",
+    "options": ["2", "3", "4", "5"],
+    "answer": 0,
+    "explanation": "@@n is the class variable. @n on line 3 is a class instance variable (on Box itself). @n on line 5 is an instance variable of each Box object."
+  },
+  {
+    "id": "ruby-id-class-ivar",
+    "title": "Spot the class instance variable",
+    "prompt": "Which line assigns a class instance variable?",
+    "code": "1  class Box\n2    @@n = 0\n3    @n = 0\n4    def reset\n5      @n = 0\n6    end\n7  end",
+    "options": ["2", "3", "4", "5"],
+    "answer": 1,
+    "explanation": "@n in the class body (line 3) sits on the Box object, not on instances. @@n is shared class state. @n inside reset belongs to each instance."
+  },
+  {
+    "id": "ruby-id-global",
+    "title": "Spot the global variable",
+    "prompt": "Which line assigns a global variable?",
+    "code": "1  count = 0\n2  $count = 0\n3  class App\n4    @count = 0\n5  end",
+    "options": ["1", "2", "4", "5"],
+    "answer": 1,
+    "explanation": "$count is global. count on line 1 is a local. @count on line 4 is a class instance variable of App."
+  },
+  {
+    "id": "ruby-id-symbol",
+    "title": "Spot the symbol",
+    "prompt": "Which line uses a symbol?",
+    "code": "1  name = \"Ada\"\n2  key = :ada\n3  $key = name\n4  @key = key",
+    "options": ["1", "2", "3", "4"],
+    "answer": 1,
+    "explanation": ":ada is a Symbol. \"Ada\" is a String. $key is a global, @key an instance variable (of main at top level)."
+  },
+  {
+    "id": "ruby-id-param-is-local",
+    "title": "Parameters are locals",
+    "prompt": "Which line introduces the local variable `name`?",
+    "code": "1  $name = \"x\"\n2  class User\n3    def initialize(name)\n4      @name = name\n5    end\n6  end",
+    "options": ["1", "2", "3", "4"],
+    "answer": 2,
+    "explanation": "A method parameter is a local. Line 3 introduces name. Line 4 reads that local into @name. $name is a different, global name."
+  },
+  {
+    "id": "ruby-id-symbol-key",
+    "title": "Symbol as a hash key",
+    "prompt": "Which line uses a symbol?",
+    "code": "1  h = { \"id\" => 1 }\n2  h[:id] = 2\n3  id = 3\n4  h[id] = 4",
+    "options": ["1", "2", "3", "4"],
+    "answer": 1,
+    "explanation": ":id on line 2 is a Symbol. Line 1 uses the string \"id\". Line 3's id is a local Integer, and line 4 uses that integer as the key."
+  },
+  {
+    "id": "ruby-id-global-read",
+    "title": "Reading a global",
+    "prompt": "Which line reads a global variable?",
+    "code": "1  def debug\n2    out = []\n3    out << $stderr\n4    out << @log\n5  end",
+    "options": ["2", "3", "4", "5"],
+    "answer": 1,
+    "explanation": "$stderr is a global. out is a local. @log is an instance variable."
+  },
+  {
+    "id": "ruby-id-class-var-shared",
+    "title": "Class variables and subclasses",
+    "prompt": "Which line is shared with subclasses?",
+    "code": "1  class Animal\n2    @@legs = 4\n3    @kind = \"x\"\n4  end\n5  class Dog < Animal\n6    def kind\n7      @kind\n8    end\n9  end",
+    "options": ["2", "3", "6", "7"],
+    "answer": 0,
+    "explanation": "@@legs is one variable for Animal and Dog together. @kind on line 3 lives only on Animal. @kind on line 7 is Dog's instance variable, a third name."
   }
 ]
