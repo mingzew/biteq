@@ -61,6 +61,12 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
 // so tests find them by label and press the key they carry.
 type Drawing = Mounted<'terminal' | 'desktop' | 'vscode', 'Pane'>
 const OPTION = (letter: string) => new RegExp(`^${letter}\\) `)
+// Terminal unanswered labels are the option text (hotkey paints "a:"); BANKS use a1/a2, b1/b2, j1/j2.
+const OPEN = (ui: Drawing, letter: string) => {
+  if (ui.surface !== 'terminal') return OPTION(letter)
+  const n = 'abcd'.indexOf(letter) + 1
+  return new RegExp(`^[abj]${n}$`)
+}
 const inQuiz = (ui: Drawing) => (ui.surface === 'desktop' ? { in: 'quiz' } : {})
 async function find(ui: Drawing, query: { type?: string; text?: RegExp }) {
   return ui.find({ ...query, ...inQuiz(ui) })
@@ -86,7 +92,7 @@ describe('pane', () => {
       expect(await find(ui, { text: /Claude is thinking/ })).toBeDefined()
       expect(await find(ui, { text: /\[python\]/ })).toBeDefined()   // default language, as in Python
 
-      await click(ui, OPTION('a'))
+      await click(ui, OPEN(ui, 'a'))
       expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeDefined()
       expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
       expect(await find(ui, { type: 'Button', text: /[✓✗] a\) / })).toBeDefined()
@@ -116,7 +122,7 @@ describe('presses', () => {
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
     await $.turn.start({ text: 'go', turnId: 't1' })
     const term = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
-    expect((await term.find({ type: 'Button', text: OPTION('a') }))?.props.hotkey).toBe('a')
+    expect((await term.find({ type: 'Button', text: OPEN(term, 'a') }))?.props.hotkey).toBe('a')
     const desk = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
     expect((await find(desk, { type: 'Button', text: OPTION('a') }))?.props.hotkey).toBeUndefined()
     expect((await find(desk, { type: 'Button', text: /^Skip$/ }))?.props.hotkey).toBeUndefined()
@@ -229,7 +235,7 @@ describe('/biteq commands', () => {
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    await click(ui, OPTION('a'))
+    await click(ui, OPEN(ui, 'a'))
 
     const stats = await run($, 'stats')
     expect(stats).toContain('answered      1')

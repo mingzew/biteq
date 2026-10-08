@@ -77,15 +77,16 @@ export function drawQuiz(
           {q.code ? <Text color="cyan">{q.code}</Text> : null}
           <Box flexDirection="column" alignItems={align}>
             {q.options.map((opt, i) => {
-              const base = `${LETTERS[i]}) ${opt}`
+              const lettered = `${LETTERS[i]}) ${opt}`
               if (p === null) {
-                return <Button key={keys.answer(q, i)} label={base} hotkey={key(LETTERS[i] ?? '')} plain autoFocus={i === 0 ? ring : undefined} onPress={() => onPress(keys.answer(q, i))} />
+                // Terminal `plain` already paints the hotkey as "a: "; don't also prefix "a)".
+                return <Button key={keys.answer(q, i)} label={surface === 'terminal' ? opt : lettered} hotkey={key(LETTERS[i] ?? '')} plain autoFocus={i === 0 ? ring : undefined} onPress={() => onPress(keys.answer(q, i))} />
               }
               const right = i === q.answer
               const mine = i === p
               const markOpt = right ? '✓ ' : mine ? '✗ ' : '  '
               return (
-                <Button key={keys.answer(q, i)} label={`${markOpt}${base}`} plain dimColor={!right && !mine} onPress={() => onPress(keys.answer(q, i))} />
+                <Button key={keys.answer(q, i)} label={`${markOpt}${lettered}`} plain dimColor={!right && !mine} onPress={() => onPress(keys.answer(q, i))} />
               )
             })}
           </Box>
