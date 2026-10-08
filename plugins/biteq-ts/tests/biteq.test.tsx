@@ -78,7 +78,17 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
 // The pane's Buttons are keyed by action and question (`answer:0:python-a`, `next:python-a`),
 // so tests find them by label and press the key they carry.
 type Drawing = Mounted<'terminal' | 'desktop' | 'vscode', 'Pane'>
-const OPTION = (letter: string) => new RegExp(`^${letter}\\) `)
+const OPTION = (letter: string, surface?: string) =>
+  new RegExp(`^${letter}${surface === 'desktop' ? ':' : '\\)'} `)
+// Terminal unanswered labels are the option text (hotkey paints "a:"); BANKS use a1, b1, j1, r1, s1.
+const OPEN = (ui: Drawing, letter: string) => {
+  if (ui.surface === 'terminal') {
+    const n = 'abcd'.indexOf(letter) + 1
+    return new RegExp(`^[abjrs]${n}$`)
+  }
+  return OPTION(letter, ui.surface)
+}
+const ANSWERED = (ui: Drawing) => (ui.surface === 'desktop' ? /[✓✗] a: / : /[✓✗] a\) /)
 const inQuiz = (ui: Drawing) => (ui.surface === 'desktop' ? { in: 'quiz' } : {})
 async function find(ui: Drawing, query: { type?: string; text?: RegExp }) {
   return ui.find({ ...query, ...inQuiz(ui) })
@@ -106,10 +116,10 @@ describe('pane', () => {
       expect(await find(ui, { text: /Claude is thinking/ })).toBeDefined()
       expect(await find(ui, { text: /\[ruby\]/ })).toBeDefined()   // the default language
 
-      await click(ui, OPTION('a'))
+      await click(ui, OPEN(ui, 'a'))
       expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeDefined()
       expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
-      expect(await find(ui, { type: 'Button', text: /[✓✗] a\) / })).toBeDefined()
+      expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
 
       await $.turn.complete(DONE)
       expect(await find(ui, { text: /Claude is done/ })).toBeDefined()
@@ -126,7 +136,7 @@ describe('presses', () => {
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    const [a, b] = [await keyOf(ui, OPTION('a')), await keyOf(ui, OPTION('b'))]
+    const [a, b] = [await keyOf(ui, OPTION('a', 'desktop')), await keyOf(ui, OPTION('b', 'desktop'))]
     await Promise.allSettled([ui.press({ key: a, ...inQuiz(ui) }), ui.press({ key: b, ...inQuiz(ui) })])
     expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()   // answered once, not twice
   })
@@ -136,9 +146,9 @@ describe('presses', () => {
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
     await $.turn.start({ text: 'go', turnId: 't1' })
     const term = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
-    expect((await term.find({ type: 'Button', text: OPTION('a') }))?.props.hotkey).toBe('a')
+    expect((await term.find({ type: 'Button', text: OPEN(term, 'a') }))?.props.hotkey).toBe('a')
     const desk = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
-    expect((await find(desk, { type: 'Button', text: OPTION('a') }))?.props.hotkey).toBeUndefined()
+    expect((await find(desk, { type: 'Button', text: OPTION('a', 'desktop') }))?.props.hotkey).toBeUndefined()
     expect((await find(desk, { type: 'Button', text: /^Skip$/ }))?.props.hotkey).toBeUndefined()
   })
 
@@ -162,8 +172,8 @@ describe('presses', () => {
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    await click(ui, OPTION('a'))
-    expect(await find(ui, { type: 'Button', text: /[✓✗] a\) / })).toBeDefined()
+    await click(ui, OPTION('a', 'desktop'))
+    expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
     expect(await find(ui, { type: 'Button', text: /^Next$/ })).toBeDefined()
     expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
   })
@@ -188,7 +198,7 @@ describe('serving order', () => {
     const served: string[] = []
     for (let i = 0; i < 5; i++) {
       served.push((await find(ui, { text: /^\[[a-z]+\] $/ }))?.text.trim() ?? '?')
-      await click(ui, OPTION('a'))   // every fixture answer is a), so nothing comes back as missed
+      await click(ui, OPEN(ui, 'a'))   // every fixture answer is the first option, so nothing comes back as missed
       await click(ui, /^Next$/)
     }
     // ruby (the default) twice, then the others A-Z (go has no questions), then the cycle restarts
@@ -205,7 +215,7 @@ describe('several sessions', () => {
     const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     const mine = (await find(ui, { text: /^Pick / }))?.text
-    await click(ui, OPTION('a'))
+    await click(ui, OPEN(ui, 'a'))
     // meanwhile another session answers the other Ruby question
     const stats = shared.stats as { seen: string[] }
     const other = mine === 'Pick r' ? 'ruby-b' : 'ruby-a'
@@ -288,7 +298,7 @@ describe('/biteq commands', () => {
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    await click(ui, OPTION('a'))
+    await click(ui, OPEN(ui, 'a'))
 
     const stats = await run($, 'stats')
     expect(stats).toContain('answered      1')
