@@ -14,7 +14,7 @@
 //   macos   stubs
 //   io      what the modules may do through the engine (no Python counterpart)
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
 import { parse } from './biteq/claude'
 import type { ClaudeEvent } from './biteq/claude'
@@ -26,7 +26,7 @@ import { DEFAULT_STATS } from './biteq/quiz'
 
 const PANE = 'biteq'
 const QUIZ = 'quiz'
-const BUILD = 'client-3'
+const BUILD = 'client-4'
 
 // Desktop Client failed: fall back to the pane hook's own tree (ui.fault).
 let clientOk = true
@@ -156,22 +156,40 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const v = await view(io($))
     const el = $.ui.resolve(e)
+    const hasClient = 'Client' in el
     // Desktop: a Client keeps the quiz on the drawing thread. Plugin redraws
     // remount the pane webview, and the next click only focuses it.
-    if (e.surface === 'desktop' && clientOk && 'Client' in el) {
-      if (lastRenderPath !== 'client') {
-        lastRenderPath = 'client'
-        void logAlways(io($), 'click', { event: 'render', path: 'client', build: BUILD })
+    if (e.surface === 'desktop' && clientOk && hasClient) {
+      try {
+        if (lastRenderPath !== 'client') {
+          lastRenderPath = 'client'
+          void logAlways(io($), 'click', { event: 'render', path: 'client', build: BUILD, hasClient })
+        }
+        const { Box, Client } = el
+        const tree = h(Box, { flexDirection: 'column', flexGrow: 1 },
+          h(Client, { key: QUIZ, module: './biteq/quiz-client.tsx', props: v, flexGrow: 1 }))
+        if (tree) return tree as RenderElement
+        clientOk = false
+        void logAlways(io($), 'click', { event: 'render-throw', build: BUILD, message: 'Client tree empty' })
+      } catch (err) {
+        clientOk = false
+        void logAlways(io($), 'click', { event: 'render-throw', build: BUILD, message: String(err) })
       }
-      const { Box, Client } = el
-      return h(Box, { flexDirection: 'column', flexGrow: 1 },
-        h(Client, { key: QUIZ, module: './biteq/quiz-client.tsx', props: v, flexGrow: 1 }))
     }
     if (lastRenderPath !== 'fallback') {
       lastRenderPath = 'fallback'
-      void logAlways(io($), 'click', { event: 'render', path: 'fallback', build: BUILD, surface: e.surface, clientOk })
+      void logAlways(io($), 'click', {
+        event: 'render', path: 'fallback', build: BUILD, surface: e.surface, clientOk, hasClient,
+      })
     }
     return render(v, el, e.surface)
+  }).catch(async ($, e, next) => {
+    clientOk = false
+    void logAlways(io($), 'click', {
+      event: 'render-catch', build: BUILD, kind: next.error.kind, message: next.error.message,
+    })
+    if (next.called) return next(e)
+    return render(await view(io($)), $.ui.resolve(e), e.surface)
   })
 
   on('ui.message', async ($, e) => {
@@ -188,7 +206,9 @@ export const register: Register = on => {
 
   on('ui.fault', async ($, e, next) => {
     if (e.element === QUIZ) clientOk = false
-    void logAlways(io($), 'click', { event: 'client-fault', build: BUILD, phase: e.phase, reason: e.reason })
+    void logAlways(io($), 'click', {
+      event: 'client-fault', build: BUILD, phase: e.phase, reason: e.reason, module: e.module, element: e.element,
+    })
     return next(e)
   })
 

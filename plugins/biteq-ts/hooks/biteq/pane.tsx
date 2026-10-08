@@ -7,7 +7,7 @@
 // surface's elements and the button actions.
 import type { Elements, RenderSurface } from 'claude-code'
 
-import type { Question, Status } from '../../types'
+import type { Question, Stats, Status } from '../../types'
 import { drawQuiz, keys, type PaneView } from './draw'
 import type { Io } from './io'
 import { loadStats, saveStats } from './quiz'
