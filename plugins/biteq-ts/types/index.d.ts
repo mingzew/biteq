@@ -11,7 +11,7 @@ export type Question = {
   explanation: string
 }
 
-// Same shape as the Python version's ~/.biteq/stats.json
+// Persisted in the plugin store under `stats`, shared by every session
 export type Stats = {
   answered: number
   correct: number

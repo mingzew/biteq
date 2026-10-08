@@ -7,6 +7,8 @@ import type { ClientModule, Elements } from 'claude-code'
 import type { Question, Stats, Status } from '../../types'
 
 const AGENT = 'Claude'
+const NAME = 'BiteQ'
+const TAGLINE = 'Bite Size Coding Questions'
 const LETTERS = 'abcd'
 
 export const keys = {
@@ -51,9 +53,13 @@ export function drawQuiz(
 
   return (
     <Box flexDirection="column" gap={1} alignItems={align}>
+      <Box>
+        <Text bold>{NAME}</Text>
+        <Text dimColor> - {TAGLINE}</Text>
+      </Box>
       <Box justifyContent="space-between">
         <Text color={banner.color} bold>{banner.text}</Text>
-        <Text dimColor>  streak {s.streak} · {s.correct}/{s.answered}</Text>
+        <Text dimColor>streak {s.streak} · {s.correct}/{s.answered}</Text>
       </Box>
 
       {q === null ? (

@@ -1,15 +1,13 @@
 // biteq commands: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | reset [--all] | start | stop
 //
-// Same subcommands as the Python CLI. `/biteq` alone opens the pane (Python: bare `biteq`).
-// `hook` has no equivalent: register.ts hands engine events to claude.parse directly.
-// `signal` is the path every status takes (Python: hook_main -> store.set_status, then the
-// pane's poll).
+// `/biteq` alone opens the pane. `signal` is the path every status takes: register.ts hands
+// engine events to claude.parse, and the status goes to store.setStatus, then pane.onStatus.
 import type { Status } from '../../types'
 import { getLangs, setLangs } from './config'
 import { enabled as debugEnabled } from './debug'
 import type { Io } from './io'
 import { boot as bootPane, onStatus, open as openPane } from './pane'
-import { languageCounts, loadQuestions, loadStats, validate } from './quiz'
+import { languageCounts, languageOrder, loadQuestions, loadStats, validate } from './quiz'
 import { CONFIG, STATS, eventsLog, setStatus } from './store'
 
 export const COMMAND = {
@@ -25,7 +23,7 @@ export async function signal(io: Io, status: Status | null): Promise<void> {
   await onStatus(io, was, status)
 }
 
-/** Session start (and every reload): Python's `biteq pane` at boot, without taking the keys. */
+/** Session start (and every reload): open the pane, without taking the keys. */
 export async function boot(io: Io): Promise<void> {
   await cmdPane(io, undefined, false)
 }
@@ -52,10 +50,12 @@ async function cmdPane(io: Io, lang: string | undefined, focus: boolean): Promis
   } else {
     langs = await getLangs(io)
   }
-  const questions = await loadQuestions(io, langs)
+  // The selected languages come first; once all of their questions are served, the others follow
+  const order = languageOrder(langs, Object.keys(available))
+  const questions = await loadQuestions(io, order)
   if (!questions.length) {
     const counts = Object.entries(available).sort().map(([k, v]) => `${k} ${v}`).join(', ')
-    return `biteq: no questions for ${langs.join(',')}. Counts: ${counts}. Run /biteq langs.`
+    return `biteq: no questions in any bank. Counts: ${counts}. Run /biteq check.`
   }
   if (lang !== undefined) await setLangs(io, langs)   // remembered for the next session
   await bootPane(io, questions)
@@ -64,13 +64,17 @@ async function cmdPane(io: Io, lang: string | undefined, focus: boolean): Promis
   const how = (await io.surface()) === 'terminal'
     ? 'ctrl+x tab gives the pane the keyboard: a-d answer, n next, s skip, q close.'
     : 'click an answer, then Next.'
-  return `biteq: ${questions.length} questions (${langs.join(', ')}). ${how}`
+  const first = langs.filter(l => available[l]).map(l => `${l} ${available[l]}`).join(', ')
+  const start = first ? `${first} first, then the other languages` : `no ${langs.join(', ')} questions yet: the other languages`
+  return `biteq: ${start} (${questions.length} questions). ${how}`
 }
 
 async function cmdLangs(io: Io): Promise<string> {
   const chosen = await getLangs(io)
-  return Object.entries(await languageCounts(io)).sort()
-    .map(([lang, n]) => `${lang.padEnd(8)} ${String(n).padStart(3)} questions${chosen.includes(lang) ? '   <- selected' : ''}`)
+  const counts = await languageCounts(io)
+  // in the order they're served: the selected languages first, then the rest A-Z
+  return languageOrder(chosen, Object.keys(counts))
+    .map(lang => `${lang.padEnd(8)} ${String(counts[lang]).padStart(3)} questions${chosen.includes(lang) ? '   <- selected' : ''}`)
     .join('\n')
 }
 

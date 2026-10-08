@@ -1,9 +1,8 @@
-// What the modules may do outside themselves: the one file with no Python counterpart.
+// What the modules may do outside themselves.
 //
 // Claude Code's engine only lets its handle `$` be used in the file whose hook received it,
 // never passed across an import. So register.ts (the only file that touches `$`) builds this
 // object of small closures for each event, and every other module takes it as `io`.
-// Python's modules call open()/json/os directly; these are the same operations.
 import type { PluginState } from 'claude-code'
 
 /** This session's values the pane draws from ($.state); declared in types/index.d.ts. */
@@ -13,7 +12,7 @@ export type View = PluginState['biteq-ts']
 export type EnvName = 'BITEQ_DEBUG' | 'BITEQ_HOME' | 'HOME' | 'USERPROFILE'
 
 export type Io = {
-  // persisted across sessions ($.store; Python: the JSON files in ~/.biteq)
+  // persisted across sessions ($.store)
   storeGet: (key: string) => Promise<unknown>
   storeSet: (key: string, value: unknown) => Promise<void>
   storeDelete: (key: string) => Promise<void>

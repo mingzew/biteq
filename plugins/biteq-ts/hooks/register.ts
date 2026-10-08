@@ -1,9 +1,8 @@
 // biteq: bite-size coding questions in a Claude Code pane while Claude works.
 //
-// Entry point (Python: bin/biteq + hooks/hooks.json). Runs inside Claude Code's own engine:
-// no Python, Node or binary to install. This is the only file that touches the engine's `$`
-// (the engine doesn't let it cross an import): it wires Claude Code's events to the modules
-// in ./biteq and builds the `io` they take. One module per Python module in plugins/biteq/lib:
+// Entry point. Runs inside Claude Code's own engine: no Python, Node or binary to install.
+// This is the only file that touches the engine's `$` (the engine doesn't let it cross an
+// import): it wires Claude Code's events to the modules in ./biteq and builds the `io` they take:
 //   cli     /biteq subcommands, and signal(): every status goes through it
 //   store   store keys, JSON helpers, this session's status
 //   claude  engine event -> status (parse)
@@ -12,7 +11,7 @@
 //   config  remembered languages
 //   debug   BITEQ_DEBUG event log
 //   macos   stubs
-//   io      what the modules may do through the engine (no Python counterpart)
+//   io      what the modules may do through the engine
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
@@ -105,7 +104,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register(COMMAND)
     await boot(io($))
-    $.clock.every(1000, () => void tick(io($)))   // the thinking timer (Python repaints every 250 ms)
+    $.clock.every(1000, () => void tick(io($)))   // the thinking timer
     return next(e)
   })
 

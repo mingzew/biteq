@@ -3,112 +3,92 @@
 Bite-size coding questions that appear while your AI agent is thinking, so you practice instead of reaching for your phone.
 
 ```
- ● AI is thinking  0:42                                   streak 3 · 12/15
- [python] Closures in a loop
- What does this print?
+BiteQ - Bite Size Coding Questions
+● Claude is thinking  0:42                              streak 3 · 12/15
+[ruby] Hash.new with a default array
+What does `p h` print?
 
-   fs = [lambda: i for i in range(3)]
-   print([f() for f in fs])
+  h = Hash.new([])
+  h[:a] << 1
+  p h
 
-   a) [0, 1, 2]
-   b) [2, 2, 2]
-   ...
+a) {:a=>[1]}
+b) {}
+...
 ```
 
-**Status: V0 alpha. macOS only. Claude (Anthropic) models via Claude Code only.**
+**Status: V0 alpha. Claude Code only (Anthropic models). Tested on macOS.**
 
 ## How it works
 
-```
-Claude Code hooks ──► biteq hook ──► ~/.biteq/sessions.json ──► biteq pane (TUI)
-(UserPromptSubmit, PostToolUse,      (one entry per session)   shows a question while thinking,
- Notification, Stop, SessionEnd)                               flashes when the AI is done
-```
+biteq is a Claude Code plugin of **function hooks** (`plugins/biteq-ts`): it runs inside Claude Code's own
+engine, and Claude Code draws the quiz pane itself, beside the conversation, in the terminal, the desktop
+app's Code tab, and the VS Code / Cursor extension.
 
-- Python stdlib only, so there is nothing to `pip install`.
-- The hook never prints anything and always exits 0, so it can't pollute Claude's context or block it.
-- Multiple agent sessions are supported: the pane shows "thinking" while any of them is working.
-- Missed questions come back later (light spaced repetition).
-- `biteq stats` tracks the key metric: in what share of AI waits you practiced.
+- Nothing to install beyond Claude Code: no Python, Node or binary.
+- The pane opens with the session; each prompt serves a question while Claude works, and the banner and a
+  toast tell you when Claude is done or needs your input.
+- Questions come one language at a time (default Ruby, then the other banks A-Z). Missed questions come back
+  later (light spaced repetition).
+- Stats are shared by every Claude Code session. `/biteq stats` tracks the key metric: in what share of AI
+  waits you practiced.
+
+See [`plugins/biteq-ts/README.md`](plugins/biteq-ts/README.md) for the layout and development, and
+[`docs/flow.md`](docs/flow.md) for a step-by-step trace through the code.
 
 ## Requirements
 
-- macOS with `python3` 3.8 or newer. macOS doesn't ship Python itself; `/usr/bin/python3` only works once the
-  Command Line Tools are installed (`xcode-select --install`). The system Python 3.9 is fine.
-- Claude Code (terminal CLI, the Claude desktop app's Code tab, or the Claude Code extension inside Cursor).
+Claude Code with function-hooks plugins (an early-access API): the terminal CLI, the Claude desktop app's
+Code tab, or the Claude Code extension in VS Code or Cursor.
 
 ## Quick start
 
-1. Open the pane in its own terminal window or split next to your agent:
-   ```bash
-   python3 plugins/biteq/bin/biteq pane --lang python      # or: --lang python,ruby
-   ```
-   The language choice is remembered; later a bare `biteq pane` reuses it (default: `python`).
-2. Connect Claude Code, using **either** option:
-   - **Plugin** (installed once, shared by the CLI, the desktop app and the Cursor extension):
-     `/plugin marketplace add <you>/biteq`, then `/plugin install biteq@biteq`.
+1. Load the plugin, using **either** option:
+   - **Plugin** (installed once, shared by the CLI, the desktop app and the extensions):
+     `/plugin marketplace add <you>/biteq`, then `/plugin install biteq-ts@biteq`.
      From a local checkout: `/plugin marketplace add /path/to/biteq`.
-   - **Local dev:** `claude --plugin-dir ./plugins/biteq` (applies to that one terminal process only).
-3. Prompt Claude. A question appears. Answer with `a`–`d`, press `n` for the next one, `s` to skip, `q` to quit.
+   - **Local dev:** `claude --plugin-dir ./plugins/biteq-ts` (applies to that one session only).
+2. The pane opens with the session (in a terminal narrower than 144 columns, type `/biteq`).
+3. Prompt Claude. A question appears. In the desktop app, click an answer, then **Next**. In the terminal,
+   `ctrl+x tab` gives the pane the keyboard: `a`–`d` answer, `n` next, `s` skip, `q` close.
 
-Cursor's own chat agent is a different harness and does not run Claude Code hooks (see `lib/biteq/cursor.py`, not implemented yet).
+Cursor's own chat agent is a different harness and doesn't run Claude Code plugins.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `biteq pane [--lang a,b]` | Open the quiz pane; `--lang` is remembered |
-| `biteq langs` | List question banks and the selected languages |
-| `biteq check` | Validate the question banks |
-| `biteq stats` | Your stats |
-| `biteq doctor` | Check python, state dir, plugin install, last hook event |
-| `biteq reset [--all]` | Clear live sessions; `--all` also clears stats, config and the debug log |
-| `biteq hook [--source claude]` | Hook entrypoint (used by `hooks/hooks.json`) |
+| `/biteq [--lang a,b]` | Open the pane; `--lang` picks the languages served first and is remembered (default `ruby`) |
+| `/biteq langs` | List question banks in serving order and the selected languages |
+| `/biteq check` | Validate the question banks |
+| `/biteq stats` | Your stats |
+| `/biteq doctor` | Claude Code version, plugin path, store, status, debug log, questions |
+| `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log |
 
-Debugging: `BITEQ_DEBUG=1` (set in the environment Claude runs in) records every raw hook payload to `~/.biteq/events.log`.
-`BITEQ_HOME` changes the state directory (default `~/.biteq`).
-
-## Layout
-
-```
-plugins/biteq/
-├── bin/biteq             thin entrypoint (hook path always exits 0)
-├── hooks/hooks.json      Claude Code hook registration (Claude Code only; Cursor has its own hooks file)
-├── lib/biteq/
-│   ├── cli.py            commands
-│   ├── store.py          ~/.biteq paths, JSON helpers, session status (sessions.json) with locking
-│   ├── claude.py         Claude Code hook payload -> status
-│   ├── cursor.py         STUB: Cursor native-agent adapter
-│   ├── pane.py           curses UI
-│   ├── quiz.py           question banks, stats
-│   ├── config.py         remembered languages
-│   ├── debug.py          BITEQ_DEBUG event log
-│   └── macos.py          STUBS: open pane window, notifications, focus app
-└── data/questions/       one JSON file per language
-```
+Debugging: `BITEQ_DEBUG=1` (set in the environment Claude Code runs in) records each event to
+`~/.biteq/events-ts.log`. `BITEQ_HOME` changes that directory.
 
 ## Adding questions or a language
 
-Questions live in `plugins/biteq/data/questions/<lang>.json`, one JSON array per language.
-To add a language, create `<lang>.json` (`[]` is valid; `ruby.json` is an empty bank waiting for questions).
-The language is the filename. Each question has this shape:
+Questions live in `plugins/biteq-ts/data/questions/<lang>.json`, one JSON array per language.
+To add a language, create `<lang>.json` (`[]` is valid). The language is the filename. Each question has this shape:
 
 ```json
 {
-  "id": "python-mutable-default",
-  "title": "Mutable default argument",
-  "prompt": "What does this print?",
-  "code": "def add(x, items=[]): ...",
-  "options": ["[2]", "[1, 2]", "TypeError", "None"],
+  "id": "ruby-hash-default-shared",
+  "title": "Hash.new with a default array",
+  "prompt": "What does `p h` print?",
+  "code": "h = Hash.new([])\nh[:a] << 1\np h",
+  "options": ["{:a=>[1]}", "{}", "{:a=>[]}", "KeyError"],
   "answer": 1,
   "explanation": "Why the answer is right."
 }
 ```
 
 `id` must start with `<lang>-` and be unique across all banks; `options` has 2–4 entries; `answer` is the index of the right one.
-Run `biteq check` after editing.
+Run `/biteq check` after editing.
 
 ## Not built yet
 
-Opening the pane window automatically, notifications, focusing the agent app when it's done, Cursor native-agent
-support, Ruby questions.
+Notifications outside Claude Code, focusing the agent app when it's done (`macos.ts` stubs), Cursor
+native-agent support.
