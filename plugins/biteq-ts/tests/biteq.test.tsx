@@ -32,10 +32,24 @@ const DONE = { reason: 'answer', answer: 'done', durationMs: 1, isAborted: false
 
 // Everything beneath the plugin: question banks, an in-memory store, no env, and the engine's answers.
 // Calls on $ answer { value } (or { deny }); events answer their own result.
-function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal') {
+// `shared`: a store the test can also write to, standing for another Claude session using it
+function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal', shared?: Record<string, unknown>) {
   const opened: { focus?: true }[] = []
   const clock = mock.clock(on, { now: 1_000_000 })
-  mock.store(on)
+  if (shared) {
+    on('store.get', ($, e) => ({ value: shared[e.key] }))
+    on('store.set', ($, e) => {
+      shared[e.key] = JSON.parse(JSON.stringify(e.value))
+      return { value: undefined }
+    })
+    on('store.delete', ($, e) => {
+      delete shared[e.key]
+      return { value: undefined }
+    })
+    on('store.keys', () => ({ value: Object.keys(shared) }))
+  } else {
+    mock.store(on)
+  }
   mock.env(on, {})
   on('fs.exists', () => ({ value: true }))
   on('fs.list', () => ({
@@ -180,6 +194,25 @@ describe('serving order', () => {
     // ruby (the default) twice, then the others A-Z (go has no questions), then the cycle restarts
     expect(served).toEqual(['[ruby]', '[ruby]', '[js]', '[python]', '[python]'])
     expect(await find(ui, { text: /^\[ruby\] $/ })).toBeDefined()
+  })
+})
+
+describe('several sessions', () => {
+  test("Next doesn't serve a question another session already answered", async ($, on) => {
+    const shared: Record<string, unknown> = {}
+    world(on, BANKS, 'desktop', shared)
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    const mine = (await find(ui, { text: /^Pick / }))?.text
+    await click(ui, OPTION('a'))
+    // meanwhile another session answers the other Ruby question
+    const stats = shared.stats as { seen: string[] }
+    const other = mine === 'Pick r' ? 'ruby-b' : 'ruby-a'
+    shared.stats = { ...stats, seen: [...stats.seen, other], answered: 2 }
+    await click(ui, /^Next$/)
+    expect(await find(ui, { text: /^\[js\] $/ })).toBeDefined()   // both Ruby questions are done
+    expect(await find(ui, { text: /· 1\/2/ })).toBeDefined()      // and the pane's numbers caught up (1 right of 2)
   })
 })
 

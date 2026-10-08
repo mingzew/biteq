@@ -63,17 +63,27 @@ async function advance(io: Io, from: Question | null, s: Stats): Promise<void> {
   }
 }
 
+/**
+ * The stats from the store, which every Claude session shares, copied into this session's
+ * state. Picking from the session's copy could serve a question answered in another session.
+ */
+async function freshStats(io: Io): Promise<Stats> {
+  const s = await loadStats(io)
+  await io.set('stats', () => s)
+  return s
+}
+
 /** Next / Skip / Practice now: move on from `qid` ('' when no question was on screen). */
 export async function next(io: Io, qid: string): Promise<void> {
   const c = await io.get('current')
   if ((c.question?.id ?? '') !== qid) return   // already moved on
-  await advance(io, c.question, await io.get('stats'))
+  await advance(io, c.question, await freshStats(io))
   const now = (await io.get('current')).question
   if (now) await io.focus(keys.answer(now, 0))
 }
 
 async function nextQuestion(io: Io): Promise<void> {
-  await advance(io, (await io.get('current')).question, await io.get('stats'))
+  await advance(io, (await io.get('current')).question, await freshStats(io))
 }
 
 export async function answer(io: Io, qid: string, idx: number): Promise<void> {
