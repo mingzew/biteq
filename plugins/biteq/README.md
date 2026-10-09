@@ -1,4 +1,4 @@
-# biteq-ts
+# biteq
 
 biteq as a Claude Code **function-hooks** plugin. It runs inside Claude Code's own engine, so users
 install nothing (no Python, Node or binary), and Claude Code draws the quiz pane itself: in the
@@ -9,7 +9,7 @@ Claude Code labels this plugin API early access ("may change between releases").
 ## Try it
 
 ```bash
-claude --plugin-dir ./plugins/biteq-ts
+claude --plugin-dir ./plugins/biteq
 ```
 
 The pane opens with the session and again on each prompt (unless you close it). In the desktop app,
@@ -32,12 +32,12 @@ In the desktop app `/biteq` also works when the app doesn't list it: the plugin 
 text and never sends it to Claude.
 
 Debugging: `BITEQ_DEBUG=1` in the environment Claude Code runs in records each event to
-`~/.biteq/events-ts.log` (`BITEQ_HOME` moves it).
+`~/.biteq/events.log` (`BITEQ_HOME` moves it).
 
 ## Layout
 
 ```
-plugins/biteq-ts/
+plugins/biteq/
 ├── hooks/hooks.json         names the hooks module
 ├── hooks/register.ts        entry: registers every event; the ONLY file that touches `$`
 ├── hooks/biteq/
@@ -81,8 +81,8 @@ in-engine modules (the Claude Code extension inside Cursor works).
 ## Develop
 
 ```bash
-claude plugin validate plugins/biteq-ts   # what the engine sees, and what it would refuse
-claude plugin test plugins/biteq-ts       # tests/*.test.tsx against the engine (terminal/desktop/vscode)
+claude plugin validate plugins/biteq   # what the engine sees, and what it would refuse
+claude plugin test plugins/biteq       # tests/*.test.tsx against the engine (terminal/desktop/vscode)
 ```
 
 `tsconfig.json` extends `.claude-plugin/types/tsconfig.json`, which Claude Code writes (gitignored)
@@ -90,7 +90,7 @@ when it loads the plugin. Until it exists, `from 'claude-code'` shows as unresol
 To generate it, start a session with the plugin loaded (there is no separate command):
 
 ```bash
-claude --plugin-dir ./plugins/biteq-ts
+claude --plugin-dir ./plugins/biteq
 ```
 
-Then `npx -p typescript@5 tsc -p plugins/biteq-ts/tsconfig.json` type-checks everything.
+Then `npx -p typescript@5 tsc -p plugins/biteq/tsconfig.json` type-checks everything.

@@ -17,7 +17,7 @@ export const CONFIG = 'config'
 export async function eventsLog(io: Io): Promise<string> {
   const home = (await io.env('BITEQ_HOME'))
     ?? `${(await io.env('HOME')) ?? (await io.env('USERPROFILE')) ?? '.'}/.biteq`
-  return `${home}/events-ts.log`
+  return `${home}/events.log`
 }
 
 export async function loadJson<T>(io: Io, key: string, fallback: T): Promise<T> {

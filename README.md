@@ -21,7 +21,7 @@ b) {}
 
 ## How it works
 
-biteq is a Claude Code plugin of **function hooks** (`plugins/biteq-ts`): it runs inside Claude Code's own
+biteq is a Claude Code plugin of **function hooks** (`plugins/biteq`): it runs inside Claude Code's own
 engine, and Claude Code draws the quiz pane itself, beside the conversation, in the terminal, the desktop
 app's Code tab, and the VS Code / Cursor extension.
 
@@ -33,7 +33,7 @@ app's Code tab, and the VS Code / Cursor extension.
 - Stats are shared by every Claude Code session. `/biteq stats` tracks the key metric: in what share of AI
   waits you practiced.
 
-See [`plugins/biteq-ts/README.md`](plugins/biteq-ts/README.md) for the layout and development, and
+See [`plugins/biteq/README.md`](plugins/biteq/README.md) for the layout and development, and
 [`docs/flow.md`](docs/flow.md) for a step-by-step trace through the code.
 
 ## Requirements
@@ -45,9 +45,9 @@ Code tab, or the Claude Code extension in VS Code or Cursor.
 
 1. Load the plugin, using **either** option:
    - **Plugin** (installed once, shared by the CLI, the desktop app and the extensions):
-     `/plugin marketplace add <you>/biteq`, then `/plugin install biteq-ts@biteq`.
+     `/plugin marketplace add <you>/biteq`, then `/plugin install biteq@biteq`.
      From a local checkout: `/plugin marketplace add /path/to/biteq`.
-   - **Local dev:** `claude --plugin-dir ./plugins/biteq-ts` (applies to that one session only).
+   - **Local dev:** `claude --plugin-dir ./plugins/biteq` (applies to that one session only).
 2. The pane opens with the session (in a terminal narrower than 144 columns, type `/biteq`).
 3. Prompt Claude. A question appears. In the desktop app, click an answer, then **Next**. In the terminal,
    `ctrl+x tab` gives the pane the keyboard: `a`–`d` answer, `n` next, `s` skip, `q` close.
@@ -66,11 +66,11 @@ Cursor's own chat agent is a different harness and doesn't run Claude Code plugi
 | `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log |
 
 Debugging: `BITEQ_DEBUG=1` (set in the environment Claude Code runs in) records each event to
-`~/.biteq/events-ts.log`. `BITEQ_HOME` changes that directory.
+`~/.biteq/events.log`. `BITEQ_HOME` changes that directory.
 
 ## Adding questions or a language
 
-Questions live in `plugins/biteq-ts/data/questions/<lang>.json`, one JSON array per language.
+Questions live in `plugins/biteq/data/questions/<lang>.json`, one JSON array per language.
 To add a language, create `<lang>.json` (`[]` is valid). The language is the filename. Each question has this shape:
 
 ```json

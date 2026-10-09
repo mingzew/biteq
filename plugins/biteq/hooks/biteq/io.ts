@@ -6,7 +6,7 @@
 import type { PluginState } from 'claude-code'
 
 /** This session's values the pane draws from ($.state); declared in types/index.d.ts. */
-export type View = PluginState['biteq-ts']
+export type View = PluginState['biteq']
 
 /** The environment variables biteq reads (the engine wants each read named literally). */
 export type EnvName = 'BITEQ_DEBUG' | 'BITEQ_HOME' | 'HOME' | 'USERPROFILE'

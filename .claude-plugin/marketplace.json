@@ -5,8 +5,8 @@
   },
   "plugins": [
     {
-      "name": "biteq-ts",
-      "source": "./plugins/biteq-ts",
+      "name": "biteq",
+      "source": "./plugins/biteq",
       "description": "Bite-size coding questions while Claude is thinking."
     }
   ]

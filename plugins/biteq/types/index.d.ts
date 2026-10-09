@@ -29,7 +29,7 @@ export type Current = { question: Question | null; picked: number | null }
 
 declare module 'claude-code' {
   interface PluginState {
-    'biteq-ts': {
+    'biteq': {
       status: Status
       since: number
       current: Current
