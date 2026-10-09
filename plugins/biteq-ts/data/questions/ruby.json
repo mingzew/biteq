@@ -180,7 +180,7 @@
     "code": "x = 1\n[2].each { |x| }\np x",
     "options": ["nil", "2", "1", "NameError"],
     "answer": 2,
-    "explanation": "A block parameter is local to the block. It does not overwrite the outer x.\n\nx = 1\n[2].each { |x| }  # this x is a new local\np x               # => 1\n\nfor x in [2] would assign the outer x (see the for-loop question)."
+    "explanation": "A block parameter |x| is a new local. It does not write the x you assigned above.\n\nx = 1                 # this x holds 1\n[2].each { |x| }      # a different x, only inside the block; 2 goes here, then gone\np x                   # => 1  — the first x is still 1\n\nfor x in [2]; end     # would put 2 in the first x"
   },
   {
     "id": "ruby-for-leaks",
@@ -195,7 +195,7 @@
     "id": "ruby-super-empty",
     "title": "super vs super()",
     "prompt": "What does this print?",
-    "code": "class A\n  def f(n)\n    n\n  end\nend\nclass B < A\n  def f(n)\n    super()\n  end\nend\np B.new.f(2)",
+    "code": "class A\n  def f(n)\n    n\n  end\nend\n\nclass B < A\n  def f(n)\n    super()\n  end\nend\n\np B.new.f(2)",
     "options": ["2", "ArgumentError", "nil", "0"],
     "answer": 1,
     "explanation": "Bare super forwards the current arguments. super() forwards none.\n\nB.new.f(2)\nsuper()  # calls A#f with no args — ArgumentError (given 0, expected 1)\nsuper    # would call A#f(2) and return 2"
@@ -294,7 +294,7 @@
     "id": "ruby-rails-save-bang",
     "title": "save!",
     "prompt": "name is required. What does this do?",
-    "code": "class User < ApplicationRecord\n  validates :name, presence: true\nend\nUser.new.save!",
+    "code": "class User < ApplicationRecord\n  validates :name, presence: true\nend\n\nUser.new.save!",
     "options": ["returns false", "returns true", "ActiveRecord::RecordInvalid", "saves a user with name nil"],
     "answer": 2,
     "explanation": "save returns false on a failed validation. save! raises.\n\nUser.new.save   # => false\nUser.new.save!  # => ActiveRecord::RecordInvalid\n\ncreate! / update! follow the same bang rule."
@@ -349,7 +349,7 @@
     "title": "class_eval constants",
     "hard": true,
     "prompt": "What does this print?",
-    "code": "X = :outer\nclass C\n  X = :inner\nend\np C.class_eval { X }",
+    "code": "X = :outer\nclass C\n  X = :inner\nend\n\np C.class_eval { X }",
     "options": ["NameError", ":inner", ":outer", ":inner then :outer"],
     "answer": 2,
     "explanation": "A block passed to class_eval is lexical. X is the outer X, not C's.\n\nC.class_eval { X }  # => :outer  — the block closes over the outer scope\nC.class_eval \"X\"    # => :inner  — a string is evaluated inside C\n\nself is C either way. Constants in a block are not."
@@ -359,7 +359,7 @@
     "title": "class M::C nesting",
     "hard": true,
     "prompt": "What does this print?",
-    "code": "module M\n  X = 1\nend\nclass M::C\n  p X\nend",
+    "code": "module M\n  X = 1\nend\n\nclass M::C\n  p X\nend",
     "options": ["1", "M", "nil", "NameError"],
     "answer": 3,
     "explanation": "class M::C sets the name, but it does not nest the body in M for constant lookup.\n\nmodule M\n  class C\n    p X  # => 1  — nested in M, sees M::X\n  end\nend\n\nclass M::C\n  p X    # => NameError  — looks in M::C, then Object, not in M\nend"
@@ -368,7 +368,7 @@
     "id": "ruby-rails-insert-all",
     "title": "insert_all vs validates",
     "prompt": "The name column allows NULL. Who stops this?",
-    "code": "create_table :users do |t|\n  t.string :name\nend\n\nclass User < ApplicationRecord\n  validates :name, presence: true\nend\nUser.insert_all([{ name: nil }])",
+    "code": "create_table :users do |t|\n  t.string :name\nend\n\nclass User < ApplicationRecord\n  validates :name, presence: true\nend\n\nUser.insert_all([{ name: nil }])",
     "options": ["Active Record", "Nobody (it inserts)", "Action Controller", "The database"],
     "answer": 1,
     "explanation": "insert_all writes SQL and skips Active Record validations and callbacks.\n\nUser.new.save!                 # AR: RecordInvalid, no INSERT\nUser.insert_all([{ name: nil }])  # INSERT ... — validates never runs\n\nThe database only stops it if the column is NOT NULL. validates does not add that. No constraint, the row goes in."
@@ -388,7 +388,7 @@
     "title": "includes with a where on the association",
     "hard": true,
     "prompt": "Post 1 has 3 comments; 1 is approved. What does this print?",
-    "code": "post = Post.includes(:comments)\n           .where(comments: { approved: true })\n           .find(1)\np post.comments.size",
+    "code": "post = Post.includes(:comments)\n           .where(comments: { approved: true })\n           .find(1)\n\np post.comments.size",
     "options": ["3", "1", "0", "NoMethodError"],
     "answer": 1,
     "explanation": "A where on the included table turns includes into a JOIN (eager_load). Only matching comments get loaded, and post.comments is now that filtered set.\n\nPost.includes(:comments).where(comments: { approved: true })\n# one JOINed query — post.comments has 1 record, not 3\n\npost.comments.size    # => 1  (already loaded, uses the array)\npost.comments.count   # => 3  (COUNT query, ignores the preload)\npost.comments.reload.size  # => 3\n\nTo filter posts but keep all comments: Post.where(id: Comment.where(approved: true).select(:post_id)).includes(:comments)"
