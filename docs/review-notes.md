@@ -24,20 +24,20 @@ Every finding is headed by a summary of twenty words or less and a severity:
 
 ## 1 — [ `ui.press` registered without a matcher, so every press in the session enters biteq's environment | minor ]
 
-**Where** `plugins/biteq-ts/hooks/register.ts:150` · **Found** 2026-10-06
+**Where** `plugins/biteq/hooks/register.ts:150` · **Found** 2026-10-06
 
 `on('ui.press', ...)` takes no matcher, so every button press in the session is dispatched into
 biteq's environment, including presses on elements other plugins drew. The hook filters by hand:
 
 ```ts
-if (e.plugin !== 'biteq-ts' || e.requestId !== PANE) return next(e)
+if (e.plugin !== 'biteq' || e.requestId !== PANE) return next(e)
 ```
 
 That is correct — anything not ours is passed on with `next(e)` and nothing downstream breaks — but
 the filter can be a matcher, exactly as the `ui.render` hook two lines above already does:
 
 ```ts
-on('ui.press', { plugin: 'biteq-ts', requestId: PANE }, async ($, e) => { ... })
+on('ui.press', { plugin: 'biteq', requestId: PANE }, async ($, e) => { ... })
 ```
 
 `UiPressArgument` carries `plugin`, `element` and `requestId`, and the engine typings give this as
@@ -55,27 +55,27 @@ UI presses.
 
 ## 2 — [ User-tier order follows `enabledPlugins`; an outer plugin that skips `next(e)` starves biteq | moderate ]
 
-**Where** Claude Code 2.1.291 `chainOrder` · `plugins/biteq-ts/hooks/register.ts` · **Found** 2026-10-06
+**Where** Claude Code 2.1.291 `chainOrder` · `plugins/biteq/hooks/register.ts` · **Found** 2026-10-06
 
-**Issue.** biteq-ts only sees an event if every plugin outside it calls `next(e)`. A neighbor that answers without `next(e)` drops that dispatch. biteq cannot observe or repair that from `register.ts`. Core is last on purpose (plugins wrap the engine). Skipping `next` means **this event's** core does not run — not that Claude Code dies. `tool.call` becomes "resolved by a hooks module" (or a shape-error tool result). `prompt.submit` becomes "dropped" / "Prompt not submitted." The session continues. A plugin that does this on every tool or every prompt makes that session's agent or chat unusable until it is disabled.
+**Issue.** biteq only sees an event if every plugin outside it calls `next(e)`. A neighbor that answers without `next(e)` drops that dispatch. biteq cannot observe or repair that from `register.ts`. Core is last on purpose (plugins wrap the engine). Skipping `next` means **this event's** core does not run — not that Claude Code dies. `tool.call` becomes "resolved by a hooks module" (or a shape-error tool result). `prompt.submit` becomes "dropped" / "Prompt not submitted." The session continues. A plugin that does this on every tool or every prompt makes that session's agent or chat unusable until it is disabled.
 
 biteq already answers without `next` on purpose: `/biteq` `command.run`, `prompt.submit` when the text is `/biteq`, and our own pane `ui.press`. Those replace core for that dispatch. Observing hooks (`turn.*`, `tool.call`, `session.start`) must `next(e)`.
 
-**Cause.** First in the chain is outermost. biteq-ts is unmanaged, so it loads in the **user** tier. In that tier, with no `plugin.json` `dependencies`, Claude does not sort by name. It walks `Object.entries` on merged `enabledPlugins`. First key is outer. `--plugin-dir` session plugins sit outside marketplace plugins. A committed repo `.claude/settings.json` cannot put biteq in prepend (user/policy only) and cannot jump it ahead of keys the user already has.
+**Cause.** First in the chain is outermost. biteq is unmanaged, so it loads in the **user** tier. In that tier, with no `plugin.json` `dependencies`, Claude does not sort by name. It walks `Object.entries` on merged `enabledPlugins`. First key is outer. `--plugin-dir` session plugins sit outside marketplace plugins. A committed repo `.claude/settings.json` cannot put biteq in prepend (user/policy only) and cannot jump it ahead of keys the user already has.
 
 **Tiers** (outer to inner):
 
 - **prepend** — `prependPlugins` and org-seated managed plugins; runs first.
-- **user** — Unmanaged installed plugins (biteq-ts); `enabledPlugins` order, then `dependencies`.
+- **user** — Unmanaged installed plugins (biteq); `enabledPlugins` order, then `dependencies`.
 - **append** — `appendPlugins`; after user, before builtin and core.
 - **builtin** — Plugins Claude Code ships.
 - **core** — The engine's handler for this dispatch. No `next(e)` means it is not reached.
 
-**Mitigation.** Put `biteq-ts` first in `enabledPlugins`, or in `prependPlugins` in `~/.claude/settings.json`. Confirm a swallow with `claude --debug` and `~/.claude/debug/<session-id>.txt` (`without next()`, `resolved by a hooks module`, `prompt.submit: dropped`). Host-order workaround, not a biteq bug.
+**Mitigation.** Put `biteq` first in `enabledPlugins`, or in `prependPlugins` in `~/.claude/settings.json`. Confirm a swallow with `claude --debug` and `~/.claude/debug/<session-id>.txt` (`without next()`, `resolved by a hooks module`, `prompt.submit: dropped`). Host-order workaround, not a biteq bug.
 
 ## 3 — [ Desktop first click is lost: pane unfocused, answering unmounts the Button | major ]
 
-**Where** `plugins/biteq-ts/hooks/biteq/pane.tsx` (`onStatus`, `render`) · **Found** 2026-10-07 · **Fixed** 2026-10-07
+**Where** `plugins/biteq/hooks/biteq/pane.tsx` (`onStatus`, `render`) · **Found** 2026-10-07 · **Fixed** 2026-10-07
 
 On Claude Code Desktop, the first click on an option or Next did nothing; a click on the pane body first, then the button, worked. Terminal was fine. This is not the stale-`onPress` race (finding's cousin in `ui.press` by key). `ui.press` never fired: the desktop pane is a separate region, and macOS delivers the first click on an unfocused region as activate-only.
 

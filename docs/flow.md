@@ -1,6 +1,6 @@
 # biteq flow: boot, two prompts, three questions
 
-This traces one run through the code as it works today, in the plugin (`plugins/biteq-ts`), which runs
+This traces one run through the code as it works today, in the plugin (`plugins/biteq`), which runs
 inside Claude Code:
 
 1. Start a Claude Code session; the pane opens.
@@ -75,11 +75,11 @@ sequenceDiagram
 
 ## Timeline
 
-Paths are relative to `plugins/biteq-ts/`. Rows are in the order they happen.
+Paths are relative to `plugins/biteq/`. Rows are in the order they happen.
 
 | File | Method called | Explanation |
 |---|---|---|
-| `hooks/hooks.json` | names `./register.ts` | **1. Session start.** You open Claude Code with the plugin (installed, or `--plugin-dir ./plugins/biteq-ts`). The engine loads the module and calls `register(on)`, which registers every hook. |
+| `hooks/hooks.json` | names `./register.ts` | **1. Session start.** You open Claude Code with the plugin (installed, or `--plugin-dir ./plugins/biteq`). The engine loads the module and calls `register(on)`, which registers every hook. |
 | `hooks/register.ts` | `on('session.start')` | Registers the `/biteq` command (`cli.COMMAND`), calls `cli.boot(io($))`, and starts a once-a-second `pane.tick()` for the thinking timer. This also runs again after every hot reload. |
 | `hooks/biteq/cli.ts` | `boot()` then `cmdPane(io, undefined, false)` | There's no `--lang`, so the languages come from config. `false` means the pane opens without taking the keyboard. |
 | `hooks/biteq/quiz.ts` | `languageCounts()` (calls `bankFiles()` and `loadBank()`) | Counts the questions in each `data/questions/*.json` through `io.list` and `io.read`. Used to validate a language choice. |

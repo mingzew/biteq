@@ -33,12 +33,12 @@ let clientOk = true
 // every read and write to name its atom directly, hence the switches in io() below
 // Human explanation: We are initializing these variables with the default values that will be stored in Claude's engine session on first read or update.
 // Note these are session variables and will be swiped when a user closes the session. Also if the user has multiple sessions, there will be another set of variables.
-const status = atom({ plugin: 'biteq-ts', key: 'status' } as const, 'idle')
-const since = atom({ plugin: 'biteq-ts', key: 'since' } as const, 0)
-const current = atom({ plugin: 'biteq-ts', key: 'current' } as const, { question: null, picked: null })
-const engaged = atom({ plugin: 'biteq-ts', key: 'engaged' } as const, false)
-const dismissed = atom({ plugin: 'biteq-ts', key: 'dismissed' } as const, false)
-const stats = atom({ plugin: 'biteq-ts', key: 'stats' } as const, DEFAULT_STATS)
+const status = atom({ plugin: 'biteq', key: 'status' } as const, 'idle')
+const since = atom({ plugin: 'biteq', key: 'since' } as const, 0)
+const current = atom({ plugin: 'biteq', key: 'current' } as const, { question: null, picked: null })
+const engaged = atom({ plugin: 'biteq', key: 'engaged' } as const, false)
+const dismissed = atom({ plugin: 'biteq', key: 'dismissed' } as const, false)
+const stats = atom({ plugin: 'biteq', key: 'stats' } as const, DEFAULT_STATS)
 
 function io($: EngineInterface): Io {
   return {
@@ -187,7 +187,7 @@ export const register: Register = on => {
   // Take the pane's presses by key, before the engine looks up the drawing's handler: a click
   // from a drawing that was just replaced (the timer redraws every second) still lands.
   on('ui.press', async ($, e, next) => {
-    if (e.plugin !== 'biteq-ts' || e.requestId !== PANE) return next(e)
+    if (e.plugin !== 'biteq' || e.requestId !== PANE) return next(e)
     await press(io($), e.element)
     return { element: e.element }
   })

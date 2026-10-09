@@ -1,12 +1,12 @@
 # biteq lesson plan: boot to a question answered
 
-A guided read of `plugins/biteq-ts`, in fifteen steps, for someone seeing the code for the first
+A guided read of `plugins/biteq`, in fifteen steps, for someone seeing the code for the first
 time. Each step takes one small piece of the journey from the engine loading the plugin to the user
 answering a question, and explains it in under 350 words.
 
 `docs/flow.md` is the companion to this: it traces the same run as a timeline, assuming you already
 know the pieces. This document builds the pieces up one at a time. Paths are relative to
-`plugins/biteq-ts/` unless stated otherwise.
+`plugins/biteq/` unless stated otherwise.
 
 **Part A — Orientation** (steps 1–4) · what the files are, how the plugin is loaded, and the two
 abstractions everything else rests on.
@@ -21,7 +21,7 @@ abstractions everything else rests on.
 ### Step 1 — The map: ten modules, one job each
 
 ```
-plugins/biteq-ts/
+plugins/biteq/
 ├── .claude-plugin/plugin.json   name, version, pointer to the types
 ├── hooks/
 │   ├── hooks.json               { "modules": ["./register.ts"] }
@@ -57,7 +57,7 @@ tag applied to every question inside it.
 
 ```mermaid
 flowchart LR
-  A[".claude-plugin/plugin.json<br/>name: biteq-ts"] --> B["hooks/hooks.json<br/>modules: ./register.ts"]
+  A[".claude-plugin/plugin.json<br/>name: biteq"] --> B["hooks/hooks.json<br/>modules: ./register.ts"]
   B --> C["register.ts loads<br/>module body runs"]
   C --> D["export const register<br/>called with `on`"]
   D --> E["hook table:<br/>10 registrations"]
@@ -66,7 +66,7 @@ flowchart LR
 Loading has three stages, and it is worth separating them because they happen at different times
 and the distinction matters later.
 
-First the **manifest**. `.claude-plugin/plugin.json` names the plugin `biteq-ts` — that string is
+First the **manifest**. `.claude-plugin/plugin.json` names the plugin `biteq` — that string is
 the plugin's identity everywhere: the `plugin` field of every atom address, the `e.plugin` on a
 press, the folder its store file lives in. It also points at `./types/index.d.ts`, which is how the
 engine knows the plugin's state contract.
@@ -144,7 +144,7 @@ a hand-written `io`.
 ```
 types/index.d.ts                register.ts                     io()
 ─────────────────               ───────────                     ────
-PluginState['biteq-ts'] = {     const status  = atom(...)       get: key => switch (key) {
+PluginState['biteq'] = {     const status  = atom(...)       get: key => switch (key) {
   status:    Status         ──▶ const since   = atom(...)   ──▶   case 'status': read($, status)
   since:     number             const current = atom(...)         case 'since':  read($, since)
   current:   Current            const engaged = atom(...)         ...
@@ -161,7 +161,7 @@ This is types only — no runtime effect. Its job is to make `io.get('stats')` r
 make a typo like `io.get('statz')` a compile error.
 
 `register.ts:33-38` **names** the six values as atoms. An atom is an address plus a default; it
-holds no value itself. The `as const` on each is required so TypeScript narrows `'biteq-ts'` and
+holds no value itself. The `as const` on each is required so TypeScript narrows `'biteq'` and
 `'status'` to literals and can look them up in the declaration above.
 
 Then the **switches** in `io()` at lines 45–66. These look like boilerplate and people are tempted
@@ -634,5 +634,5 @@ worth keeping already went to `$.store` at the moment it changed.
 
 - `docs/flow.md` — the same journey as a timeline table.
 - `docs/review-notes.md` — things found while reading this code that may warrant a change.
-- `plugins/biteq-ts/.claude-plugin/types/claude-code/index.d.ts` — the engine's own API docs, which
+- `plugins/biteq/.claude-plugin/types/claude-code/index.d.ts` — the engine's own API docs, which
   the engine rewrites on every update. The authority for anything in this document.

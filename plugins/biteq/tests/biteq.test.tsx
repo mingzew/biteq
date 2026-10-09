@@ -1,4 +1,4 @@
-// Run: claude plugin test plugins/biteq-ts
+// Run: claude plugin test plugins/biteq
 //
 // The engine's test kit: `$` is the engine's own, and the hooks a test registers with `on`
 // stand for everything beneath the plugin (files, store, the session), answered from memory.
@@ -107,7 +107,7 @@ describe('pane', () => {
     test(`${surface}: a prompt serves a question; answer, verdict, done, next`, async ($, on) => {
       world(on, BANKS, surface)
       await $.session.start({ cwd: '.', surface, isInteractive: true })
-      const ui = await $.ui.mount({ plugin: 'biteq-ts', surface, ...PANE })
+      const ui = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
       expect(await find(ui, { text: /^BiteQ$/ })).toBeDefined()
       expect(await find(ui, { text: /^ - Bite Size Coding Questions$/ })).toBeDefined()
       expect(await find(ui, { text: /idle/ })).toBeDefined()
@@ -134,7 +134,7 @@ describe('presses', () => {
   test('two clicks on one drawing record one answer', async ($, on) => {
     world(on, BANKS, 'desktop')
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     const [a, b] = [await keyOf(ui, OPTION('a', 'desktop')), await keyOf(ui, OPTION('b', 'desktop'))]
     await Promise.allSettled([ui.press({ key: a, ...inQuiz(ui) }), ui.press({ key: b, ...inQuiz(ui) })])
@@ -147,9 +147,9 @@ describe('presses', () => {
     world(on)
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    const term = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
+    const term = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
     expect((await term.find({ type: 'Button', text: OPEN(term, 'a') }))?.props.hotkey).toBe('a')
-    const desk = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    const desk = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
     expect((await find(desk, { type: 'Button', text: OPTION('a', 'desktop') }))?.props.hotkey).toBeUndefined()
     expect((await find(desk, { type: 'Button', text: /^Skip$/ }))?.props.hotkey).toBeUndefined()
   })
@@ -172,7 +172,7 @@ describe('presses', () => {
   test('desktop: answering keeps option Buttons and still records', async ($, on) => {
     world(on, BANKS, 'desktop')
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     await click(ui, OPTION('a', 'desktop'))
     expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
@@ -183,7 +183,7 @@ describe('presses', () => {
   test('the thinking timer counts while Claude works', async ($, on) => {
     const { clock } = world(on, BANKS, 'terminal')
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     expect(await ui.find({ text: /thinking\s+0:00/ })).toBeDefined()
     await clock.advance(65_000)
@@ -195,7 +195,7 @@ describe('serving order', () => {
   test('every question in a language is served before the next language starts', async ($, on) => {
     world(on, BANKS, 'desktop')
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     const served: string[] = []
     for (let i = 0; i < 5; i++) {
@@ -214,7 +214,7 @@ describe('several sessions', () => {
     const shared: Record<string, unknown> = {}
     world(on, BANKS, 'desktop', shared)
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'desktop', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     const mine = (await find(ui, { text: /^Pick / }))?.text
     await click(ui, OPEN(ui, 'a'))
@@ -238,7 +238,7 @@ describe('claude events', () => {
       return { result: { answers: {} } } as never
     })
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
+    ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'ask me', turnId: 't1' })
     await $.tool.call({ tool: 'AskUserQuestion', input: { questions: [] } } as never)
     expect(seen).toMatch(/needs your input/)
@@ -248,7 +248,7 @@ describe('claude events', () => {
   test('a subagent finishing does not end the main turn', async ($, on) => {
     world(on)
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     await $.turn.complete({ ...DONE, turnId: 't2', agentId: 'sub' })
     expect(await ui.find({ text: /Claude is thinking/ })).toBeDefined()
@@ -257,7 +257,7 @@ describe('claude events', () => {
   test('a permission prompt is waiting', async ($, on) => {
     world(on)
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     await $.classic.Notification({ message: 'ok?', notification_type: 'permission_prompt' } as never)
     expect(await ui.find({ text: /needs your input/ })).toBeDefined()
@@ -297,7 +297,7 @@ describe('/biteq commands', () => {
   test('stats, check, doctor, reset', async ($, on) => {
     world(on)
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq-ts', surface: 'terminal', ...PANE })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     await click(ui, OPEN(ui, 'a'))
 

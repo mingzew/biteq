@@ -1,5 +1,5 @@
 // Optional raw event log. Enable with BITEQ_DEBUG=1 in the environment Claude Code runs in;
-// writes ~/.biteq/events-ts.log (one line per event: ISO time, source, payload).
+// writes ~/.biteq/events.log (one line per event: ISO time, source, payload).
 import type { Io } from './io'
 import { eventsLog } from './store'
 
