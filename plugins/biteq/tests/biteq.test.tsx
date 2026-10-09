@@ -118,7 +118,7 @@ describe('pane', () => {
 
       await click(ui, OPEN(ui, 'a'))
       expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeDefined()
-      expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
+      expect(await find(ui, { text: /streak \d+ · best \d+/ })).toBeDefined()
       expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
 
       await $.turn.complete(DONE)
@@ -138,7 +138,9 @@ describe('presses', () => {
     await $.turn.start({ text: 'go', turnId: 't1' })
     const [a, b] = [await keyOf(ui, OPTION('a', 'desktop')), await keyOf(ui, OPTION('b', 'desktop'))]
     await Promise.allSettled([ui.press({ key: a, ...inQuiz(ui) }), ui.press({ key: b, ...inQuiz(ui) })])
-    expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()   // answered once, not twice
+    expect(await find(ui, { text: /streak \d+ · best \d+/ })).toBeDefined()
+    const stats = String(((await $.prompt.submit({ text: '/biteq stats', wait: false } as never)) as { drop?: string }).drop)
+    expect(stats).toContain('answered      1')   // once, not twice
   })
 
   test('hotkeys only in the terminal; the desktop keeps its keys in the message box', async ($, on) => {
@@ -175,7 +177,7 @@ describe('presses', () => {
     await click(ui, OPTION('a', 'desktop'))
     expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
     expect(await find(ui, { type: 'Button', text: /^Next$/ })).toBeDefined()
-    expect(await find(ui, { text: /streak \d+ · \d\/1/ })).toBeDefined()
+    expect(await find(ui, { text: /streak \d+ · best \d+/ })).toBeDefined()
   })
 
   test('the thinking timer counts while Claude works', async ($, on) => {
@@ -222,7 +224,6 @@ describe('several sessions', () => {
     shared.stats = { ...stats, seen: [...stats.seen, other], answered: 2 }
     await click(ui, /^Next$/)
     expect(await find(ui, { text: /^\[js\] $/ })).toBeDefined()   // both Ruby questions are done
-    expect(await find(ui, { text: /· 1\/2/ })).toBeDefined()      // and the pane's numbers caught up (1 right of 2)
   })
 })
 

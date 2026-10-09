@@ -59,7 +59,7 @@ export function drawQuiz(
       </Box>
       <Box justifyContent="space-between">
         <Text color={banner.color} bold>{banner.text}</Text>
-        <Text dimColor>  streak {s.streak} · {s.correct}/{s.answered}</Text>
+        <Text dimColor>  streak {s.streak} · best {s.best_streak}</Text>
       </Box>
 
       {q === null ? (
@@ -75,7 +75,7 @@ export function drawQuiz(
         <Box flexDirection="column" gap={1}>
           <Box>
             <Text color="blue">[{q.lang}] </Text>
-            <Text bold>{q.title ?? ''}</Text>
+            <Text bold>{q.hard ? (s.streak > 0 ? '[BYE STREAK] ' : '[OOF] ') : ''}{q.title ?? ''}</Text>
           </Box>
           <Text>{q.prompt}</Text>
           {q.code ? <Text color="cyan">{q.code}</Text> : null}

@@ -9,6 +9,7 @@ export type Question = {
   options: string[]
   answer: number
   explanation: string
+  hard?: boolean
 }
 
 // Persisted in the plugin store under `stats`, shared by every session
