@@ -14,8 +14,10 @@ claude --plugin-dir ./plugins/biteq
 
 The pane opens with the session and again on each prompt (unless you close it). In the desktop app,
 click an answer, then **Next**. In the terminal it docks beside the conversation at 144+ columns,
-otherwise inline; `ctrl+x tab` gives it the keyboard: `a`–`d` answer, `n` next, `s` skip, `q` close,
-Esc back to the prompt. (The desktop app keeps its keys in the message box, so the pane shows no key
+otherwise inline; `ctrl+x tab` gives it the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter)
+answer, and a hint bar on the pane's bottom row names the rest: `n: skip · q: close` before answering,
+`⏎ next · q: close` after (Enter on the answered question moves on; `n` still does, unshown). Esc goes
+back to the prompt. Space can't be bound: Claude Code allows only a letter or digit as a hotkey. (The desktop app keeps its keys in the message box, so the pane shows no key
 hints there.)
 
 | Command | What it does |
@@ -64,6 +66,10 @@ themselves. A module that needs a new engine capability adds it to `Io` and to `
 
 ## How it works
 
+**Design rule: the quiz is a pane.** Keep it in the Claude Code pane opened with `$.ui.open` (docked beside
+the conversation; inline above the prompt only when there's no room to dock). Don't move it to the
+`AbovePrompt` band, the status line, toasts or a separate window unless the team explicitly decides otherwise.
+
 Each Claude Code session runs its own copy of the plugin and draws its own pane, so there's no state
 file, lock or polling. Engine events set the session's status:
 
@@ -79,6 +85,11 @@ shared by every session. Cursor's own agent isn't supported: it only runs comman
 in-engine modules (the Claude Code extension inside Cursor works).
 
 ## Develop
+
+**If the pane shows inline above the prompt instead of docked:** the terminal pane only docks in Claude Code's
+fullscreen layout. Claude Code turns fullscreen off by itself after sessions end abruptly (it records
+`"fullscreenAutoDisabled"` in `~/.claude.json`), for example when a test harness kills `claude` instead of
+exiting with `/exit`. Remove that key, or re-enable fullscreen, and restart the session.
 
 ```bash
 claude plugin validate plugins/biteq   # what the engine sees, and what it would refuse

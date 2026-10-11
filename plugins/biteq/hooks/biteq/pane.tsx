@@ -114,7 +114,9 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
     }
   })
   await io.set('stats', () => s)
-  await io.focus(keys.next(q))
+  // Terminal: the ring stays on the picked option, so Enter (pressing it again) moves on; the
+  // hint bar is kept out of the ring. Desktop: the ring moves to the Next button.
+  await io.focus((await io.surface()) === 'terminal' ? keys.answer(q, idx) : keys.next(q))
 }
 
 /** This session's status changed: count a new wait, serve a question, reopen the pane. */
@@ -170,7 +172,13 @@ export async function close(io: Io): Promise<void> {
  */
 export async function press(io: Io, key: string): Promise<void> {
   const [action = '', ...rest] = key.split(':')
-  if (action === 'answer') await answer(io, rest.slice(1).join(':'), Number(rest[0]))
+  if (action === 'answer') {
+    const qid = rest.slice(1).join(':')
+    const c = await io.get('current')
+    // Terminal: Enter on an option of the question already answered is "next" (the hint bar's ⏎)
+    if (c.question?.id === qid && c.picked !== null && (await io.surface()) === 'terminal') await next(io, qid)
+    else await answer(io, qid, Number(rest[0]))
+  }
   else if (action === 'next' || action === 'skip') await next(io, rest.join(':'))
   else if (action === 'close') await close(io)
 }
@@ -192,8 +200,12 @@ export async function view(io: Io): Promise<PaneView> {
   }
 }
 
-export function render(v: PaneView, el: Elements[RenderSurface], surface: RenderSurface) {
-  return drawQuiz(v, el, surface, () => {})
+/**
+ * `fill`: the rows of a docked terminal pane's body. The tree fills them so the hint bar sits on
+ * the pane's last row. Left out inline, where the pane is sized to its content.
+ */
+export function render(v: PaneView, el: Elements[RenderSurface], surface: RenderSurface, fill?: number) {
+  return drawQuiz(v, el, surface, () => {}, surface === 'terminal', surface === 'terminal' ? fill : undefined)
 }
 
 function randomOf<T>(list: T[]): T | null {

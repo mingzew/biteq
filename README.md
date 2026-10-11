@@ -33,6 +33,11 @@ app's Code tab, and the VS Code / Cursor extension.
 - Stats are shared by every Claude Code session. `/biteq stats` tracks the key metric: in what share of AI
   waits you practiced.
 
+**Design rule: the quiz is a pane.** BiteQ is shown in a Claude Code pane (`$.ui.open`): docked beside
+the conversation in the terminal's fullscreen layout and in the desktop app, inline above the prompt only when
+there's no room to dock. Keep it a pane. Don't move it to the band above the prompt, the status line, toasts or
+a separate window unless the team explicitly decides otherwise.
+
 See [`plugins/biteq/README.md`](plugins/biteq/README.md) for the layout and development, and
 [`docs/flow.md`](docs/flow.md) for a step-by-step trace through the code.
 
@@ -50,7 +55,9 @@ Code tab, or the Claude Code extension in VS Code or Cursor.
    - **Local dev:** `claude --plugin-dir ./plugins/biteq` (applies to that one session only).
 2. The pane opens with the session (in a terminal narrower than 144 columns, type `/biteq`).
 3. Prompt Claude. A question appears. In the desktop app, click an answer, then **Next**. In the terminal,
-   `ctrl+x tab` gives the pane the keyboard: `a`–`d` answer, `n` next, `s` skip, `q` close.
+   `ctrl+x tab` gives the pane the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter) answer, and the
+   hint bar at the bottom names the rest: `n: skip · q: close` before you answer, `⏎ next · q: close` after
+   (Enter moves on; `n` still does too, though the bar no longer shows it).
 
 Cursor's own chat agent is a different harness and doesn't run Claude Code plugins.
 
