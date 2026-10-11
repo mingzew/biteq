@@ -7,6 +7,7 @@
 import type { Elements, RenderSurface } from 'claude-code'
 
 import type { Question, Stats, Status } from '../../types'
+import type { ClientTraits } from './client'
 import { drawQuiz, keys, type PaneView } from './draw'
 import type { Io } from './io'
 import { getPauseWhenDone, setPauseWhenDone } from './config'
@@ -139,9 +140,9 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
     }
   })
   await io.set('stats', () => s)
-  // Terminal: the ring stays on the picked option, so Enter (pressing it again) moves on; the
-  // hint bar is kept out of the ring. Desktop: the ring moves to the Next button.
-  await io.focus((await io.surface()) === 'terminal' ? keys.answer(q, idx) : keys.next(q))
+  // With Enter-to-next (the CLI) the ring stays on the picked option, so pressing it again moves on;
+  // the hint bar is kept out of the ring. Otherwise the ring moves to the Next button.
+  await io.focus((await io.traits()).enterMovesOn ? keys.answer(q, idx) : keys.next(q))
 }
 
 /** This session's status changed: count a new wait, serve a question, reopen the pane. */
@@ -155,16 +156,16 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
     if (c.question === null || c.picked !== null) await advance(io, c.question, s)
     if (!(await io.get('dismissed'))) {
       // Desktop: ask for the pane's keyboard now that the composer is empty, so the
-      // first click on an option is a press. Terminal keeps ctrl+x tab. A grant is
+      // first click on an option is a press. The CLI keeps ctrl+x tab. A grant is
       // refused if the composer has text; boot still opens without focus.
-      void io.openPane((await io.surface()) === 'desktop')
+      void io.openPane((await io.traits()).focusOnWait)
     }
   }
 }
 
 /** Once a second: redraw while thinking, so the timer counts. */
 export async function tick(io: Io): Promise<void> {
-  if ((await io.surface()) === 'desktop') return   // desktop Client counts on its own frame clock
+  if ((await io.traits()).clientModule) return   // the surface module counts on its own frame clock
   if ((await io.get('status')) === 'thinking') io.redraw()
 }
 
@@ -201,8 +202,8 @@ export async function press(io: Io, key: string): Promise<void> {
   if (action === 'answer') {
     const qid = rest.slice(1).join(':')
     const c = await io.get('current')
-    // Terminal: Enter on an option of the question already answered is "next" (the hint bar's ⏎)
-    if (c.question?.id === qid && c.picked !== null && (await io.surface()) === 'terminal') await next(io, qid)
+    // Enter on an option of the question already answered is "next" (the CLI hint bar's ⏎)
+    if (c.question?.id === qid && c.picked !== null && (await io.traits()).enterMovesOn) await next(io, qid)
     else await answer(io, qid, Number(rest[0]))
   }
   else if (action === 'next' || action === 'skip') await next(io, rest.join(':'))
@@ -232,11 +233,12 @@ export async function view(io: Io): Promise<PaneView> {
 }
 
 /**
- * `fill`: the rows of a docked terminal pane's body. The tree fills them so the hint bar sits on
- * the pane's last row. Left out inline, where the pane is sized to its content.
+ * `traits`: the client's (client.ts traitsOf). `fill`: the rows of a docked pane's body; with a hint
+ * bar the tree fills them so the bar sits on the pane's last row. Left out inline, where the pane
+ * is sized to its content.
  */
-export function render(v: PaneView, el: Elements[RenderSurface], surface: RenderSurface, fill?: number) {
-  return drawQuiz(v, el, surface, () => {}, surface === 'terminal', surface === 'terminal' ? fill : undefined)
+export function render(v: PaneView, el: Elements[RenderSurface], traits: ClientTraits, fill?: number) {
+  return drawQuiz(v, el, traits, () => {}, traits.hintBar ? fill : undefined)
 }
 
 function randomOf<T>(list: T[]): T | null {

@@ -18,6 +18,7 @@ import type { EngineInterface, Register, RenderElement } from 'claude-code'
 import { parse } from './biteq/claude'
 import type { ClaudeEvent } from './biteq/claude'
 import { COMMAND, boot, run, signal, typedArgs } from './biteq/cli'
+import { toClient, traitsOf } from './biteq/client'
 import { logEvent } from './biteq/debug'
 import type { Io, View } from './biteq/io'
 import { isHintKey } from './biteq/draw'
@@ -89,8 +90,9 @@ function io($: EngineInterface): Io {
     },
     redraw: () => $.ui.invalidate('ui.render'),
     now: () => $.clock.now(),
+    client: async () => toClient(await $.session.surface()),
+    traits: async () => traitsOf(toClient(await $.session.surface())),
     version: async () => (await $.session.version()).version,
-    surface: () => $.session.surface(),
   }
 }
 
@@ -156,27 +158,28 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const quiz = await view(io($))
     const el = $.ui.resolve(e)
-    const hasClient = 'Client' in el
+    const traits = traitsOf(toClient(e.surface))
     // Desktop: a Client keeps the quiz on the drawing thread. Plugin redraws
     // remount the pane webview, and the next click only focuses it. Its props
-    // are the quiz alone, so a focus change does not redraw that webview.
-    if (e.surface === 'desktop' && clientOk && hasClient) {
+    // are the quiz and the client's traits alone, so a focus change does not redraw that webview.
+    if (traits.clientModule && clientOk && 'Client' in el) {
       try {
         const { Box, Client } = el
         const tree = h(Box, { flexDirection: 'column', flexGrow: 1 },
-          h(Client, { key: QUIZ, module: './biteq/quiz-client.tsx', props: quiz, flexGrow: 1 }))
+          h(Client, { key: QUIZ, module: './biteq/quiz-client.tsx', props: { ...quiz, traits }, flexGrow: 1 }))
         if (tree) return tree as RenderElement
         clientOk = false
       } catch {
         clientOk = false
       }
     }
-    return render(e.surface === 'terminal' ? { ...quiz, focused: e.props.isFocused } : quiz, el, e.surface, fillRows(e.props))
+    return render(traits.dimsWhenUnfocused ? { ...quiz, focused: e.props.isFocused } : quiz, el, traits, fillRows(e.props))
   }).catch(async ($, e, next) => {
     clientOk = false
     if (next.called) return next(e)
     const quiz = await view(io($))
-    return render(e.surface === 'terminal' ? { ...quiz, focused: e.props.isFocused } : quiz, $.ui.resolve(e), e.surface, fillRows(e.props))
+    const traits = traitsOf(toClient(e.surface))
+    return render(traits.dimsWhenUnfocused ? { ...quiz, focused: e.props.isFocused } : quiz, $.ui.resolve(e), traits, fillRows(e.props))
   })
 
   on('ui.message', async ($, e) => {
@@ -184,7 +187,7 @@ export const register: Register = on => {
     const key = data && typeof data === 'object' && 'key' in data ? String((data as { key: unknown }).key) : ''
     if (!key || key.startsWith('debug:')) return {}
     await press(io($), key)
-    return { props: await view(io($)) }
+    return { props: { ...(await view(io($))), traits: traitsOf(toClient(e.surface)) } }
   })
 
   on('ui.fault', async ($, e, next) => {
@@ -192,13 +195,12 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Terminal hint bar (next/skip, close): pressed by hotkey only, so the arrow keys and Tab skip
-  // it and only walk the answers.
-  // A person's move names its target `element`; the plugin's own `$.ui.focus` (pane.answer moves
-  // the ring to Next) names it `key`. The desktop keeps its Next/Close buttons, so terminal only.
+  // The hint bar (next/skip, close): pressed by hotkey only, so the arrow keys and Tab skip it and
+  // only walk the answers. A person's move names its target `element`; the plugin's own
+  // `$.ui.focus` names it `key`. Clients without a hint bar keep Next/Close as focusable buttons.
   on('ui.focus', async ($, e, next) => {
     const target = e.element ?? (e as { key?: string }).key
-    if (e.requestId === PANE && target && isHintKey(target) && (await $.session.surface()) === 'terminal') {
+    if (e.requestId === PANE && target && isHintKey(target) && traitsOf(toClient(await $.session.surface())).hintBar) {
       return { deny: 'hint bar: pressed by its hotkey' }
     }
     return next(e)

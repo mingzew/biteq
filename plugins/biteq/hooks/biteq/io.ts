@@ -5,6 +5,8 @@
 // object of small closures for each event, and every other module takes it as `io`.
 import type { PluginState } from 'claude-code'
 
+import type { Client, ClientTraits } from './client'
+
 /** This session's values the pane draws from ($.state); declared in types/index.d.ts. */
 export type View = PluginState['biteq']
 
@@ -38,7 +40,11 @@ export type Io = {
   // the engine's clock (a test can move it), in milliseconds
   now: () => Promise<number>
 
+  // which supported client this session runs in (null: unsupported, or headless), and what that
+  // means for biteq; see client.ts
+  client: () => Promise<Client | null>
+  traits: () => Promise<ClientTraits>
+
   // about this session, for /biteq doctor
   version: () => Promise<string>
-  surface: () => Promise<string | null>
 }
