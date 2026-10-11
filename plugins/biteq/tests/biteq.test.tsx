@@ -28,6 +28,8 @@ const PANE = {
   },
 } as const
 
+const RESTING = /^Claude is done, go review\. The next time Claude cooks, we will serve the question\.$/
+
 const DONE = { reason: 'answer', answer: 'done', durationMs: 1, isAborted: false, turnId: 't1' } as const
 
 // Everything beneath the plugin: question banks, an in-memory store, no env, and the engine's answers.
@@ -130,11 +132,97 @@ describe('pane', () => {
       await $.turn.complete(DONE)
       expect(await find(ui, { text: /Claude is done/ })).toBeDefined()
 
-      // the terminal's Next/Skip are lowercase hint-bar buttons ("n: next")
+      // Claude is done: Next rests instead of serving (the terminal's Next is the hint bar's "next")
       await click(ui, ui.surface === 'terminal' ? /^next$/ : /^Next$/)
+      expect(await find(ui, { text: RESTING })).toBeDefined()
+      expect(await find(ui, { text: /^Pick / })).toBeUndefined()
+
+      // Claude works again: the next question is served
+      await $.turn.start({ text: 'more', turnId: 't2' })
       expect(await find(ui, { type: 'Button', text: ui.surface === 'terminal' ? /^skip$/ : /^Skip$/ })).toBeDefined()
     })
   }
+})
+
+describe('when Claude is done', () => {
+  const RESTING_RE = RESTING
+  async function done($: Engine, on: On, surface: 'terminal' | 'desktop', shared?: Record<string, unknown>) {
+    world(on, BANKS, surface, shared)
+    await $.session.start({ cwd: '.', surface, isInteractive: true })
+    const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await $.turn.complete(DONE)
+    return ui
+  }
+  const title = async (ui: Drawing) => (await find(ui, { text: /^Pick / }))?.text
+  const NEXT = (ui: Drawing) => (ui.surface === 'terminal' ? /^next$/ : /^Next$/)
+  const SKIP = (ui: Drawing) => (ui.surface === 'terminal' ? /^skip$/ : /^Skip$/)
+  const run = async ($: Engine, args: string) =>
+    String(((await $.prompt.submit({ text: `/biteq ${args}`, wait: false } as never)) as { drop?: string }).drop)
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    test(`${surface}: the question on screen can still be answered, with its explanation`, async ($, on) => {
+      const ui = await done($, on, surface)
+      expect(await title(ui)).toBeDefined()
+      await click(ui, OPEN(ui, 'a'))
+      expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeDefined()
+      expect(await find(ui, { text: /^because$/ })).toBeDefined()   // the explanation
+    })
+
+    test(`${surface}: Next and Skip show the resting message, with no question, answers or Next`, async ($, on) => {
+      const ui = await done($, on, surface)
+      await click(ui, SKIP(ui))   // skip an unanswered question: rests too
+      expect(await find(ui, { text: RESTING_RE })).toBeDefined()
+      expect(await title(ui)).toBeUndefined()
+      expect(await find(ui, { type: 'Button', text: OPEN(ui, 'a') })).toBeUndefined()
+      expect(await find(ui, { type: 'Button', text: NEXT(ui) })).toBeUndefined()
+      if (surface === 'terminal') {
+        expect((await find(ui, { type: 'Button', text: /^serve next$/ }))?.props.hotkey).toBe('n')
+        expect((await find(ui, { type: 'Button', text: /^always serve$/ }))?.props.hotkey).toBe('s')
+      } else {
+        expect(await find(ui, { type: 'Button', text: /^Serve next question$/ })).toBeDefined()
+        expect(await find(ui, { type: 'Button', text: /^Always serve, even when Claude is done$/ })).toBeDefined()
+      }
+    })
+
+    test(`${surface}: "serve next question" serves one now; the setting stays on`, async ($, on) => {
+      const ui = await done($, on, surface)
+      await click(ui, OPEN(ui, 'a'))
+      await click(ui, NEXT(ui))
+      await click(ui, surface === 'terminal' ? /^serve next$/ : /^Serve next question$/)
+      expect(await title(ui)).toBeDefined()
+      await click(ui, OPEN(ui, 'a'))
+      await click(ui, NEXT(ui))
+      expect(await find(ui, { text: RESTING_RE })).toBeDefined()   // still pausing
+    })
+  }
+
+  test('"always serve" is remembered, and /biteq pause on turns pausing back on', async ($, on) => {
+    const shared: Record<string, unknown> = {}
+    const ui = await done($, on, 'desktop', shared)
+    await click(ui, SKIP(ui))
+    await click(ui, /^Always serve, even when Claude is done$/)
+    expect(await title(ui)).toBeDefined()
+    expect(shared.config).toMatchObject({ pauseWhenDone: false })   // in the store: every session, every restart
+    await click(ui, OPEN(ui, 'a'))
+    await click(ui, NEXT(ui))
+    expect(await title(ui)).toBeDefined()   // keeps serving while Claude is done
+    expect(await run($, 'doctor')).toContain('when done     keep serving')
+
+    expect(await run($, 'pause on')).toContain('pause when Claude is done: on')
+    expect(shared.config).toMatchObject({ pauseWhenDone: true })
+    await click(ui, SKIP(ui))
+    expect(await find(ui, { text: RESTING_RE })).toBeDefined()
+    expect(await run($, 'pause maybe')).toBe('usage: /biteq pause on|off')
+  })
+
+  test('reopening the pane with /biteq keeps resting', async ($, on) => {
+    const ui = await done($, on, 'desktop')
+    await click(ui, SKIP(ui))
+    await run($, '')
+    expect(await find(ui, { text: RESTING_RE })).toBeDefined()
+    expect(await title(ui)).toBeUndefined()
+  })
 })
 
 describe('terminal hint bar', () => {

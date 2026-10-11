@@ -3,7 +3,7 @@
 // `/biteq` alone opens the pane. `signal` is the path every status takes: register.ts hands
 // engine events to claude.parse, and the status goes to store.setStatus, then pane.onStatus.
 import type { Status } from '../../types'
-import { getLangs, setLangs } from './config'
+import { getLangs, getPauseWhenDone, setLangs, setPauseWhenDone } from './config'
 import { enabled as debugEnabled } from './debug'
 import type { Io } from './io'
 import { boot as bootPane, onStatus, open as openPane } from './pane'
@@ -12,8 +12,8 @@ import { CONFIG, STATS, eventsLog, setStatus } from './store'
 
 export const COMMAND = {
   name: 'biteq',
-  description: 'biteq quiz pane: /biteq [--lang a,b] | langs | check | stats | doctor | reset',
-  argumentHint: '[pane|langs|check|stats|doctor|reset] [--lang a,b]',
+  description: 'biteq quiz pane: /biteq [--lang a,b] | langs | check | stats | doctor | pause on|off | reset',
+  argumentHint: '[pane|langs|check|stats|doctor|pause|reset] [--lang a,b]',
 }
 
 /** Record a status and let the pane react (count the wait, serve a question, flash). */
@@ -114,6 +114,7 @@ async function cmdDoctor(io: Io): Promise<string> {
     `debug log     ${(await debugEnabled(io)) ? await eventsLog(io) : 'off (set BITEQ_DEBUG=1 to record events)'}`,
     `questions     ${total} (${Object.entries(counts).sort().map(([k, n]) => `${k} ${n}`).join(', ')})`,
     `selected      ${(await getLangs(io)).join(',')}`,
+    `when done     ${(await getPauseWhenDone(io)) ? 'pause (no new question until Claude works again)' : 'keep serving'}`,
   ].join('\n')
 }
 
@@ -136,6 +137,15 @@ async function cmdReset(io: Io, all: boolean): Promise<string> {
   return `removed: ${removed.join(', ')}`
 }
 
+/** `pause on`: no new question once Claude is done (the default); `off`: keep serving. Remembered. */
+async function cmdPause(io: Io, value: string | undefined): Promise<string> {
+  if (value === 'on' || value === 'off') await setPauseWhenDone(io, value === 'on')
+  else if (value !== undefined) return 'usage: /biteq pause on|off'
+  return (await getPauseWhenDone(io))
+    ? 'biteq: pause when Claude is done: on (the next question waits until Claude works again)'
+    : 'biteq: pause when Claude is done: off (questions keep coming)'
+}
+
 /** /biteq <args>, from the command (terminal) or a typed prompt (desktop); returns the reply. */
 export async function run(io: Io, args: string): Promise<string> {
   const words = args.trim().split(/\s+/).filter(Boolean)
@@ -153,9 +163,10 @@ export async function run(io: Io, args: string): Promise<string> {
     case 'stats': return cmdStats(io)
     case 'doctor': return cmdDoctor(io)
     case 'reset': return cmdReset(io, words.includes('--all'))
+    case 'pause': return cmdPause(io, words[1])
     case 'start': await signal(io, 'thinking'); return 'biteq: marked thinking'
     case 'stop': await signal(io, 'done'); return 'biteq: marked done'
     default:
-      return 'usage: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | reset [--all] | start | stop'
+      return 'usage: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | pause on|off | reset [--all] | start | stop'
   }
 }

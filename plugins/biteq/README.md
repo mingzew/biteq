@@ -17,7 +17,8 @@ click an answer, then **Next**. In the terminal it docks beside the conversation
 otherwise inline; `ctrl+x tab` gives it the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter)
 answer, and a hint bar on the pane's bottom row names the rest: `n: skip · q: close` before answering,
 `⏎ next · q: close` after (Enter on the answered question moves on; `n` still does, unshown). Esc goes
-back to the prompt. Space can't be bound: Claude Code allows only a letter or digit as a hotkey. (The desktop app keeps its keys in the message box, so the pane shows no key
+back to the prompt. Resting after Claude is done, the bar reads `n: serve next · s: always serve · q: close`.
+Space and `;` can't be bound: Claude Code allows only a letter or digit as a hotkey. (The desktop app keeps its keys in the message box, so the pane shows no key
 hints there.)
 
 | Command | What it does |
@@ -27,6 +28,7 @@ hints there.)
 | `/biteq check` | Validate the question banks |
 | `/biteq stats` | Your stats |
 | `/biteq doctor` | Claude Code version, plugin path, store, status, debug log, questions |
+| `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered |
 | `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log |
 | `/biteq start` / `stop` | Manually mark Claude as thinking / done (debugging) |
 
@@ -76,7 +78,7 @@ file, lock or polling. Engine events set the session's status:
 | Event | Status |
 |---|---|
 | `turn.start` | thinking: count the wait, serve a question, open the pane |
-| `turn.complete` | done (also on interrupt; a subagent's turn is ignored) |
+| `turn.complete` | done (also on interrupt; a subagent's turn is ignored). The question on screen can still be answered, but Next rests ("Claude is done, go review") instead of serving, until the next `turn.start`; unless `/biteq pause off` or **Always serve** (`config.pauseWhenDone`) |
 | `tool.call` for AskUserQuestion / ExitPlanMode | waiting while the tool blocks, thinking once it returns |
 | `classic.Notification` | waiting on `permission_prompt`, done on `idle_prompt` |
 
