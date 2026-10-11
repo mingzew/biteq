@@ -15,21 +15,52 @@ const AGENT = 'Claude'
 const NAME = 'BiteQ'
 const TAGLINE = 'Bite Size Coding Questions'
 const LETTERS = 'abcd'
+const RESTING = `${AGENT} is done, go review. The next time ${AGENT} cooks, we will serve the question.`
 
 export const keys = {
   answer: (q: Question, idx: number) => `answer:${idx}:${q.id}`,
   next: (q: Question | null) => `next:${q?.id ?? ''}`,
   skip: (q: Question) => `skip:${q.id}`,
   close: 'close',
+  serve: 'serve',     // while resting: one question now
+  always: 'always',   // while resting: keep serving after Claude is done, remembered
+}
+
+/**
+ * The terminal's hint bar for what's on screen, as one flat row: `plain` hotkey buttons draw as
+ * "n: skip", with " · " between them. After an answer it shows "⏎ next" (Enter on the answered
+ * option); n still moves on through a button clipped out of sight.
+ */
+function hintBar(v: PaneView, el: QuizElements, onPress: (key: string) => void) {
+  const { Box, Text, Button } = el
+  const q = v.question
+  const hint = (k: string, label: string, hotkey: string) =>
+    <Button key={k} label={label} hotkey={hotkey} plain dimColor onPress={() => onPress(k)} />
+  const items =
+    q === null && v.resting ? [hint(keys.serve, 'serve next', 'n'), hint(keys.always, 'always serve', 's')]
+    : q === null ? (v.bank > 0 ? [hint(keys.next(null), 'practice', 'n')] : [])
+    : v.picked === null ? [hint(keys.skip(q), 'skip', 'n')]
+    : [<Text key="enter" dimColor>⏎ next</Text>]
+  const hidden = q !== null && v.picked !== null && (
+    <Box key="hidden-next" position="absolute" width={0} height={0} overflow="hidden">
+      {hint(keys.next(q), 'next', 'n')}
+    </Box>
+  )
+  const row = [...items, hint(keys.close, 'close', 'q')]
+  return [
+    ...row.flatMap((item, i) => (i === 0 ? [item] : [<Text key={`sep-${i}`} dimColor> · </Text>, item])),
+    ...(hidden ? [hidden] : []),
+  ]
 }
 
 /** The pane keys the terminal's hint bar presses: never in the arrow keys' focus ring. */
 export function isHintKey(key: string): boolean {
-  return key === keys.close || key.startsWith('next:') || key.startsWith('skip:')
+  return key === keys.close || key === keys.serve || key === keys.always || key.startsWith('next:') || key.startsWith('skip:')
 }
 
 export type PaneView = {
   status: Status
+  resting: boolean   // Claude is done and Next rested: no question until Claude works again
   elapsedMs: number
   since: number
   bank: number
@@ -84,7 +115,17 @@ export function drawQuiz(
         <Text dimColor>  streak {s.streak} · best {s.best_streak}</Text>
       </Box>
 
-      {q === null ? (
+      {q === null && v.resting ? (
+        <Box flexDirection="column" gap={1} alignItems={align}>
+          <Text>{RESTING}</Text>
+          {!hints && (
+            <Box gap={2}>
+              <Button key={keys.serve} label="Serve next question" variant="primary" autoFocus={ring} onPress={() => onPress(keys.serve)} />
+              <Button key={keys.always} label="Always serve, even when Claude is done" onPress={() => onPress(keys.always)} />
+            </Box>
+          )}
+        </Box>
+      ) : q === null ? (
         <Box flexDirection="column" gap={1}>
           <Text dimColor>
             {v.bank
@@ -129,21 +170,7 @@ export function drawQuiz(
         // A unix-style hint bar: `plain` hotkey buttons draw as "n: next", dim like the rest
         // a growing column pushes the bar's one row to the pane's bottom edge
         <Box flexDirection="column" flexGrow={1} justifyContent="flex-end">
-          <Box>
-          {q === null
-            ? v.bank > 0 && <Button key={keys.next(null)} label="practice" hotkey="n" plain dimColor={dim} onPress={() => onPress(keys.next(null))} />
-            : p !== null
-              ? <>
-                  {/* "⏎ next" is shown; n still moves on through a button clipped out of sight */}
-                  <Text dimColor>⏎ next</Text>
-                  <Box position="absolute" width={0} height={0} overflow="hidden">
-                    <Button key={keys.next(q)} label="next" hotkey="n" plain dimColor={dim} onPress={() => onPress(keys.next(q))} />
-                  </Box>
-                </>
-              : <Button key={keys.skip(q)} label="skip" hotkey="n" plain dimColor={dim} onPress={() => onPress(keys.skip(q))} />}
-          {(q !== null || v.bank > 0) && <Text dimColor> · </Text>}
-          <Button key={keys.close} label="close" hotkey="q" plain dimColor onPress={() => onPress(keys.close)} />
-          </Box>
+          <Box flexWrap="nowrap">{hintBar(v, el, onPress)}</Box>
         </Box>
       ) : (
         <Box gap={2}>

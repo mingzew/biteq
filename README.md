@@ -28,6 +28,9 @@ app's Code tab, and the VS Code / Cursor extension.
 - Nothing to install beyond Claude Code: no Python, Node or binary.
 - The pane opens with the session; each prompt serves a question while Claude works, and the banner and a
   toast tell you when Claude is done or needs your input.
+- Once Claude is done you can finish the question on screen, but Next doesn't serve another: the pane says
+  "Claude is done, go review" until Claude works again. **Serve next question** serves one anyway; **Always serve**
+  turns this off for good (remembered; `/biteq pause on` turns it back on).
 - Questions come one language at a time (default Ruby, then the other banks A-Z). Missed questions come back
   later (light spaced repetition).
 - Stats are shared by every Claude Code session. `/biteq stats` tracks the key metric: in what share of AI
@@ -70,6 +73,7 @@ Cursor's own chat agent is a different harness and doesn't run Claude Code plugi
 | `/biteq check` | Validate the question banks |
 | `/biteq stats` | Your stats |
 | `/biteq doctor` | Claude Code version, plugin path, store, status, debug log, questions |
+| `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered |
 | `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log |
 
 Debugging: `BITEQ_DEBUG=1` (set in the environment Claude Code runs in) records each event to

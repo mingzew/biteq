@@ -9,6 +9,7 @@ import type { Elements, RenderSurface } from 'claude-code'
 import type { Question, Stats, Status } from '../../types'
 import { drawQuiz, keys, type PaneView } from './draw'
 import type { Io } from './io'
+import { getPauseWhenDone, setPauseWhenDone } from './config'
 import { loadStats, saveStats } from './quiz'
 
 export type { PaneView } from './draw'
@@ -76,9 +77,33 @@ async function freshStats(io: Io): Promise<Stats> {
 export async function next(io: Io, qid: string): Promise<void> {
   const c = await io.get('current')
   if ((c.question?.id ?? '') !== qid) return   // already moved on
+  if (c.question !== null && (await resting(io))) {
+    // Claude is done: no next question until it works again (onStatus serves it then)
+    await io.set('current', now => (now.question?.id === qid ? { question: null, picked: null } : now))
+    return
+  }
   await advance(io, c.question, await freshStats(io))
   const now = (await io.get('current')).question
   if (now) await io.focus(keys.answer(now, 0))
+}
+
+/** Whether Next should rest instead of serving: Claude is done and the person hasn't opted out. */
+async function resting(io: Io): Promise<boolean> {
+  return (await io.get('status')) === 'done' && (await getPauseWhenDone(io))
+}
+
+/** "Serve next question" while resting: one question now, the setting unchanged. */
+export async function serve(io: Io): Promise<void> {
+  if ((await io.get('current')).question !== null) return   // already serving
+  await advance(io, null, await freshStats(io))
+  const now = (await io.get('current')).question
+  if (now) await io.focus(keys.answer(now, 0))
+}
+
+/** "Always serve": remember to keep serving after Claude is done, and serve one now. */
+export async function always(io: Io): Promise<void> {
+  await setPauseWhenDone(io, false)
+  await serve(io)
 }
 
 async function nextQuestion(io: Io): Promise<void> {
@@ -147,7 +172,8 @@ export async function tick(io: Io): Promise<void> {
 export async function open(io: Io, focus: boolean): Promise<boolean> {
   await io.set('dismissed', () => false)
   const placed = await io.openPane(focus)
-  if ((await io.get('current')).question === null && questions.length) await nextQuestion(io)
+  // while resting (Claude done), reopening the pane keeps the resting message
+  if ((await io.get('current')).question === null && questions.length && !(await resting(io))) await nextQuestion(io)
   return placed
 }
 
@@ -180,6 +206,8 @@ export async function press(io: Io, key: string): Promise<void> {
     else await answer(io, qid, Number(rest[0]))
   }
   else if (action === 'next' || action === 'skip') await next(io, rest.join(':'))
+  else if (action === 'serve') await serve(io)
+  else if (action === 'always') await always(io)
   else if (action === 'close') await close(io)
 }
 
@@ -189,8 +217,11 @@ export async function press(io: Io, key: string): Promise<void> {
 export async function view(io: Io): Promise<PaneView> {
   const { question, picked } = await io.get('current')
   const since = await io.get('since')
+  const status = await io.get('status')
   return {
-    status: await io.get('status'),
+    status,
+    // Claude is done and Next rested: say so instead of showing a question
+    resting: status === 'done' && question === null && questions.length > 0,
     since,
     elapsedMs: (await io.now()) - since,
     bank: questions.length,
