@@ -26,6 +26,9 @@ export type PaneView = {
   question: Question | null
   picked: number | null
   stats: Stats
+  // Terminal only. Desktop is not given this: restyling that pane on focus
+  // unmounts the button that holds the keyboard.
+  focused?: boolean
 }
 
 type Clock = { since: number; extra: number }
@@ -44,6 +47,7 @@ export function drawQuiz(
   const key = (k: string) => (surface === 'terminal' ? k : undefined)
   const ring = surface === 'desktop' ? true as const : undefined
   const align = surface === 'desktop' ? 'flex-start' as const : undefined
+  const dim = surface === 'terminal' && v.focused === false ? true as const : undefined
   const banner = {
     thinking: { text: `● ${AGENT} is thinking  ${fmtSecs(v.elapsedMs)}`, color: 'yellow' },
     waiting: { text: `! ${AGENT} needs your input`, color: 'magenta' },
@@ -53,12 +57,14 @@ export function drawQuiz(
 
   return (
     <Box flexDirection="column" gap={1} alignItems={align}>
-      <Box>
-        <Text bold>{NAME}</Text>
-        <Text dimColor> - {TAGLINE}</Text>
-      </Box>
+      {surface !== 'desktop' && (
+        <Box>
+          <Text bold dimColor={dim}>{NAME}</Text>
+          <Text dimColor> - {TAGLINE}</Text>
+        </Box>
+      )}
       <Box justifyContent="space-between">
-        <Text color={banner.color} bold>{banner.text}</Text>
+        <Text color={banner.color} bold dimColor={dim}>{banner.text}</Text>
         <Text dimColor>  streak {s.streak} · best {s.best_streak}</Text>
       </Box>
 
@@ -69,35 +75,35 @@ export function drawQuiz(
               ? 'No question yet. Prompt Claude and one will appear here, or practice now.'
               : 'No questions for the selected languages. Try /biteq langs.'}
           </Text>
-          {v.bank > 0 && <Button key={keys.next(null)} label="Practice now" hotkey={key('n')} onPress={() => onPress(keys.next(null))} />}
+          {v.bank > 0 && <Button key={keys.next(null)} label="Practice now" hotkey={key('n')} dimColor={dim} onPress={() => onPress(keys.next(null))} />}
         </Box>
       ) : (
         <Box flexDirection="column" gap={1}>
           <Box>
-            <Text color="blue">[{q.lang}] </Text>
-            <Text bold>{q.hard ? (s.streak > 0 ? '[BYE STREAK] ' : '[OOF] ') : ''}{q.title ?? ''}</Text>
+            <Text color="blue" dimColor={dim}>[{q.lang}] </Text>
+            <Text bold dimColor={dim}>{q.hard ? (s.streak > 0 ? '[BYE STREAK] ' : '[OOF] ') : ''}{q.title ?? ''}</Text>
           </Box>
-          <Text>{q.prompt}</Text>
-          {q.code ? <Text color="cyan">{q.code}</Text> : null}
+          <Text dimColor={dim}>{q.prompt}</Text>
+          {q.code ? <Text color="cyan" dimColor={dim}>{q.code}</Text> : null}
           <Box flexDirection="column" alignItems={align}>
             {q.options.map((opt, i) => {
               const lettered = `${LETTERS[i]}${surface === 'desktop' ? ':' : ')'} ${opt}`
               if (p === null) {
                 // Terminal `plain` already paints the hotkey as "a: "; don't also prefix "a)".
-                return <Button key={keys.answer(q, i)} label={surface === 'terminal' ? opt : lettered} hotkey={key(LETTERS[i] ?? '')} plain autoFocus={i === 0 ? ring : undefined} onPress={() => onPress(keys.answer(q, i))} />
+                return <Button key={keys.answer(q, i)} label={surface === 'terminal' ? opt : lettered} hotkey={key(LETTERS[i] ?? '')} plain dimColor={dim} autoFocus={i === 0 ? ring : undefined} onPress={() => onPress(keys.answer(q, i))} />
               }
               const right = i === q.answer
               const mine = i === p
               const markOpt = right ? '✓ ' : mine ? '✗ ' : '  '
               return (
-                <Button key={keys.answer(q, i)} label={`${markOpt}${lettered}`} plain dimColor={!right && !mine} onPress={() => onPress(keys.answer(q, i))} />
+                <Button key={keys.answer(q, i)} label={`${markOpt}${lettered}`} plain dimColor={dim || (!right && !mine)} onPress={() => onPress(keys.answer(q, i))} />
               )
             })}
           </Box>
           {p !== null && (
             <Box flexDirection="column">
-              <Text color={p === q.answer ? 'green' : 'red'} bold>{p === q.answer ? 'Correct!' : 'Not quite.'}</Text>
-              <Text>{q.explanation}</Text>
+              <Text color={p === q.answer ? 'green' : 'red'} bold dimColor={dim}>{p === q.answer ? 'Correct!' : 'Not quite.'}</Text>
+              <Text dimColor={dim}>{q.explanation}</Text>
             </Box>
           )}
         </Box>
@@ -105,8 +111,8 @@ export function drawQuiz(
 
       <Box gap={2}>
         {q !== null && (p !== null
-          ? <Button key={keys.next(q)} label="Next" hotkey={key('n')} variant="primary" autoFocus={ring} onPress={() => onPress(keys.next(q))} />
-          : <Button key={keys.skip(q)} label="Skip" hotkey={key('s')} onPress={() => onPress(keys.skip(q))} />)}
+          ? <Button key={keys.next(q)} label="Next" hotkey={key('n')} variant="primary" dimColor={dim} autoFocus={ring} onPress={() => onPress(keys.next(q))} />
+          : <Button key={keys.skip(q)} label="Skip" hotkey={key('s')} dimColor={dim} onPress={() => onPress(keys.skip(q))} />)}
         <Button key={keys.close} label="Close" hotkey={key('q')} role="dismiss" dimColor onPress={() => onPress(keys.close)} />
       </Box>
     </Box>

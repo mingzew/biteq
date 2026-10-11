@@ -108,8 +108,13 @@ describe('pane', () => {
       world(on, BANKS, surface)
       await $.session.start({ cwd: '.', surface, isInteractive: true })
       const ui = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
-      expect(await find(ui, { text: /^BiteQ$/ })).toBeDefined()
-      expect(await find(ui, { text: /^ - Bite Size Coding Questions$/ })).toBeDefined()
+      if (surface === 'desktop') {
+        expect(await find(ui, { text: /^BiteQ$/ })).toBeUndefined()
+        expect(await find(ui, { text: /Bite Size Coding Questions/ })).toBeUndefined()
+      } else {
+        expect(await find(ui, { text: /^BiteQ$/ })).toBeDefined()
+        expect(await find(ui, { text: /^ - Bite Size Coding Questions$/ })).toBeDefined()
+      }
       expect(await find(ui, { text: /idle/ })).toBeDefined()
 
       await $.turn.start({ text: 'fix the bug', turnId: 't1' })
@@ -178,6 +183,47 @@ describe('presses', () => {
     expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
     expect(await find(ui, { type: 'Button', text: /^Next$/ })).toBeDefined()
     expect(await find(ui, { text: /streak \d+ · best \d+/ })).toBeDefined()
+  })
+
+  test('terminal: an unfocused pane dims the quiz; focus restores it', async ($, on) => {
+    world(on, BANKS, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    const title = () => find(ui, { type: 'Text', text: /^BiteQ$/ })
+    const banner = () => find(ui, { type: 'Text', text: /Claude is thinking/ })
+    const option = OPEN(ui, 'a')
+    expect((await title())?.props.dimColor).toBeUndefined()
+    expect((await banner())?.props.color).toBe('yellow')
+    expect((await banner())?.props.dimColor).toBeUndefined()
+
+    await ui.redraw({ ...PANE.props, isFocused: false })
+    expect((await title())?.props.dimColor).toBe(true)
+    expect((await banner())?.props.dimColor).toBe(true)
+    expect((await banner())?.props.color).toBe('yellow')
+    expect((await find(ui, { type: 'Text', text: /^Pick / }))?.props.dimColor).toBe(true)
+    expect((await find(ui, { type: 'Button', text: option }))?.props.dimColor).toBe(true)
+    expect((await find(ui, { type: 'Button', text: /^Skip$/ }))?.props.dimColor).toBe(true)
+
+    await ui.redraw({ ...PANE.props, isFocused: true })
+    expect((await title())?.props.dimColor).toBeUndefined()
+  })
+
+  test('desktop: losing focus leaves the quiz as it was', async ($, on) => {
+    world(on, BANKS, 'desktop')
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    const banner = () => find(ui, { type: 'Text', text: /Claude is thinking/ })
+    const option = OPEN(ui, 'a')
+    expect(await find(ui, { text: /^BiteQ$/ })).toBeUndefined()
+
+    await ui.redraw({ ...PANE.props, isFocused: false })
+    expect((await banner())?.props.color).toBe('yellow')
+    expect((await banner())?.props.dimColor).toBeUndefined()
+    expect((await find(ui, { type: 'Text', text: /^Pick / }))?.props.dimColor).toBeUndefined()
+    expect((await find(ui, { type: 'Button', text: option }))?.props.dimColor).toBeUndefined()
+    expect((await find(ui, { type: 'Button', text: /^Skip$/ }))?.props.dimColor).toBeUndefined()
   })
 
   test('the thinking timer counts while Claude works', async ($, on) => {
