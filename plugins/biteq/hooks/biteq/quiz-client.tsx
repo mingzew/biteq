@@ -1,5 +1,10 @@
 // Desktop surface module: must be self-contained. The desktop app loads this
 // file alone (ui_client_module), so a value import of ./draw would fail there.
+//
+// drawQuiz also draws the terminal pane (through pane.render, not this module): there Next/Skip
+// and Close are a hint bar at the bottom, pressed by hotkey (n, q) and kept out of the arrow
+// keys' focus ring (register.ts's ui.focus hook). A terminal Client would take raw keys such as
+// space, but only after a mouse click; ctrl+x tab doesn't give it the keyboard.
 // No setState/post during the draw call: three setStates with nothing between
 // unmount the instance, and a desktop webview treats that as a crash.
 import type { ClientModule, Elements } from 'claude-code'
@@ -16,6 +21,11 @@ export const keys = {
   next: (q: Question | null) => `next:${q?.id ?? ''}`,
   skip: (q: Question) => `skip:${q.id}`,
   close: 'close',
+}
+
+/** The pane keys the terminal's hint bar presses: never in the arrow keys' focus ring. */
+export function isHintKey(key: string): boolean {
+  return key === keys.close || key.startsWith('next:') || key.startsWith('skip:')
 }
 
 export type PaneView = {
@@ -35,12 +45,18 @@ type Clock = { since: number; extra: number }
 type QuizElements = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
 
 let latest: PaneView | undefined
+// Instances whose timer is running. `state` stays undefined until the first tick, so an
+// instance drawn twice before then (new props on a prompt) would start a second timer and the
+// clock would run at double speed.
+const started = new WeakSet<object>()
 
 export function drawQuiz(
   v: PaneView,
   el: QuizElements,
   surface: 'terminal' | 'desktop' | 'vscode' | 'mobile',
   onPress: (key: string) => void,
+  hints = false,   // terminal: Next/Skip and Close as a hint bar at the bottom, pressed by hotkey
+  fill?: number,   // rows to fill (a docked terminal pane's body), so the hint bar sits on the last row
 ) {
   const { Box, Text, Button } = el
   const { question: q, picked: p, stats: s } = v
@@ -56,7 +72,7 @@ export function drawQuiz(
   }[v.status]
 
   return (
-    <Box flexDirection="column" gap={1} alignItems={align}>
+    <Box flexDirection="column" gap={1} alignItems={align} flexGrow={hints ? 1 : undefined} minHeight={fill}>
       {surface !== 'desktop' && (
         <Box>
           <Text bold dimColor={dim}>{NAME}</Text>
@@ -75,7 +91,7 @@ export function drawQuiz(
               ? 'No question yet. Prompt Claude and one will appear here, or practice now.'
               : 'No questions for the selected languages. Try /biteq langs.'}
           </Text>
-          {v.bank > 0 && <Button key={keys.next(null)} label="Practice now" hotkey={key('n')} dimColor={dim} onPress={() => onPress(keys.next(null))} />}
+          {v.bank > 0 && !hints && <Button key={keys.next(null)} label="Practice now" hotkey={key('n')} dimColor={dim} onPress={() => onPress(keys.next(null))} />}
         </Box>
       ) : (
         <Box flexDirection="column" gap={1}>
@@ -109,26 +125,50 @@ export function drawQuiz(
         </Box>
       )}
 
-      <Box gap={2}>
-        {q !== null && (p !== null
-          ? <Button key={keys.next(q)} label="Next" hotkey={key('n')} variant="primary" dimColor={dim} autoFocus={ring} onPress={() => onPress(keys.next(q))} />
-          : <Button key={keys.skip(q)} label="Skip" hotkey={key('s')} dimColor={dim} onPress={() => onPress(keys.skip(q))} />)}
-        <Button key={keys.close} label="Close" hotkey={key('q')} role="dismiss" dimColor onPress={() => onPress(keys.close)} />
-      </Box>
+      {hints ? (
+        // A unix-style hint bar: `plain` hotkey buttons draw as "n: next", dim like the rest
+        // a growing column pushes the bar's one row to the pane's bottom edge
+        <Box flexDirection="column" flexGrow={1} justifyContent="flex-end">
+          <Box>
+          {q === null
+            ? v.bank > 0 && <Button key={keys.next(null)} label="practice" hotkey="n" plain dimColor={dim} onPress={() => onPress(keys.next(null))} />
+            : p !== null
+              ? <>
+                  {/* "⏎ next" is shown; n still moves on through a button clipped out of sight */}
+                  <Text dimColor>⏎ next</Text>
+                  <Box position="absolute" width={0} height={0} overflow="hidden">
+                    <Button key={keys.next(q)} label="next" hotkey="n" plain dimColor={dim} onPress={() => onPress(keys.next(q))} />
+                  </Box>
+                </>
+              : <Button key={keys.skip(q)} label="skip" hotkey="n" plain dimColor={dim} onPress={() => onPress(keys.skip(q))} />}
+          {(q !== null || v.bank > 0) && <Text dimColor> · </Text>}
+          <Button key={keys.close} label="close" hotkey="q" plain dimColor onPress={() => onPress(keys.close)} />
+          </Box>
+        </Box>
+      ) : (
+        <Box gap={2}>
+          {q !== null && (p !== null
+            ? <Button key={keys.next(q)} label="Next" hotkey={key('n')} dimColor={dim} variant="primary" autoFocus={ring} onPress={() => onPress(keys.next(q))} />
+            : <Button key={keys.skip(q)} label="Skip" hotkey={key('s')} dimColor={dim} onPress={() => onPress(keys.skip(q))} />)}
+          <Button key={keys.close} label="Close" hotkey={key('q')} role="dismiss" dimColor onPress={() => onPress(keys.close)} />
+        </Box>
+      )}
     </Box>
   )
 }
 
 const Quiz: ClientModule<PaneView, Clock> = (v, surface) => {
   latest = v
-  if (surface.state === undefined) {
+  if (!started.has(surface)) {
+    started.add(surface)
     surface.every(1000, () => {
       const now = latest
       if (!now) return
       const s = surface.state
       surface.setState({
         since: now.since,
-        extra: s && s.since === now.since ? s.extra + 1000 : 0,
+        // count on from the last tick, or from the elapsed time the plugin last drew
+        extra: (s && s.since === now.since ? s.extra : now.elapsedMs) + 1000,
       })
     })
   }

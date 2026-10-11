@@ -20,6 +20,7 @@ import type { ClaudeEvent } from './biteq/claude'
 import { COMMAND, boot, run, signal, typedArgs } from './biteq/cli'
 import { logEvent } from './biteq/debug'
 import type { Io, View } from './biteq/io'
+import { isHintKey } from './biteq/draw'
 import { closed, press, render, tick, view } from './biteq/pane'
 import { DEFAULT_STATS } from './biteq/quiz'
 
@@ -99,6 +100,11 @@ async function claudeEvent($: EngineInterface, e: ClaudeEvent): Promise<void> {
   await signal(it, parse(e))
 }
 
+/** A docked pane's body rows (the hint bar goes on the last); none inline, where it fits its content. */
+function fillRows(props: { placement: 'dock' | 'inline'; scroll: { bodyRows: number } }): number | undefined {
+  return props.placement === 'dock' && props.scroll.bodyRows > 0 ? props.scroll.bodyRows : undefined
+}
+
 export const register: Register = on => {
   // ---- boot and the /biteq command (cli)
   on('session.start', async ($, e, next) => {
@@ -165,12 +171,12 @@ export const register: Register = on => {
         clientOk = false
       }
     }
-    return render(e.surface === 'terminal' ? { ...quiz, focused: e.props.isFocused } : quiz, el, e.surface)
+    return render(e.surface === 'terminal' ? { ...quiz, focused: e.props.isFocused } : quiz, el, e.surface, fillRows(e.props))
   }).catch(async ($, e, next) => {
     clientOk = false
     if (next.called) return next(e)
     const quiz = await view(io($))
-    return render(e.surface === 'terminal' ? { ...quiz, focused: e.props.isFocused } : quiz, $.ui.resolve(e), e.surface)
+    return render(e.surface === 'terminal' ? { ...quiz, focused: e.props.isFocused } : quiz, $.ui.resolve(e), e.surface, fillRows(e.props))
   })
 
   on('ui.message', async ($, e) => {
@@ -183,6 +189,18 @@ export const register: Register = on => {
 
   on('ui.fault', async ($, e, next) => {
     if (e.element === QUIZ) clientOk = false
+    return next(e)
+  })
+
+  // Terminal hint bar (next/skip, close): pressed by hotkey only, so the arrow keys and Tab skip
+  // it and only walk the answers.
+  // A person's move names its target `element`; the plugin's own `$.ui.focus` (pane.answer moves
+  // the ring to Next) names it `key`. The desktop keeps its Next/Close buttons, so terminal only.
+  on('ui.focus', async ($, e, next) => {
+    const target = e.element ?? (e as { key?: string }).key
+    if (e.requestId === PANE && target && isHintKey(target) && (await $.session.surface()) === 'terminal') {
+      return { deny: 'hint bar: pressed by its hotkey' }
+    }
     return next(e)
   })
 

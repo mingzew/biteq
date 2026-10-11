@@ -64,6 +64,7 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
   })
   on('ui.close', () => ({ value: undefined }) as never)
   on('ui.toast', () => ({ value: undefined }))
+  on('ui.focus', () => ({}))   // beneath the plugin: the ring moves
   on('session.version', () => ({ value: { version: '2.1.x', base: '2.1.x' } }) as never)
   on('session.surface', () => ({ value: surface }) as never)
   on('classic.Notification', () => ({}) as never)
@@ -129,10 +130,118 @@ describe('pane', () => {
       await $.turn.complete(DONE)
       expect(await find(ui, { text: /Claude is done/ })).toBeDefined()
 
-      await click(ui, /^Next$/)
-      expect(await find(ui, { type: 'Button', text: /^Skip$/ })).toBeDefined()
+      // the terminal's Next/Skip are lowercase hint-bar buttons ("n: next")
+      await click(ui, ui.surface === 'terminal' ? /^next$/ : /^Next$/)
+      expect(await find(ui, { type: 'Button', text: ui.surface === 'terminal' ? /^skip$/ : /^Skip$/ })).toBeDefined()
     })
   }
+})
+
+describe('terminal hint bar', () => {
+  async function terminal($: Engine, on: On) {
+    const { opened } = world(on, BANKS, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    return { ui, opened }
+  }
+  const title = async (ui: Drawing) => (await find(ui, { text: /^Pick / }))?.text
+  const hint = async (ui: Drawing, label: string) => find(ui, { type: 'Button', text: new RegExp(`^${label}$`) })
+
+  test('next/skip and close are dim hotkey buttons (n, q) at the bottom', async ($, on) => {
+    const { ui } = await terminal($, on)
+    const skip = await hint(ui, 'skip')
+    const close = await hint(ui, 'close')
+    expect(skip?.props).toMatchObject({ hotkey: 'n', plain: true, dimColor: true })
+    expect(close?.props).toMatchObject({ hotkey: 'q', plain: true, dimColor: true })
+    expect(await hint(ui, 'Next')).toBeUndefined()
+    expect(await hint(ui, 'Close')).toBeUndefined()
+    // the bar is the pane's last row
+    const drawn = JSON.stringify(await ui.drawn())
+    expect(drawn.lastIndexOf('"close"')).toBeGreaterThan(drawn.lastIndexOf('Pick r'))
+  })
+
+  test('the arrow keys and Tab never land on the hint bar', async ($, on) => {
+    const { ui } = await terminal($, on)
+    const answerKey = await keyOf(ui, OPEN(ui, 'a'))
+    for (const label of ['skip', 'close']) {
+      const key = (await hint(ui, label))?.key ?? ''
+      const res = await $.ui.focus({ requestId: 'biteq', key } as never)
+      expect(res).toMatchObject({ deny: expect.stringContaining('hint bar') } as never)
+    }
+    const ok = await $.ui.focus({ requestId: 'biteq', key: answerKey } as never)
+    expect((ok as { deny?: string }).deny ?? '').not.toContain('hint bar')
+  })
+
+  test('n skips, then after an answer reads "next"; q closes and the pane stays closed', async ($, on) => {
+    const { ui, opened } = await terminal($, on)
+    const before = await title(ui)
+    await click(ui, /^skip$/)
+    expect(await title(ui)).not.toBe(before)
+    await click(ui, OPEN(ui, 'a'))
+    expect(await hint(ui, 'next')).toBeDefined()
+    await click(ui, /^close$/)
+    const count = opened.length
+    await $.turn.complete(DONE)
+    await $.turn.start({ text: 'again', turnId: 't2' })
+    expect(opened.length).toBe(count)   // dismissed: no reopen
+  })
+
+  test('after an answer the bar shows "⏎ next"; n still moves on but is not shown', async ($, on) => {
+    const { ui } = await terminal($, on)
+    await click(ui, OPEN(ui, 'a'))
+    expect(await find(ui, { type: 'Text', text: /^⏎ next$/ })).toBeDefined()
+    // n's button is drawn (so the hotkey works) inside a zero-size, clipped box
+    const drawn = JSON.stringify(await ui.drawn())
+    expect(drawn).toMatch(/"position":"absolute","width":0,"height":0,"overflow":"hidden"\},"children":\[\{"type":"Button","props":\{"key":"next:[^"]+","label":"next","hotkey":"n"/)
+    const before = await title(ui)
+    await click(ui, /^next$/)   // what the n hotkey presses
+    expect(await title(ui)).not.toBe(before)
+  })
+
+  test('Enter on an answered option moves on (terminal)', async ($, on) => {
+    const { ui } = await terminal($, on)
+    const before = await title(ui)
+    const a = await keyOf(ui, OPEN(ui, 'a'))
+    await ui.press({ key: a })   // answer
+    await ui.press({ key: a })   // Enter again on the same, now answered, option
+    expect(await title(ui)).not.toBe(before)
+    expect(await find(ui, { text: /^n: skip|skip$/ })).toBeDefined()
+  })
+
+  test('desktop: pressing an answered option does not move on', async ($, on) => {
+    world(on, BANKS, 'desktop')
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    const before = await title(ui)
+    const a = await keyOf(ui, OPTION('a', 'desktop'))
+    await ui.press({ key: a, ...inQuiz(ui) })
+    await ui.press({ key: a, ...inQuiz(ui) })
+    expect(await title(ui)).toBe(before)
+  })
+
+  test('a docked pane fills its rows, so the bar sits on the last one', async ($, on) => {
+    const { ui } = await terminal($, on)
+    expect(JSON.stringify(await ui.drawn())).toContain(`"minHeight":${PANE.props.scroll.bodyRows}`)
+  })
+
+  test('an inline pane fits its content (filling it would push the prompt down)', async ($, on) => {
+    world(on, BANKS, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE, props: { ...PANE.props, placement: 'inline' } })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    expect(JSON.stringify(await ui.drawn())).not.toContain('"minHeight"')
+  })
+
+  test('desktop keeps its Next/Skip/Close buttons', async ($, on) => {
+    world(on, BANKS, 'desktop')
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    expect(await find(ui, { type: 'Button', text: /^Skip$/ })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /^Close$/ })).toBeDefined()
+  })
 })
 
 describe('presses', () => {
