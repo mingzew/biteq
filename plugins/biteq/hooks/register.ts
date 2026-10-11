@@ -148,27 +148,29 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const v = await view(io($))
+    const quiz = await view(io($))
     const el = $.ui.resolve(e)
     const hasClient = 'Client' in el
     // Desktop: a Client keeps the quiz on the drawing thread. Plugin redraws
-    // remount the pane webview, and the next click only focuses it.
+    // remount the pane webview, and the next click only focuses it. Its props
+    // are the quiz alone, so a focus change does not redraw that webview.
     if (e.surface === 'desktop' && clientOk && hasClient) {
       try {
         const { Box, Client } = el
         const tree = h(Box, { flexDirection: 'column', flexGrow: 1 },
-          h(Client, { key: QUIZ, module: './biteq/quiz-client.tsx', props: v, flexGrow: 1 }))
+          h(Client, { key: QUIZ, module: './biteq/quiz-client.tsx', props: quiz, flexGrow: 1 }))
         if (tree) return tree as RenderElement
         clientOk = false
       } catch {
         clientOk = false
       }
     }
-    return render(v, el, e.surface)
+    return render(e.surface === 'terminal' ? { ...quiz, focused: e.props.isFocused } : quiz, el, e.surface)
   }).catch(async ($, e, next) => {
     clientOk = false
     if (next.called) return next(e)
-    return render(await view(io($)), $.ui.resolve(e), e.surface)
+    const quiz = await view(io($))
+    return render(e.surface === 'terminal' ? { ...quiz, focused: e.props.isFocused } : quiz, $.ui.resolve(e), e.surface)
   })
 
   on('ui.message', async ($, e) => {
