@@ -1,7 +1,9 @@
 // Desktop surface module: must be self-contained. The desktop app loads this
 // file alone (ui_client_module), so a value import of ./draw would fail there.
+// Type imports are fine (they're erased): what differs per client arrives as a ClientTraits
+// value (client.ts), from pane.render or, here, in the module's props.
 //
-// drawQuiz also draws the terminal pane (through pane.render, not this module): there Next/Skip
+// drawQuiz also draws the CLI pane (through pane.render, not this module): there Next/Skip
 // and Close are a hint bar at the bottom, pressed by hotkey (n, q) and kept out of the arrow
 // keys' focus ring (register.ts's ui.focus hook). A terminal Client would take raw keys such as
 // space, but only after a mouse click; ctrl+x tab doesn't give it the keyboard.
@@ -10,6 +12,7 @@
 import type { ClientModule, Elements } from 'claude-code'
 
 import type { Question, Stats, Status } from '../../types'
+import type { ClientTraits } from './client'
 
 const AGENT = 'Claude'
 const NAME = 'BiteQ'
@@ -67,10 +70,13 @@ export type PaneView = {
   question: Question | null
   picked: number | null
   stats: Stats
-  // Terminal only. Desktop is not given this: restyling that pane on focus
-  // unmounts the button that holds the keyboard.
+  // Only for clients that dim when unfocused (the CLI). Desktop is not given this: restyling that
+  // pane on focus unmounts the button that holds the keyboard.
   focused?: boolean
 }
+
+/** What this module draws from: the quiz, plus the traits of the client it draws for. */
+type QuizProps = PaneView & { traits: ClientTraits }
 
 type Clock = { since: number; extra: number }
 type QuizElements = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
@@ -84,17 +90,34 @@ const started = new WeakSet<object>()
 export function drawQuiz(
   v: PaneView,
   el: QuizElements,
-  surface: 'terminal' | 'desktop' | 'vscode' | 'mobile',
+  traits: ClientTraits,   // what differs for the client drawing it (client.ts)
   onPress: (key: string) => void,
-  hints = false,   // terminal: Next/Skip and Close as a hint bar at the bottom, pressed by hotkey
-  fill?: number,   // rows to fill (a docked terminal pane's body), so the hint bar sits on the last row
+  fill?: number,   // rows to fill (a docked pane's body), so the hint bar sits on the last row
 ) {
   const { Box, Text, Button } = el
   const { question: q, picked: p, stats: s } = v
-  const key = (k: string) => (surface === 'terminal' ? k : undefined)
-  const ring = surface === 'desktop' ? true as const : undefined
-  const align = surface === 'desktop' ? 'flex-start' as const : undefined
-  const dim = surface === 'terminal' && v.focused === false ? true as const : undefined
+  const hints = traits.hintBar
+  const key = (k: string) => (traits.hotkeys ? k : undefined)
+  const ring = traits.autoFocus ? true as const : undefined
+  const align = traits.alignStart ? 'flex-start' as const : undefined
+  const dim = traits.dimsWhenUnfocused && v.focused === false ? true as const : undefined
+  // An action button (Next, Skip, Close, Serve next question, ...). Where a bare Button draws as
+  // plain text it gets a rounded frame that lights in the accent colour on hover; the main
+  // action's frame is accent-coloured already. The CLI keeps its own look.
+  const action = (k: string, label: string, opts: { primary?: boolean; hotkey?: string; dismiss?: boolean; focus?: true } = {}) => {
+    const button = (
+      <Button key={k} label={label} hotkey={key(opts.hotkey ?? '')} dimColor={opts.dismiss ? true : dim}
+        variant={opts.primary ? 'primary' : undefined} role={opts.dismiss ? 'dismiss' : undefined}
+        autoFocus={opts.focus} onPress={() => onPress(k)} />
+    )
+    if (!traits.framedActions) return button
+    return (
+      <Box key={`frame:${k}`} borderStyle="round" borderColor={opts.primary ? 'claude' : 'subtle'} paddingX={1}
+        hover={{ borderColor: 'claude' }}>
+        {button}
+      </Box>
+    )
+  }
   const banner = {
     thinking: { text: `● ${AGENT} is thinking  ${fmtSecs(v.elapsedMs)}`, color: 'yellow' },
     waiting: { text: `! ${AGENT} needs your input`, color: 'magenta' },
@@ -104,7 +127,7 @@ export function drawQuiz(
 
   return (
     <Box flexDirection="column" gap={1} alignItems={align} flexGrow={hints ? 1 : undefined} minHeight={fill}>
-      {surface !== 'desktop' && (
+      {traits.showsTitle && (
         <Box>
           <Text bold dimColor={dim}>{NAME}</Text>
           <Text dimColor> - {TAGLINE}</Text>
@@ -120,8 +143,8 @@ export function drawQuiz(
           <Text>{RESTING}</Text>
           {!hints && (
             <Box gap={2}>
-              <Button key={keys.serve} label="Serve next question" variant="primary" autoFocus={ring} onPress={() => onPress(keys.serve)} />
-              <Button key={keys.always} label="Always serve, even when Claude is done" onPress={() => onPress(keys.always)} />
+              {action(keys.serve, 'Serve next question', { primary: true, focus: ring })}
+              {action(keys.always, 'Always serve, even when Claude is done')}
             </Box>
           )}
         </Box>
@@ -132,7 +155,7 @@ export function drawQuiz(
               ? 'No question yet. Prompt Claude and one will appear here, or practice now.'
               : 'No questions for the selected languages. Try /biteq langs.'}
           </Text>
-          {v.bank > 0 && !hints && <Button key={keys.next(null)} label="Practice now" hotkey={key('n')} dimColor={dim} onPress={() => onPress(keys.next(null))} />}
+          {v.bank > 0 && !hints && action(keys.next(null), 'Practice now', { hotkey: 'n' })}
         </Box>
       ) : (
         <Box flexDirection="column" gap={1}>
@@ -144,10 +167,10 @@ export function drawQuiz(
           {q.code ? <Text color="cyan" dimColor={dim}>{q.code}</Text> : null}
           <Box flexDirection="column" alignItems={align}>
             {q.options.map((opt, i) => {
-              const lettered = `${LETTERS[i]}${surface === 'desktop' ? ':' : ')'} ${opt}`
+              const lettered = `${LETTERS[i]}${traits.optionSeparator} ${opt}`
               if (p === null) {
-                // Terminal `plain` already paints the hotkey as "a: "; don't also prefix "a)".
-                return <Button key={keys.answer(q, i)} label={surface === 'terminal' ? opt : lettered} hotkey={key(LETTERS[i] ?? '')} plain dimColor={dim} autoFocus={i === 0 ? ring : undefined} onPress={() => onPress(keys.answer(q, i))} />
+                // A `plain` Button with a hotkey already paints it as "a: "; don't also prefix "a)".
+                return <Button key={keys.answer(q, i)} label={traits.hotkeys ? opt : lettered} hotkey={key(LETTERS[i] ?? '')} plain dimColor={dim} autoFocus={i === 0 ? ring : undefined} onPress={() => onPress(keys.answer(q, i))} />
               }
               const right = i === q.answer
               const mine = i === p
@@ -175,16 +198,16 @@ export function drawQuiz(
       ) : (
         <Box gap={2}>
           {q !== null && (p !== null
-            ? <Button key={keys.next(q)} label="Next" hotkey={key('n')} dimColor={dim} variant="primary" autoFocus={ring} onPress={() => onPress(keys.next(q))} />
-            : <Button key={keys.skip(q)} label="Skip" hotkey={key('s')} dimColor={dim} onPress={() => onPress(keys.skip(q))} />)}
-          <Button key={keys.close} label="Close" hotkey={key('q')} role="dismiss" dimColor onPress={() => onPress(keys.close)} />
+            ? action(keys.next(q), 'Next', { primary: true, hotkey: 'n', focus: ring })
+            : action(keys.skip(q), 'Skip', { hotkey: 's' }))}
+          {action(keys.close, 'Close', { hotkey: 'q', dismiss: true })}
         </Box>
       )}
     </Box>
   )
 }
 
-const Quiz: ClientModule<PaneView, Clock> = (v, surface) => {
+const Quiz: ClientModule<QuizProps, Clock> = (v, surface) => {
   latest = v
   if (!started.has(surface)) {
     started.add(surface)
@@ -201,7 +224,7 @@ const Quiz: ClientModule<PaneView, Clock> = (v, surface) => {
   }
   const extra = surface.state?.since === v.since ? surface.state.extra : 0
   const elapsedMs = v.status === 'thinking' ? Math.max(v.elapsedMs, extra) : v.elapsedMs
-  return drawQuiz({ ...v, elapsedMs }, surface.elements, 'desktop', key => surface.post({ key }))
+  return drawQuiz({ ...v, elapsedMs }, surface.elements, v.traits, key => surface.post({ key }))
 }
 
 export default Quiz

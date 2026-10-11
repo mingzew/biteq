@@ -61,7 +61,7 @@ async function cmdPane(io: Io, lang: string | undefined, focus: boolean): Promis
   await bootPane(io, questions)
   const placed = await openPane(io, focus)
   if (!placed) return 'biteq: the pane will show up once this window is wide enough.'
-  const how = (await io.surface()) === 'terminal'
+  const how = (await io.traits()).hotkeys
     ? 'ctrl+x tab gives the pane the keyboard: a-d answer, n next, s skip, q close.'
     : 'click an answer, then Next.'
   const first = langs.filter(l => available[l]).map(l => `${l} ${available[l]}`).join(', ')
@@ -108,7 +108,7 @@ async function cmdDoctor(io: Io): Promise<string> {
   return [
     `claude code   ${await io.version()}`,
     `plugin        ${io.pluginRoot}`,
-    `surface       ${(await io.surface()) ?? 'none (headless)'}`,
+    `client        ${(await io.client()) ?? 'unsupported or none (headless)'}`,
     `store         ${storeOk}`,
     `status        ${await io.get('status')}`,
     `debug log     ${(await debugEnabled(io)) ? await eventsLog(io) : 'off (set BITEQ_DEBUG=1 to record events)'}`,
