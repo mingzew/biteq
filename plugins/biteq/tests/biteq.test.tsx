@@ -216,6 +216,19 @@ describe('when Claude is done', () => {
     expect(await run($, 'pause maybe')).toBe('usage: /biteq pause on|off')
   })
 
+  test('desktop: the actions are framed so they read as buttons', async ($, on) => {
+    const ui = await done($, on, 'desktop')
+    const drawn = JSON.stringify(await ui.drawn({ in: 'quiz' } as never))
+    // Skip and Close under a question, then Serve / Always serve while resting: each in a rounded frame
+    const framed = (key: string) => new RegExp(`"key":"frame:${key}","borderStyle":"round"`)
+    expect(drawn).toMatch(framed('skip:[^"]+'))
+    expect(drawn).toMatch(framed('close'))
+    await click(ui, SKIP(ui))
+    const resting = JSON.stringify(await ui.drawn({ in: 'quiz' } as never))
+    expect(resting).toMatch(new RegExp(`"key":"frame:serve","borderStyle":"round","borderColor":"claude"`))
+    expect(resting).toMatch(new RegExp(`"key":"frame:always","borderStyle":"round","borderColor":"subtle"`))
+  })
+
   test('reopening the pane with /biteq keeps resting', async ($, on) => {
     const ui = await done($, on, 'desktop')
     await click(ui, SKIP(ui))

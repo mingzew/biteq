@@ -95,6 +95,23 @@ export function drawQuiz(
   const ring = surface === 'desktop' ? true as const : undefined
   const align = surface === 'desktop' ? 'flex-start' as const : undefined
   const dim = surface === 'terminal' && v.focused === false ? true as const : undefined
+  // An action button (Next, Skip, Close, Serve next question, ...). Off the terminal a bare Button
+  // draws as plain text, so it gets a rounded frame that lights in the accent colour on hover;
+  // the main action's frame is accent-coloured already. The terminal keeps its own look.
+  const action = (k: string, label: string, opts: { primary?: boolean; hotkey?: string; dismiss?: boolean; focus?: true } = {}) => {
+    const button = (
+      <Button key={k} label={label} hotkey={key(opts.hotkey ?? '')} dimColor={opts.dismiss ? true : dim}
+        variant={opts.primary ? 'primary' : undefined} role={opts.dismiss ? 'dismiss' : undefined}
+        autoFocus={opts.focus} onPress={() => onPress(k)} />
+    )
+    if (surface === 'terminal') return button
+    return (
+      <Box key={`frame:${k}`} borderStyle="round" borderColor={opts.primary ? 'claude' : 'subtle'} paddingX={1}
+        hover={{ borderColor: 'claude' }}>
+        {button}
+      </Box>
+    )
+  }
   const banner = {
     thinking: { text: `● ${AGENT} is thinking  ${fmtSecs(v.elapsedMs)}`, color: 'yellow' },
     waiting: { text: `! ${AGENT} needs your input`, color: 'magenta' },
@@ -120,8 +137,8 @@ export function drawQuiz(
           <Text>{RESTING}</Text>
           {!hints && (
             <Box gap={2}>
-              <Button key={keys.serve} label="Serve next question" variant="primary" autoFocus={ring} onPress={() => onPress(keys.serve)} />
-              <Button key={keys.always} label="Always serve, even when Claude is done" onPress={() => onPress(keys.always)} />
+              {action(keys.serve, 'Serve next question', { primary: true, focus: ring })}
+              {action(keys.always, 'Always serve, even when Claude is done')}
             </Box>
           )}
         </Box>
@@ -132,7 +149,7 @@ export function drawQuiz(
               ? 'No question yet. Prompt Claude and one will appear here, or practice now.'
               : 'No questions for the selected languages. Try /biteq langs.'}
           </Text>
-          {v.bank > 0 && !hints && <Button key={keys.next(null)} label="Practice now" hotkey={key('n')} dimColor={dim} onPress={() => onPress(keys.next(null))} />}
+          {v.bank > 0 && !hints && action(keys.next(null), 'Practice now', { hotkey: 'n' })}
         </Box>
       ) : (
         <Box flexDirection="column" gap={1}>
@@ -175,9 +192,9 @@ export function drawQuiz(
       ) : (
         <Box gap={2}>
           {q !== null && (p !== null
-            ? <Button key={keys.next(q)} label="Next" hotkey={key('n')} dimColor={dim} variant="primary" autoFocus={ring} onPress={() => onPress(keys.next(q))} />
-            : <Button key={keys.skip(q)} label="Skip" hotkey={key('s')} dimColor={dim} onPress={() => onPress(keys.skip(q))} />)}
-          <Button key={keys.close} label="Close" hotkey={key('q')} role="dismiss" dimColor onPress={() => onPress(keys.close)} />
+            ? action(keys.next(q), 'Next', { primary: true, hotkey: 'n', focus: ring })
+            : action(keys.skip(q), 'Skip', { hotkey: 's' }))}
+          {action(keys.close, 'Close', { hotkey: 'q', dismiss: true })}
         </Box>
       )}
     </Box>
