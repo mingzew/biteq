@@ -16,6 +16,7 @@ import type { ClientTraits } from './client'
 
 const AGENT = 'Claude'
 const NAME = 'BiteQ'
+const TITLE_COLOR = '#F58700'
 const TAGLINE = 'Bite Size Coding Questions'
 const LETTERS = 'abcd'
 const RESTING = `${AGENT} is done, go review. The next time ${AGENT} cooks, we will serve the question.`
@@ -124,16 +125,16 @@ export function drawQuiz(
     done: { text: `✓ ${AGENT} is done, go review`, color: 'green' },
     idle: { text: '○ idle', color: 'gray' },
   }[v.status]
-  // The high number uses BiteQ's own style (bold, dim only while unfocused). At 0–0 the line stays dim.
+  // The high side uses the BiteQ colour, bold, and dims only while the pane is unfocused. At 0–0 the line stays dim.
   // A correct answer raises best to match streak, so the two are equal while the user is on their record.
   const mark = (n: number, other: number) =>
-    n > 0 && n >= other ? { bold: true as const, dimColor: dim } : { dimColor: true as const }
+    n > 0 && n >= other ? { bold: true as const, color: TITLE_COLOR, dimColor: dim } : { dimColor: true as const }
 
   return (
     <Box flexDirection="column" gap={1} alignItems={align} flexGrow={hints ? 1 : undefined} minHeight={fill}>
       {traits.showsTitle && (
         <Box>
-          <Text bold dimColor={dim}>{NAME}</Text>
+          <Text bold color={TITLE_COLOR} dimColor={dim}>{NAME}</Text>
           <Text dimColor> - {TAGLINE}</Text>
         </Box>
       )}
