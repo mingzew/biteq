@@ -124,6 +124,10 @@ export function drawQuiz(
     done: { text: `✓ ${AGENT} is done, go review`, color: 'green' },
     idle: { text: '○ idle', color: 'gray' },
   }[v.status]
+  // The high number uses BiteQ's own style (bold, dim only while unfocused). At 0–0 the line stays dim.
+  // A correct answer raises best to match streak, so the two are equal while the user is on their record.
+  const mark = (n: number, other: number) =>
+    n > 0 && n >= other ? { bold: true as const, dimColor: dim } : { dimColor: true as const }
 
   return (
     <Box flexDirection="column" gap={1} alignItems={align} flexGrow={hints ? 1 : undefined} minHeight={fill}>
@@ -133,9 +137,10 @@ export function drawQuiz(
           <Text dimColor> - {TAGLINE}</Text>
         </Box>
       )}
-      <Box justifyContent="space-between">
-        <Text color={banner.color} bold dimColor={dim}>{banner.text}</Text>
-        <Text dimColor>  streak {s.streak} · best {s.best_streak}</Text>
+      <Box justifyContent="flex-start">
+        <Text {...mark(s.streak, s.best_streak)}>streak {s.streak}</Text>
+        <Text dimColor> · </Text>
+        <Text {...mark(s.best_streak, s.streak)}>best {s.best_streak}</Text>
       </Box>
 
       {q === null && v.resting ? (
@@ -159,11 +164,10 @@ export function drawQuiz(
         </Box>
       ) : (
         <Box flexDirection="column" gap={1}>
-          <Box>
+          <Box flexWrap="wrap">
             <Text color="blue" dimColor={dim}>[{q.lang}] </Text>
-            <Text bold dimColor={dim}>{q.hard ? (s.streak > 0 ? '[BYE STREAK] ' : '[OOF] ') : ''}{q.title ?? ''}</Text>
+            <Text dimColor={dim}>{q.prompt}</Text>
           </Box>
-          <Text dimColor={dim}>{q.prompt}</Text>
           {q.code ? <Text color="cyan" dimColor={dim}>{q.code}</Text> : null}
           <Box flexDirection="column" alignItems={align}>
             {q.options.map((opt, i) => {
