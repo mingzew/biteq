@@ -436,6 +436,26 @@ describe('presses', () => {
     expect((await find(ui, { type: 'Button', text: /^Skip$/ }))?.props.dimColor).toBeUndefined()
   })
 
+  test('terminal: BiteQ and a matched streak are #F58700 and bold; 0–0 stays dim', async ($, on) => {
+    world(on, BANKS, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    const title = () => find(ui, { type: 'Text', text: /^BiteQ$/ })
+    const side = (text: RegExp) => find(ui, { type: 'Text', text })
+    expect((await title())?.props.color).toBe('#F58700')
+    expect((await title())?.props.bold).toBe(true)
+    expect((await side(/^streak 0$/))?.props.color).toBeUndefined()
+    expect((await side(/^streak 0$/))?.props.dimColor).toBe(true)
+    expect((await side(/^best 0$/))?.props.dimColor).toBe(true)
+
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'a'))
+    expect((await side(/^streak 1$/))?.props.color).toBe('#F58700')
+    expect((await side(/^streak 1$/))?.props.bold).toBe(true)
+    expect((await side(/^best 1$/))?.props.color).toBe('#F58700')
+    expect((await side(/^best 1$/))?.props.bold).toBe(true)
+  })
+
   test('the thinking timer counts while Claude works', async ($, on) => {
     const { clock } = world(on, BANKS, 'terminal')
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
