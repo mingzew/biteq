@@ -6,25 +6,28 @@
     "code": "i = 1\nwhile i < n:\n    for j in range(n):\n        work()\n    i *= 2",
     "options": ["O(n)", "O(n log n)", "O(n²)", "O(log n)"],
     "answer": 1,
-    "explanation": "The outer loop runs log₂ n times because i doubles each time. Each pass does n work, giving O(n log n)."
+    "explanation": "The outer loop runs log₂ n times because i doubles each time. Each pass does n work, giving O(n log n).",
+    "practicality": 5
   },
   {
     "id": "cs-in-list",
     "title": "Hidden quadratic",
-    "prompt": "allowed is a list with n items and items has n items. What is the complexity?",
-    "code": "result = [x for x in items if x in allowed]",
+    "prompt": "`signups` and `blocked` are both lists of n email addresses. What is the time complexity?",
+    "code": "flagged = [email for email in signups if email in blocked]",
     "options": ["O(n)", "O(n log n)", "O(n²)", "O(1)"],
     "answer": 2,
-    "explanation": "x in list is a linear scan, and it runs n times. Converting allowed to a set first makes the whole thing O(n)."
+    "explanation": "email in blocked scans the blocked list from the start, so each check is O(n). It runs once per signup, so the whole line is O(n) * O(n) = O(n²).\n\nflagged = [email for email in signups   # n iterations\n           if email in blocked]         # list lookup: O(n) each\n\nblocked = set(blocked)                  # O(n) once; set lookup is O(1)\nflagged = [email for email in signups if email in blocked]   # now O(n) overall",
+    "practicality": 9
   },
   {
     "id": "cs-lru",
     "title": "Data structures",
-    "prompt": "Which combination gives an LRU cache O(1) get and put?",
-    "code": "",
+    "prompt": "An LRU (least recently used) cache must do get and put in O(1), and evict the least recently used key when full. Which pair of data structures makes that possible?",
+    "code": "cache = LRUCache(capacity=2)\ncache.put(\"a\", 1)\ncache.put(\"b\", 2)\ncache.get(\"a\")      # \"a\" becomes the most recently used\ncache.put(\"c\", 3)   # full: evicts \"b\", the least recently used",
     "options": ["Hash map + min-heap", "Hash map + doubly linked list", "Sorted array + binary search", "Two stacks"],
     "answer": 1,
-    "explanation": "The map finds a node in O(1). The doubly linked list moves that node to the front, or evicts the tail, in O(1)."
+    "explanation": "A hash map from key to node finds any entry in O(1). A doubly linked list keeps the entries in order of use: on get or put, unlink the node and move it to the front in O(1); when full, drop the node at the back in O(1).\n\nget(key):  node = map[key]; move node to front; return node.value\nput(key):  add/move node to front; if over capacity, remove the back node and its map entry\n\nA min-heap would make every access O(log n), and a sorted array needs O(n) shifts to reorder.",
+    "practicality": 6
   },
   {
     "id": "cs-race-counter",
@@ -33,7 +36,8 @@
     "code": "counter += 1",
     "options": ["Always 200,000", "At most 200,000, possibly less", "Possibly more than 200,000", "Always 100,000"],
     "answer": 1,
-    "explanation": "+= is a read-modify-write, so two threads can read the same value and one update gets lost. Even in CPython with the GIL this isn't atomic. Use a lock or an atomic."
+    "explanation": "counter += 1 is three steps, not one: read counter, add 1, write it back. Two threads can interleave those steps, and then one increment is lost:\n\nThread A: read counter      # 5\nThread B: read counter      # 5 (A hasn't written yet)\nThread A: write 5 + 1       # counter = 6\nThread B: write 5 + 1       # counter = 6, A's increment is lost\n\nEach lost update makes the total smaller, never larger, so the result is at most 200,000 and usually less. This happens even in CPython with the GIL, because a thread can be switched between the read and the write. Guard it with a lock (with lock: counter += 1) or use an atomic counter.",
+    "practicality": 7
   },
   {
     "id": "cs-http-idempotent",
@@ -42,6 +46,725 @@
     "code": "",
     "options": ["GET", "PUT", "DELETE", "POST"],
     "answer": 3,
-    "explanation": "Sending the same PUT or DELETE again leaves the server in the same state. POST makes no such promise, which is why retrying POST safely needs idempotency keys."
+    "explanation": "Idempotent means sending the same request once or many times leaves the server in the same state. That makes it safe to retry after a timeout.\n\nPUT /users/7 {name: \"Ada\"}   # twice: user 7 is still named Ada\nDELETE /users/7               # twice: user 7 is still gone (the second may return 404)\nPOST /orders {item: 42}       # twice: two orders\n\nGET is idempotent too (it shouldn't change anything). POST makes no promise, which is why APIs that let clients retry a POST ask for an idempotency key.",
+    "practicality": 7
+  },
+  {
+    "id": "cs-fcc-001",
+    "prompt": "In terms of Big-O complexity, what is the time complexity for lookups in a binary tree index?",
+    "options": ["O(log n)", "O(n)", "O(n log n)", "O(1)"],
+    "answer": 0,
+    "explanation": "This is because a binary tree index allows for efficient searching by halving the search space at each step.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #1"
+  },
+  {
+    "id": "cs-fcc-003",
+    "prompt": "What is the base case in a recursive function?",
+    "options": ["The initial input value to the recursive function", "The condition under which the recursive function starts calling itself", "The condition under which the recursive function stops calling itself", "The maximum number of times the recursive function can call itself"],
+    "answer": 2,
+    "explanation": "In recursion, the base case is the condition under which the recursive function stops calling itself to prevent an infinite loop. It is crucial for ensuring that the recursion terminates and the program does not run indefinitely.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #3"
+  },
+  {
+    "id": "cs-fcc-005",
+    "prompt": "What is the average time complexity of an element insertion in a hash table?",
+    "options": ["O(1)", "O(logn)", "O(n)", "O(n^2)"],
+    "answer": 0,
+    "explanation": "The average time complexity of an element insertion in a hash table is O(1). Unlike arrays, hash tables use a hashing function to generate a unique key or index for each element, ensuring constant time for element insertion.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #5"
+  },
+  {
+    "id": "cs-fcc-007",
+    "prompt": "Which sorting algorithm has an average time complexity of O(nlogn)?",
+    "options": ["Insertion sort", "Selection sort", "Bubble sort", "Quick sort"],
+    "answer": 3,
+    "explanation": "Quick sort has an average time complexity of O(nlogn), making it efficient for sorting large datasets.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #7"
+  },
+  {
+    "id": "cs-fcc-008",
+    "prompt": "Which data structure does Dijkstra's shortest-path algorithm use to pick the next closest vertex?",
+    "options": ["Priority Queue", "Hash set", "String", "Stack"],
+    "answer": 0,
+    "explanation": "Dijkstra's algorithm, which is used to find the shortest path in a graph, typically employs a priority queue to efficiently select the next vertex with the smallest distance.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #8"
+  },
+  {
+    "id": "cs-fcc-009",
+    "prompt": "What is the time complexity of inserting an element into a linked list at the beginning?",
+    "options": ["O(1)", "O(log n)", "O(n)", "O(n2)"],
+    "answer": 0,
+    "explanation": "The time complexity involved to insert a node at the head of the linked list as well as to append at the tail is O(1).",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #9"
+  },
+  {
+    "id": "cs-fcc-013",
+    "prompt": "Which of the following algorithms is used to find the shortest path between two points in a connected weighted graph?",
+    "options": ["Kruskal Algorithm", "Dijkstra's Algorithm", "Prims Algorithms", "Floyd's Tortoise-Hare Algorithm"],
+    "answer": 1,
+    "explanation": "Dijkstra's algorithm finds shortest paths from a source in a graph with non-negative weights. Kruskal's and Prim's build a minimum spanning tree, which is not the same as shortest paths. Floyd's tortoise and hare finds cycles in a linked list.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #13"
+  },
+  {
+    "id": "cs-fcc-016",
+    "prompt": "A stable sort keeps items that compare equal in their original order. Which of these sorting algorithms is stable?",
+    "options": ["Merge Sort", "Selection sort", "Heap Sort", "Quick Sort"],
+    "answer": 0,
+    "explanation": "Merge sort is stable: when two items compare equal, the merge step takes the one from the left half first, so they keep their original order.\n\nSort [(\"Bo\", 30), (\"Al\", 25), (\"Cy\", 30)] by age:\nstable:     Al 25, Bo 30, Cy 30   # Bo stays before Cy\nnot stable: Al 25, Cy 30, Bo 30   # allowed for quick, heap or selection sort\n\nStability matters when you sort by one key after another, e.g. by name and then by age. Python's sorted() and JavaScript's Array.prototype.sort are stable.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #16"
+  },
+  {
+    "id": "cs-fcc-017",
+    "prompt": "Which of the following sorting algorithms has the same best-case and worst-case time complexities?",
+    "options": ["Insertion Sort", "Bubble Sort", "Quick Sort", "Merge Sort"],
+    "answer": 3,
+    "explanation": "Merge sort has a time complexity of O(nlogn) in all cases - best, average and worst.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #17"
+  },
+  {
+    "id": "cs-fcc-021",
+    "prompt": "Which term is used for removing elements from the front of the queue?",
+    "options": ["Peek.", "Dequeue.", "isFull.", "Enqueue."],
+    "answer": 1,
+    "explanation": "Dequeue is the term for removing elements from the front of the queue.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #21"
+  },
+  {
+    "id": "cs-fcc-026",
+    "prompt": "The Traveling Salesman Problem: given cities and the distance between each pair, find the shortest tour, a route that visits every city exactly once and returns to the start. Which is true of finding that shortest tour?",
+    "options": ["It is an NP-Hard problem.", "It is an NP-Complete problem.", "It is a P problem.", "It is an NP problem."],
+    "answer": 0,
+    "explanation": "NP-hard means at least as hard as every problem in NP: no known algorithm solves it in polynomial time, and finding one would solve all of NP. Checking every tour of n cities takes about n! steps.\n\nFinding the shortest tour is NP-hard. It isn't NP-complete, because you can't check quickly that a given tour is the shortest. The yes/no version (\"is there a tour shorter than k?\") is in NP and is NP-complete.\n\nIn practice, route planners use heuristics and approximations that find a good tour, not a provably shortest one.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #26"
+  },
+  {
+    "id": "cs-fcc-027",
+    "prompt": "Which of the following algorithms can be used for the shortest path problem for an unweighted graph?",
+    "options": ["Linear Search", "Breadth First Search", "Ternary Search", "Binary Search"],
+    "answer": 1,
+    "explanation": "Breadth First Search can be used for the shortest path problem for an unweighted graph.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #27"
+  },
+  {
+    "id": "cs-fcc-028",
+    "prompt": "What is SOLID?",
+    "options": ["A database consistency model, like ACID", "Five principles of object-oriented design", "Four principles of functional programming", "A naming convention for classes and files"],
+    "answer": 1,
+    "explanation": "SOLID is an acronym for five object-oriented design principles that keep code easy to change:\n\nS  Single responsibility: a class has one reason to change.\nO  Open/closed: open for extension, closed for modification; add behaviour without editing working code.\nL  Liskov substitution: a subclass can stand in anywhere its parent is used.\nI  Interface segregation: several small interfaces beat one large one clients only partly use.\nD  Dependency inversion: depend on abstractions (an interface), not concrete classes.\n\nACID (atomicity, consistency, isolation, durability) is the database one.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #28"
+  },
+  {
+    "id": "cs-fcc-034",
+    "prompt": "What is the term for when data is being pushed onto a full stack?",
+    "options": ["Empty collection", "Stack Overflow", "Garbage Collection", "Underflow"],
+    "answer": 1,
+    "explanation": "Stack Overflow happens when there is an attempt to push data on an already full stack.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #34"
+  },
+  {
+    "id": "cs-fcc-036",
+    "prompt": "Which operation is used to add an item to the back of the queue?",
+    "options": ["isFull", "Peek", "Dequeue", "Enqueue"],
+    "answer": 3,
+    "explanation": "Enqueue is the operation used to add an item to the back of the queue.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #36"
+  },
+  {
+    "id": "cs-fcc-039",
+    "prompt": "Which of the following is the most correct statement?",
+    "options": ["All undirected graphs have topological ordering", "A cyclic graph also has topological ordering.", "Topological sort is just an another name for BFS", "Topological sort is possible only for a Directed Acyclic Graph"],
+    "answer": 3,
+    "explanation": "A topological ordering lists a directed graph's nodes so every edge points forward: if A -> B, A comes before B. Build steps and course prerequisites are the classic uses.\n\nshirt -> tie -> jacket, shirt -> belt   # one valid order: shirt, belt, tie, jacket\nA -> B -> C -> A                       # a cycle: whichever comes first, some edge points backwards\n\nSo an ordering exists exactly when the graph is directed and has no cycles (a DAG). Undirected edges have no direction to respect. It's computed with DFS or Kahn's algorithm, not BFS order alone.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #39",
+    "comment": "improve the topological ordering in explanation."
+  },
+  {
+    "id": "cs-fcc-041",
+    "prompt": "Which of the following is true for Big O?",
+    "options": ["2*logn = O(n)", "n! = O(n)", "2^n = O(n)", "n^2 = O(n)"],
+    "answer": 0,
+    "explanation": "Big O notation describes the upper bound. The function n upper bounds the function 2*logn. However, it is not the tightest upper bound, and in general we always specify the tightest upper bound to quantify an algorithm.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #41"
+  },
+  {
+    "id": "cs-fcc-042",
+    "prompt": "Between merge sort and quicksort, which guarantees O(n log n) even in the worst case?",
+    "options": ["Both", "Merge sort", "Neither", "Quicksort"],
+    "answer": 1,
+    "explanation": "Merge sort is O(n log n) in every case. Quicksort is O(n log n) on average and usually faster in practice, but O(n^2) in the worst case (consistently bad pivots).",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #42"
+  },
+  {
+    "id": "cs-fcc-043",
+    "prompt": "What data structure does a binary search tree degenerate to if it isn't balanced properly?",
+    "options": ["Linked List", "Set", "Queue", "Dictionary"],
+    "answer": 0,
+    "explanation": "A binary search tree degenerates to a linked list if it is not balanced properly. It is balanced if the height of the left and right subtrees of any node differ by at most one.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #43"
+  },
+  {
+    "id": "cs-fcc-044",
+    "prompt": "Which algorithm utilizes a pivot value to sort?",
+    "options": ["Quick Sort", "Insertion Sort", "Merge Sort", "Bubble Sort"],
+    "answer": 0,
+    "explanation": "Quick sort works by selecting one element (called “the pivot”) and finding the index where the pivot should end up in the sorted array.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #44"
+  },
+  {
+    "id": "cs-fcc-047",
+    "prompt": "Which one of these data structures follows the FIFO(First In First Out) method?",
+    "options": ["Queues", "Arrays", "Stacks", "Trees"],
+    "answer": 0,
+    "explanation": "A queue is defined as a linear data structure that is open at both ends and the operations are performed in First In First Out (FIFO) order.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #47"
+  },
+  {
+    "id": "cs-fcc-050",
+    "prompt": "What is Big O Notation?",
+    "options": ["A way to notate changes from the server.", "A way to notate the different elements in an array.", "A way to notate the different types in a file system.", "A way to measure the performance and efficiency of an algorithm."],
+    "answer": 3,
+    "explanation": "Big O notation is a way to measure the performance of an algorithm.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #50"
+  },
+  {
+    "id": "cs-fcc-051",
+    "prompt": "What is the worst case time complexity for accessing an element in a BST(Binary Search Tree)?",
+    "options": ["O(logn)", "O(n*n)", "O(n*logn)", "O(n)"],
+    "answer": 3,
+    "explanation": "The worst case time complexity would be O(n) because we might need to visit all of the nodes.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #51"
+  },
+  {
+    "id": "cs-fcc-056",
+    "prompt": "Which of the following is a Divide and Conquer algorithm?",
+    "options": ["Heap Sort", "Selection Sort", "Bubble Sort", "Merge Sort"],
+    "answer": 3,
+    "explanation": "Merge Sort recursively splits the array into smaller arrays, sorts those arrays and merges them into one sorted array.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #56"
+  },
+  {
+    "id": "cs-fcc-057",
+    "prompt": "Which is true of a fixed-size array, like a plain array in C or Java?",
+    "options": ["It can only be one-dimensional", "Insertion and deletion of elements has a time complexity of O(1)", "Size of an array can not be changed once initialized", "A single array can contain data of different data types"],
+    "answer": 2,
+    "explanation": "A fixed-size array is one contiguous block of memory sized when it is created. To grow it you allocate a bigger array and copy everything across (which is what dynamic arrays like ArrayList or Python lists do for you).\n\nWhy not O(1) insert and delete? Reading arr[i] is O(1), but inserting or deleting in the middle means shifting every later element one slot:\n\n[a, b, c, d, _]  insert x at index 1\n[a, x, b, c, d]  b, c and d each moved right: O(n)\n\nOnly changing the last element is O(1). Fast insert and delete in the middle (given the node) is what a linked list offers.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #57"
+  },
+  {
+    "id": "cs-fcc-068",
+    "prompt": "How many bits make up a byte?",
+    "options": ["16 bits", "8 bits", "12 bits", "32 bits"],
+    "answer": 1,
+    "explanation": "There are 8 bits in a byte",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #68"
+  },
+  {
+    "id": "cs-fcc-073",
+    "prompt": "Select the type of loop that repeats a sequence of instructions an unknown number of times while a condition is True.",
+    "options": ["While loop", "Infinite loop", "For loop", "Circular loop"],
+    "answer": 0,
+    "explanation": "While loops repeat a block of code an unknown number of times while a condition is True and they stop when the condition is False.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #73"
+  },
+  {
+    "id": "cs-fcc-093",
+    "prompt": "What does DOM stand for?",
+    "options": ["Documentary Object Mobile", "Direct Object Model", "Document Objective Model", "Document Object Model"],
+    "answer": 3,
+    "explanation": "DOM stands for Document Object Model: the browser's live tree of objects built from a page's HTML, one node per element, attribute and piece of text.\n\nIt matters because it is the API between JavaScript and the page. Everything that changes a page after it loads goes through it:\n\ndocument.querySelector('#total').textContent = '$42'   # change text\nbutton.addEventListener('click', save)                # react to the user\n\nFrameworks like React update the DOM for you, and its cost is why they batch and minimise DOM changes.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #93"
+  },
+  {
+    "id": "cs-fcc-095",
+    "prompt": "What color would rgb(255,255,255) give?",
+    "options": ["White", "Blue", "Red", "Black"],
+    "answer": 0,
+    "explanation": "The maximum value of 255 represents that the full amount of all colors and their full intensity is on display.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #95"
+  },
+  {
+    "id": "cs-fcc-100",
+    "prompt": "The process by which a function calls itself directly or indirectly is known as...",
+    "options": ["Decomposition", "Recursion", "Looping", "Encapsulation"],
+    "answer": 1,
+    "explanation": "Recursion is the process by which a function calls itself directly or indirectly during its execution. This works for problems that can be solved by solving smaller instances of the same problem.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #100"
+  },
+  {
+    "id": "cs-fcc-113",
+    "prompt": "What type of loop is used to repeat a block of code a known number of times?",
+    "options": ["Triangular loop", "While loop", "Infinite loop", "For loop"],
+    "answer": 3,
+    "explanation": "For loops repeat a block of code a known number of times, so we can use them when we know in advance how many iterations we need to run to complete a task.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #113"
+  },
+  {
+    "id": "cs-fcc-114",
+    "prompt": "Which one is NOT a standard HTTP response status code?",
+    "options": ["201", "504", "702", "403"],
+    "answer": 2,
+    "explanation": "HTTP response status codes are divided in five groups between 100-599.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #114"
+  },
+  {
+    "id": "cs-fcc-118",
+    "prompt": "A value passed to a function (or method) when calling the function is known as...",
+    "options": ["Return value", "Parameter", "Argument", "Class"],
+    "answer": 2,
+    "explanation": "An argument is a value passed to a function (or method) when the function or method is called.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #118"
+  },
+  {
+    "id": "cs-fcc-120",
+    "prompt": "What is Lossless compression?",
+    "options": ["a reverse algorithm", "a sorting algorithm", "an algorithm that converts wav files to mp3 files", "a compression algorithm that allows the original data to be perfectly reconstructed from the compressed data."],
+    "answer": 3,
+    "explanation": "Lossless compression is a compression algorithm that allows the original data to be perfectly reconstructed from the compressed data.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #120"
+  },
+  {
+    "id": "cs-fcc-122",
+    "prompt": "Which data structure is used for the implementation of a recursive algorithm?",
+    "options": ["Linked list", "Stack", "Queue", "Tree"],
+    "answer": 1,
+    "explanation": "In recursion, the nested function that is called later returns the value first, which is in the same nature as that of a stack (Last In First Out).",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #122"
+  },
+  {
+    "id": "cs-fcc-124",
+    "prompt": "Which one is NOT a real logic gate?",
+    "options": ["NAND", "XAND", "AND", "XNOR"],
+    "answer": 1,
+    "explanation": "The seven logic gates in boolean algebra are AND, OR, XOR, NOT, NAND, NOR, and XNOR.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #124"
+  },
+  {
+    "id": "cs-fcc-127",
+    "prompt": "What are the four pillars of Object-oriented programming?",
+    "options": ["Objects, Methods, Properties and Fields.", "Abstraction, Encapsulation, Inheritance, and Polymorphism.", "Declaration, Modeling, Evaluation and Implementation.", "Immutability, Purity, Transparency and State."],
+    "answer": 1,
+    "explanation": "Abstraction, encapsulation, inheritance, and polymorphism are software design principles to help you write clean object-oriented code.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #127"
+  },
+  {
+    "id": "cs-fcc-132",
+    "prompt": "What is the best case time complexity for the merge sort algorithm?",
+    "options": ["O(n^2)", "O(log(n))", "O(n*log(n))", "O(2^n)"],
+    "answer": 2,
+    "explanation": "Merge sort is a divide and conquer algorithm that has a best case time complexity of O(n*log n)",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #132"
+  },
+  {
+    "id": "cs-fcc-133",
+    "prompt": "What is the advantage of using linked lists over arrays?",
+    "options": ["Random accessing elements is easier in linked lists than arrays", "Linked lists helps in faster insertions and deletions than arrays", "Memory usage in linked lists is less than arrays", "Reverse traversal is possible in singly linked lists"],
+    "answer": 1,
+    "explanation": "Linked lists have quicker insertions and deletions than arrays because there is no need to shift all other elements with lists.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #133"
+  },
+  {
+    "id": "cs-fcc-134",
+    "prompt": "Which sorting algorithm is best when data is nearly sorted?",
+    "options": ["Heap Sort", "Merge Sort", "Selection Sort", "Insertion Sort"],
+    "answer": 3,
+    "explanation": "Insertion sort does about n comparisons when each element is already near its place, so it runs in close to O(n) on nearly sorted data. Selection sort is O(n^2) regardless.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #134"
+  },
+  {
+    "id": "cs-fcc-136",
+    "prompt": "Which algorithm finds the shortest path between nodes in a graph?",
+    "options": ["Rabin-Karp Algorithm", "Binary Search Algorithm", "Dijkstra's Algorithm", "Quicksort Algorithm"],
+    "answer": 2,
+    "explanation": "Dijkstra's Algorithm can find the shortest path from a node (called the 'source node') to all other nodes in the graph, producing a shortest-path tree.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #136"
+  },
+  {
+    "id": "cs-fcc-137",
+    "prompt": "In Banker's algorithm, which part of the computer represents the 'Banker'?",
+    "options": ["RAM", "Register", "CPU", "Operating System"],
+    "answer": 3,
+    "explanation": "Banker's algorithm is a deadlock-avoidance algorithm: the operating system, like a banker, grants a process's request for resources only if every process can still finish afterwards.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #137"
+  },
+  {
+    "id": "cs-fcc-138",
+    "prompt": "What is Big Theta notation?",
+    "options": ["A tight bound: growth bounded above and below by the same function", "Only the lower bound of an algorithm's performance", "Only the upper bound of an algorithm's performance", "The average case for an algorithm's performance"],
+    "answer": 0,
+    "explanation": "Θ(f(n)) means the running time is both O(f(n)) and Ω(f(n)): it grows at the same rate as f(n), up to constant factors.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #138"
+  },
+  {
+    "id": "cs-recursion-two-calls",
+    "prompt": "How many calls does f(n) make in total, in Big-O?",
+    "code": "def f(n):\n    if n <= 1:\n        return 1\n    return f(n - 1) + f(n - 1)",
+    "options": ["O(n)", "O(n²)", "O(2^n)", "O(n log n)"],
+    "answer": 2,
+    "explanation": "Each call makes two more calls until n reaches 1, so the calls form a binary tree n levels deep: 1 + 2 + 4 + ... + 2^(n-1) = 2^n - 1 calls.\n\nf(3)                      # 1 call\n├── f(2)                  # 2 calls\n│   ├── f(1)  f(1)        # 4 calls\n└── f(2) ...\n\nIn general a recursion that branches b times and goes d deep makes about b^d calls. Computing f(n - 1) once and doubling it (return 2 * f(n - 1)) makes it O(n); naive Fibonacci has the same blow-up.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #139"
+  },
+  {
+    "id": "cs-fcc-140",
+    "prompt": "What is the worst case time complexity for binary and linear search?",
+    "options": ["binary search is O(n) and linear search is O(logn)", "binary search is O(n) and linear search is O(n)", "binary search is O(logn) and linear search is O(logn)", "binary search is O(logn) and linear search is O(n)"],
+    "answer": 3,
+    "explanation": "The worst case time complexity for linear search O(n) because we have to iterate through n elements. The worst case time complexity for binary search is O(logn) because it is a divide and conquer algorithm.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #140"
+  },
+  {
+    "id": "cs-fcc-143",
+    "prompt": "How does the Bubble Sort algorithm work?",
+    "options": ["This algorithm traverses a list, compares adjacent values, and swaps them if they are not in the correct order.", "This algorithm divides the list into different buckets and sorts these buckets individually.", "This algorithm breaks down an unsorted list into two halves.", "This algorithm selects the current smallest element, and swaps it into place."],
+    "answer": 0,
+    "explanation": "The Bubble Sort algorithm traverses a list, compares adjacent values, and swaps them if they are not in the correct order.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #143"
+  },
+  {
+    "id": "cs-fcc-144",
+    "prompt": "What is the underlining process behind the Merge Sort algorithm?",
+    "options": ["backtracking", "graph traversal", "Recursion", "String matching and parsing"],
+    "answer": 2,
+    "explanation": "The Merge Sort algorithm works by recursively breaking down an unsorted list into two halves until it reaches a point where it can no longer be broken down.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #144"
+  },
+  {
+    "id": "cs-fcc-146",
+    "prompt": "What is the worst case time complexity for Bubble sort?",
+    "options": ["O(n^2)", "O(nlogn)", "O(n)", "O(logn)"],
+    "answer": 0,
+    "explanation": "Bubble sort has a worst case time complexity of O(n^2), which is slow compared to other sorting algorithms.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #146"
+  },
+  {
+    "id": "cs-fcc-148",
+    "prompt": "Which of the following time complexities is considered to be the fastest?",
+    "options": ["O(n)", "O(logn)", "O(nlogn)", "O(1)"],
+    "answer": 3,
+    "explanation": "O(1) is independent of input size so it remains in constant time regardless of the size of the input.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #148"
+  },
+  {
+    "id": "cs-fcc-149",
+    "prompt": "What is the worst case time complexity for Selection sort?",
+    "options": ["O(n*logn)", "O(n^3)", "O(n*n)", "O(n+k)"],
+    "answer": 2,
+    "explanation": "Selection sort has a worst case time complexity of O(n*n), due to the two nested loops.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #149"
+  },
+  {
+    "id": "cs-fcc-150",
+    "prompt": "Which of the following is a dynamically typed language?",
+    "options": ["Python", "C++", "Java", "C"],
+    "answer": 0,
+    "explanation": "Statically-typed languages like C, C++, and Java, perform type checking at compile time whereas dynamically-typed languages like Python and JavaScript  perform type checking at runtime.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #150"
+  },
+  {
+    "id": "cs-fizzbuzz-order",
+    "prompt": "What does this print on the 15th iteration (i = 15)?\n",
+    "code": "for i in range(1, 16):\n    if i % 3 == 0:\n        print(\"Fizz\")\n    elif i % 5 == 0:\n        print(\"Buzz\")\n    elif i % 15 == 0:\n        print(\"FizzBuzz\")\n    else:\n        print(i)",
+    "options": ["FizzBuzz", "Fizz", "Buzz", "15"],
+    "answer": 1,
+    "explanation": "An if/elif chain stops at the first branch that matches. 15 % 3 == 0 is checked first, so it prints Fizz and the FizzBuzz branch is never reached, for 15 or for any multiple of 15.\n\nif i % 3 == 0:       # 15 matches here: prints Fizz, chain ends\nelif i % 15 == 0:    # unreachable for every multiple of 15\n\nPut the most specific condition first: check i % 15 (or i % 3 == 0 and i % 5 == 0) before i % 3 and i % 5.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #151"
+  },
+  {
+    "id": "cs-fcc-152",
+    "prompt": "What's the Big O notation of an algorithm that increases the running time linearly with the input size?",
+    "options": ["O(n)", "O(log n)", "O(1)", "O(n^2)"],
+    "answer": 0,
+    "explanation": "The letter n represents the input size, and the big O represents the increase of the running time.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #152"
+  },
+  {
+    "id": "cs-fcc-154",
+    "prompt": "Which of the following examples shows the correct syntax for kebab case?",
+    "options": ["number*of*donuts", "number_of_donuts", "number-of-donuts", "numberOfDonuts"],
+    "answer": 2,
+    "explanation": "Kebab case writes words in lowercase, joined by hyphens: number-of-donuts.\n\nIt's used where names live in text rather than in code, because a hyphen is a minus sign in most languages: URLs and slugs (/blog/my-first-post), CSS classes (.nav-bar), HTML data attributes (data-user-id), command-line flags (--dry-run), npm package names and file names.\n\nnumber_of_donuts is snake case (Python, Ruby, SQL); numberOfDonuts is camel case (JavaScript, Java).",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #154"
+  },
+  {
+    "id": "cs-fcc-155",
+    "prompt": "Which of the following type of trees is also known as a 'large key' tree?",
+    "options": ["Ternary Tree", "Adelson-Velsky and Landis Tree (AVL Tree/Height balanced tree)", "Binary Search Tree", "B-Tree"],
+    "answer": 3,
+    "explanation": "A B-tree is a self-balancing search tree whose nodes each hold many sorted keys (often hundreds) and have many children, rather than one key and two children.\n\nSearching reads one node, finds where the key falls among its sorted keys, and follows that child down. Because each node branches so widely, the tree stays only a few levels deep, even for millions of keys.\n\nThat fits disks and SSDs, which read in blocks: one node is one block, so a lookup costs a handful of reads. That's why databases (indexes in PostgreSQL and MySQL) and file systems use B-trees.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #155"
+  },
+  {
+    "id": "cs-fcc-156",
+    "prompt": "Which data structure is used to implement an auto-complete feature?",
+    "options": ["Trie", "Stack", "Linked List", "Tree"],
+    "answer": 0,
+    "explanation": "A Trie is a tree based data structure where each node stores a character performing efficient search operations on them",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #156"
+  },
+  {
+    "id": "cs-fcc-157",
+    "prompt": "Which of the following tree traversal algorithms has an O(1) space complexity?",
+    "options": ["Dijkstra's algorithm", "Morris algorithm", "Bellman-Ford algorithm", "Floyd Warshall algorithm"],
+    "answer": 1,
+    "explanation": "Morris traversal is a tree traversal algorithm that does not employ the use of recursion or a stack. In this traversal, links are created as successors and nodes are printed using these links.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #157"
+  },
+  {
+    "id": "cs-fcc-159",
+    "prompt": "In the RotateLeft or RotateRight function in an AVL tree, when do we update the root of the tree?",
+    "options": ["when the node becomes a leaf of the tree", "when the node becomes nullptr", "when the Parent of the node becomes nullptr", "when the height balance is restored"],
+    "answer": 2,
+    "explanation": "When the parent of the node becomes nullptr, this means the  node is the root of the tree.  So when we make a right or left rotation, we need to update the root of the tree with the appropriate child of the node.",
+    "practicality": 1,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #159"
+  },
+  {
+    "id": "cs-fcc-161",
+    "prompt": "What is a data structure that consists of nodes, where each node has data and a reference to the next node in the sequence?",
+    "options": ["Vector", "Linked List", "Heap", "Stack"],
+    "answer": 1,
+    "explanation": "A Linked List contains nodes and each node has data and a reference to next node so that it can have access to the data of its next node and we can get the information of all nodes by iterating the node until it reaches nullptr.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #161"
+  },
+  {
+    "id": "cs-fcc-162",
+    "prompt": "What is the basis for a Red-Black tree?",
+    "options": ["AVL Tree", "Linked List", "Red-Black Graphs", "2-3-4 tree"],
+    "answer": 3,
+    "explanation": "A red-black tree is a self-balancing binary search tree. Each node is coloured red or black, and two rules keep it balanced: a red node never has a red child, and every path from the root down to a leaf passes the same number of black nodes. So the longest path is at most twice the shortest, and the height stays O(log n).\n\nAfter an insert or delete breaks a rule, the tree recolours nodes and rotates a few of them to restore it.\n\nIt is a binary encoding of a 2-3-4 tree: a black node together with its red children forms one 2-3-4 node holding up to 3 keys. Java's TreeMap and C++'s std::map are red-black trees.",
+    "practicality": 1,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #162"
+  },
+  {
+    "id": "cs-fcc-163",
+    "prompt": "What are the space and time complexities for Red-Black Trees where n are the number of entries?",
+    "options": ["O(nlogn), O(1)", "O(n), O(logn)", "O(logn), O(logn)", "O(n), O(n^2)"],
+    "answer": 1,
+    "explanation": "A red-black tree is a self-balancing binary search tree: every node is red or black, a red node has no red child, and every root-to-leaf path has the same number of black nodes. Those rules keep its height within about 2·log n.\n\nSpace: one node per entry, so O(n).\nTime: search walks one root-to-leaf path, O(log n). Insert and delete also walk one path and then fix the colours with at most a few rotations, so they're O(log n) too.\n\nAn unbalanced binary search tree can degrade to a linked list and O(n) per operation; the colour rules are what prevent that.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #163"
+  },
+  {
+    "id": "cs-fcc-164",
+    "prompt": "Which of the following algorithms is used in Identifying a circular linked list?",
+    "options": ["Dijkstra's Algorithm", "Floyd's Tortoise-Hare Algorithm", "Greedy Algorithms", "Linear Search Algorithm"],
+    "answer": 1,
+    "explanation": "Floyd's Tortoise-Hare Algorithm is for finding a circular Linked list. The Hare is a pointer which jumps 2 nodes while the Tortoise moves one node at a time. In case they both meet, we get a circular linked list. If any of them becomes nullptr, then there is no Circular Linked list.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #164"
+  },
+  {
+    "id": "cs-fcc-166",
+    "prompt": "In the context of machine learning, what is the bias-variance trade-off?",
+    "options": ["The trade-off between precision and recall in classification.", "A technique to reduce overfitting in neural networks.", "The balance between underfitting (high bias) and overfitting (high variance) in a model.", "The relationship between accuracy and complexity in algorithms."],
+    "answer": 2,
+    "explanation": "A model underfits when it's too simple to capture the pattern: it does badly even on its training data (high bias). It overfits when it memorises the training data, noise included: it scores well there but badly on new data (high variance).\n\nAnalogy: studying for an exam. Underfitting is skimming the chapter titles; you fail the practice test and the real one. Overfitting is memorising the practice test's answers; you ace it, then fail the real exam with different questions.\n\nMaking a model more complex lowers bias but raises variance, so you look for the point where error on held-out data (a validation set) is lowest. It's why you never judge a model by its training score alone.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #166"
+  },
+  {
+    "id": "cs-fcc-168",
+    "prompt": "What is the purpose of dynamic programming in algorithm design?",
+    "options": ["To optimize code for parallel processing.", "To balance load in distributed systems.", "To solve problems by breaking them into smaller subproblems and storing their solutions to avoid redundant calculations.", "To reduce the time complexity of algorithms through loop unrolling."],
+    "answer": 2,
+    "explanation": "Dynamic programming is a technique used to solve problems by breaking them into smaller subproblems and storing their solutions, reducing redundant calculations and improving efficiency.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #168"
+  },
+  {
+    "id": "cs-fcc-170",
+    "prompt": "What is the use of a priority queue?",
+    "options": ["A priority queue manages elements based on priority, ensuring higher priority items are processed first.", "It's a fixed-size queue.", "It's a queue that organizes elements by their value.", "It only accepts elements of the same type."],
+    "answer": 0,
+    "explanation": "A priority queue is essential in scenarios where certain tasks need to be handled in order of importance or urgency.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #170"
+  },
+  {
+    "id": "cs-fcc-172",
+    "prompt": "What is a hash table in computer science?",
+    "options": ["A hash table is primarily used for sorting data.", "A hash table is limited to a fixed size and cannot grow dynamically.", "A hash table is a data structure that only stores keys, not values.", "A hash table stores key-value pairs, using a hash function to enable fast data retrieval."],
+    "answer": 3,
+    "explanation": "Hash tables are widely used in computer science for implementing associative arrays, databases, and various applications that require fast data access.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #172"
+  },
+  {
+    "id": "cs-fcc-175",
+    "prompt": "What is a key characteristic of a complete binary tree?",
+    "options": ["All nodes have exactly two children", "Every level is full except possibly the last, which fills from the left", "The last level may have gaps between nodes", "It has the maximum number of nodes for its height"],
+    "answer": 1,
+    "explanation": "A complete binary tree fills level by level, left to right, which is why a heap can be stored in a plain array. A tree with the maximum number of nodes for its height is a perfect binary tree.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #175"
+  },
+  {
+    "id": "cs-fcc-177",
+    "prompt": "Which data structure allows for efficient retrieval of data based on a key?",
+    "options": ["Hash Table", "Linked List", "Queue", "Binary Tree"],
+    "answer": 0,
+    "explanation": "A hash table allows for efficient data retrieval based on a key through the use of a hash function.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #177"
+  },
+  {
+    "id": "cs-fcc-179",
+    "prompt": "What is load balancing?",
+    "options": ["Removing excess load from a server", "An Internet Protocol", "Distributing network traffic across multiple servers", "Allocating more resources to a single server"],
+    "answer": 2,
+    "explanation": "Load balancing is a technique used in computing and networking to distribute incoming network traffic or workload across multiple servers, devices, or resources. The primary goal of load balancing is to optimize resource utilization, maximize throughput, minimize response time, and ensure high availability of services.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #179"
+  },
+  {
+    "id": "cs-fcc-181",
+    "prompt": "Which data structure uses the LIFO (Last In, First Out) principle?",
+    "options": ["Stack", "Hash Table", "Linked List", "Queue"],
+    "answer": 0,
+    "explanation": "A stack is a data structure that follows the Last In, First Out (LIFO) principle, meaning the last element added to the stack will be the first one to be removed.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #181"
+  },
+  {
+    "id": "cs-fcc-182",
+    "prompt": "In object-oriented programming, what is encapsulation?",
+    "options": ["The ability to define multiple methods with the same name", "The concept of wrapping data and methods that operate on the data within a single unit or class", "The ability of a function to call itself", "The concept of using symbols to represent operations and data"],
+    "answer": 1,
+    "explanation": "Encapsulation is an object-oriented programming principle that bundles the data (attributes) and methods (functions) that operate on the data into a single unit or class, and restricts direct access to some of the object's components.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #182"
+  },
+  {
+    "id": "cs-fcc-183",
+    "prompt": "What is polymorphism in the context of object-oriented programming?",
+    "options": ["The ability of different objects to respond uniquely to the same method call", "The process of defining a new class based on an existing class", "The concept of hiding the internal state of an object", "The ability to copy an object's state into a new object"],
+    "answer": 0,
+    "explanation": "Polymorphism is an object-oriented programming principle that allows objects of different classes to be treated as objects of a common super class. It enables a single method to behave differently based on the object that it is acting upon.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #183"
+  },
+  {
+    "id": "cs-fcc-184",
+    "prompt": "What does a compiler do?",
+    "options": ["Manages memory allocation", "Debugs code", "Translates high-level code to machine code", "Optimizes performance"],
+    "answer": 2,
+    "explanation": "A compiler is a utility program that transforms your code into executable machine code files.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #184"
+  },
+  {
+    "id": "cs-http-401-vs-403",
+    "title": "401 vs 403",
+    "prompt": "A request carries a valid, unexpired token for user 42. User 42 is not an admin. What should the API return?",
+    "code": "DELETE /admin/users/7\nAuthorization: Bearer <valid token for user 42>",
+    "options": ["401 Unauthorized", "403 Forbidden", "400 Bad Request", "405 Method Not Allowed"],
+    "answer": 1,
+    "explanation": "401 means \"I don't know who you are\": credentials are missing, invalid or expired, so logging in (again) could fix it. 403 means \"I know who you are, and you can't do this\": retrying with the same identity won't help.\n\nNo Authorization header       # 401 (send a WWW-Authenticate header with it)\nExpired or tampered token     # 401: the client should refresh or log in again\nValid token, not an admin     # 403: authenticated, but not allowed\n\nClients act on the difference: a 401 often triggers a token refresh or a redirect to login, which loops forever if you send it for a permission problem. Some APIs return 404 instead of 403 to hide that a resource exists at all.",
+    "practicality": 9
+  },
+  {
+    "id": "cs-cors-preflight",
+    "title": "CORS preflight",
+    "prompt": "A page on https://app.example.com runs this. The console says the request was blocked by CORS policy because the preflight response has no Access-Control-Allow-Origin header. The same POST works from curl. What happened?",
+    "code": "fetch(\"https://api.example.com/orders\", {\n  method: \"POST\",\n  headers: { \"Content-Type\": \"application/json\" },\n  body: JSON.stringify(order),\n})",
+    "options": ["The API rejected the JSON body; curl skips that validation", "The browser sent the POST, the API created the order, and the browser then hid the response", "The browser first sent an OPTIONS preflight; the API's reply didn't allow app.example.com, so the browser never sent the POST", "app.example.com must add Access-Control-Allow-Origin to its own pages' responses"],
+    "answer": 2,
+    "explanation": "CORS is enforced by the browser, not the server, which is why curl works. A cross-origin request that isn't \"simple\" (here, Content-Type: application/json) gets a preflight: the browser asks the API with OPTIONS first, and only sends the real request if the answer allows it.\n\nOPTIONS /orders                                  # sent by the browser automatically\nOrigin: https://app.example.com\nAccess-Control-Request-Headers: content-type\n\n# the API must answer with:\nAccess-Control-Allow-Origin: https://app.example.com\nAccess-Control-Allow-Methods: POST\nAccess-Control-Allow-Headers: Content-Type\n\nThe fix belongs on the API (api.example.com). The \"sent, then hidden\" option does happen, but only for simple requests that skip the preflight, such as a form-encoded POST: the server acts on it and the page just can't read the reply.",
+    "practicality": 8
+  },
+  {
+    "id": "cs-cache-no-cache",
+    "title": "Cache-Control: no-cache",
+    "prompt": "An API returns account balances with this header. What may a browser or CDN do with the response?",
+    "code": "Cache-Control: no-cache",
+    "options": ["Store it, but check with the server that it's still current before every reuse", "Never store it anywhere", "Store it in the browser only, never in a shared cache like a CDN", "Reuse it without asking until the browser is restarted"],
+    "answer": 0,
+    "explanation": "no-cache doesn't mean \"don't cache\". It means a cache may keep the response but must revalidate it with the server (for example with If-None-Match and the ETag) before using it again. If nothing changed, the server answers 304 Not Modified and the stored copy is used.\n\nCache-Control: no-cache      # store, but revalidate every time\nCache-Control: no-store      # don't store at all: use this for sensitive data\nCache-Control: private       # browser may store it; shared caches (CDNs, proxies) may not\nCache-Control: max-age=60    # reuse for 60 seconds without asking\n\nFor balances you'd usually want private, no-store, or no-cache plus private, depending on whether a stale copy on disk is acceptable.",
+    "practicality": 7
+  },
+  {
+    "id": "cs-http-502-vs-504",
+    "title": "502 vs 504",
+    "prompt": "nginx proxies to your app. The report endpoint takes about 75 seconds to respond, and nginx gives up waiting on the app after 60 seconds. What status do users get?",
+    "code": "location /reports/ {\n    proxy_pass http://app:8000;\n    proxy_read_timeout 60s;\n}",
+    "options": ["500 Internal Server Error", "502 Bad Gateway", "503 Service Unavailable", "504 Gateway Timeout"],
+    "answer": 3,
+    "explanation": "A 5xx from a proxy or load balancer says which side failed. 504 means the gateway (nginx) reached the app but the app didn't answer in time; the app may well finish the report afterwards, and nobody receives it.\n\n504 Gateway Timeout    # upstream too slow: raise the timeout, or make the work async (return 202 and poll)\n502 Bad Gateway        # upstream down, refused the connection, or sent a broken response (crashed, wrong port)\n503 Service Unavailable # overloaded or in maintenance, often sent on purpose with Retry-After\n500 Internal Server Error # the app itself threw an error\n\nWhen debugging, 502 and 504 point at the connection between proxy and app; 500 points into the app's own logs.",
+    "practicality": 7
+  },
+  {
+    "id": "cs-http2-tcp-head-of-line",
+    "title": "HTTP/2 under packet loss",
+    "prompt": "A reverse proxy swaps its pool of HTTP/1.1 upstream connections for HTTP/2 multiplexing. On a congested network with heavy packet loss, what is the most likely result?",
+    "options": ["Faster: independent streams keep a lost packet from affecting the other streams", "Unchanged: both versions use the same flow control, which ignores congestion", "Slower: all streams share one TCP connection, so one lost packet stalls them all", "Slower: multiplexing adds payload overhead to every request and exhausts the CPU on retries"],
+    "answer": 2,
+    "explanation": "Multiplexing means sending many requests at once over one connection, each as its own numbered stream, with their frames interleaved. It fixes HTTP/1.1's problem of one request at a time per connection, but all those streams share one TCP connection, and TCP delivers bytes in order. One lost packet holds back every stream until it is retransmitted.\n\nHTTP/1.1 pool of 6 connections, 1 request each:\n  packet lost on conn 3\n    # only the request on conn 3 waits\n  conns 1, 2, 4, 5, 6\n    # keep flowing\n\nHTTP/2, 1 connection multiplexing 6 streams:\n  frames: s1 s2 s3 s1 s4 s5\n    # streams interleaved on one connection\n  packet lost\n    # TCP holds back every later byte\n  streams 1-6\n    # all stall until the retransmit arrives\n\nHPACK header compression makes HTTP/2 lighter per request, not heavier.",
+    "practicality": 5
+  },
+  {
+    "id": "cs-cache-stampede-hot-key",
+    "title": "Hot key expires",
+    "prompt": "During a flash sale, millions of requests hit one product page cached in Redis. The product's cache entry hits its TTL and is evicted, and database CPU spikes until the platform times out. What happened, and what fixes it?",
+    "options": ["Cache penetration: add a Bloom filter in front of Redis to reject IDs that do not exist", "Cache stampede: lock per product ID so one request rebuilds the cache, the rest wait", "Cache avalanche: add random jitter to the TTL so keys do not all expire together", "Replication lag: add PostgreSQL read replicas to spread the read load"],
+    "answer": 1,
+    "explanation": "A cache stampede is when a heavily requested key's TTL (time to live) runs out and many requests miss at once. Every one of them queries the database to rebuild the same entry, and that pile-up is the CPU spike. A lock scoped to that key lets one request rebuild it while the rest wait and read from the cache again.\n\nWithout a lock:\n  GET product:99 -> nil\n    # TTL ran out, the key is gone\n  10,000 requests miss\n    # each one queries PostgreSQL for product 99\n\nWith a lock on product 99:\n  request 1: takes lock:product:99\n    # queries PostgreSQL, then SETs product:99\n  requests 2..n: lock is taken\n    # sleep ~50ms, then GET product:99 again (now a hit)\n  requests for other products\n    # use other lock keys, so they are not held up\n\nSimilar names, different problems:\n  avalanche\n    # many keys expire together; jittered TTLs fix that,\n    # but one hot key still stampedes\n  penetration\n    # keys that exist nowhere, cache or database; a Bloom filter\n    # fixes that, but product 99 does exist\n\nRead replicas spread the load but do not stop thousands of identical queries; the lock does.",
+    "practicality": 6
   }
 ]

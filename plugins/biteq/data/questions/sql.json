@@ -6,7 +6,8 @@
     "code": "SELECT u.id, o.id\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id\nWHERE o.status = 'paid';",
     "options": ["Yes, with o.id = NULL", "No", "Only if status is nullable", "Yes, once per order"],
     "answer": 1,
-    "explanation": "For unmatched rows o.status is NULL, and NULL = 'paid' is not true, so WHERE removes them and the query behaves like an INNER JOIN. Put the condition in the ON clause instead."
+    "explanation": "For unmatched rows o.status is NULL, and NULL = 'paid' is not true, so WHERE removes them and the query behaves like an INNER JOIN. Put the condition in the ON clause instead.",
+    "practicality": 10
   },
   {
     "id": "sql-count-null",
@@ -15,7 +16,8 @@
     "code": "SELECT COUNT(*), COUNT(v) FROM t;",
     "options": ["3, 3", "3, 2", "2, 2", "3, NULL"],
     "answer": 1,
-    "explanation": "COUNT(*) counts rows. COUNT(col) counts only the non-NULL values in that column."
+    "explanation": "COUNT(*) counts rows. COUNT(col) counts only the non-NULL values in that column.",
+    "practicality": 8
   },
   {
     "id": "sql-not-in-null",
@@ -24,6 +26,7 @@
     "code": "SELECT id FROM users\nWHERE id NOT IN (SELECT user_id FROM banned);",
     "options": ["2", "1", "0", "3"],
     "answer": 2,
-    "explanation": "x NOT IN (2, NULL) means x <> 2 AND x <> NULL. Comparing with NULL gives unknown, so no row passes. Use NOT EXISTS."
+    "explanation": "x NOT IN (2, NULL) means x <> 2 AND x <> NULL. Comparing with NULL gives unknown, so no row passes. Use NOT EXISTS.",
+    "practicality": 8
   }
 ]
