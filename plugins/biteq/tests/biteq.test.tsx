@@ -595,3 +595,34 @@ describe('/biteq commands', () => {
     expect(out).toContain('ERROR wrong-id: answer out of range')
   })
 })
+
+describe('telemetry', () => {
+  const run = async ($: Engine, args: string) =>
+    String(((await $.prompt.submit({ text: `/biteq ${args}`, wait: false } as never)) as { drop?: string }).drop)
+
+  test('a checkout load does not report an open or an answer', async ($, on) => {
+    const fetched: string[] = []
+    world(on)
+    on('http.fetch', ($, e) => {
+      fetched.push(e.url)
+      return { value: { status: 200, ok: true, headers: {}, text: '' } }
+    })
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'a'))
+    expect(fetched).toEqual([])
+  })
+
+  test('reset --all leaves the telemetry userId', async ($, on) => {
+    const shared: Record<string, unknown> = {
+      userId: '6b9f1a20-0c3e-4d5f-8a7b-9c0d1e2f3a4b',
+    }
+    world(on, BANKS, 'terminal', shared)
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    expect(await run($, 'reset --all')).toContain('removed: status, stats, config')
+    expect(shared.userId).toBe('6b9f1a20-0c3e-4d5f-8a7b-9c0d1e2f3a4b')
+    expect(shared.stats).toBeUndefined()
+    expect(shared.config).toBeUndefined()
+  })
+})

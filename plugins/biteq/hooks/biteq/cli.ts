@@ -123,7 +123,7 @@ async function cmdReset(io: Io, all: boolean): Promise<string> {
   await setStatus(io, 'idle')
   if (all) {
     await io.storeDelete(STATS)
-    await io.storeDelete(CONFIG)
+    await io.storeDelete(CONFIG)   // userId stays: it is the machine the users total counts
     removed.push('stats', 'config')
     const log = await eventsLog(io)
     for (const path of [log, `${log}.1`]) {
