@@ -12,6 +12,8 @@ import type { Io } from './io'
 // Store keys: one JSON file of the plugin's own under ~/.claude/plugins/store/, across sessions
 export const STATS = 'stats'
 export const CONFIG = 'config'
+// The machine id telemetry sends. /biteq reset --all does not delete this key.
+export const USER_ID = 'userId'
 
 /** The debug log is a real file, under ~/.biteq (or BITEQ_HOME). */
 export async function eventsLog(io: Io): Promise<string> {

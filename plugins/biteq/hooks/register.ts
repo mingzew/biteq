@@ -11,6 +11,7 @@
 //   config  remembered languages
 //   debug   BITEQ_DEBUG event log
 //   macos   stubs
+//   telemetry  a placed pane and a recorded answer
 //   io      what the modules may do through the engine
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement } from 'claude-code'
@@ -24,6 +25,7 @@ import type { Io, View } from './biteq/io'
 import { isHintKey } from './biteq/draw'
 import { closed, press, render, tick, view } from './biteq/pane'
 import { DEFAULT_STATS } from './biteq/quiz'
+import { reportOpen } from './biteq/telemetry'
 
 const PANE = 'biteq'
 const QUIZ = 'quiz'
@@ -40,10 +42,11 @@ const since = atom({ plugin: 'biteq', key: 'since' } as const, 0)
 const current = atom({ plugin: 'biteq', key: 'current' } as const, { question: null, picked: null })
 const engaged = atom({ plugin: 'biteq', key: 'engaged' } as const, false)
 const dismissed = atom({ plugin: 'biteq', key: 'dismissed' } as const, false)
+const openReported = atom({ plugin: 'biteq', key: 'openReported' } as const, false)
 const stats = atom({ plugin: 'biteq', key: 'stats' } as const, DEFAULT_STATS)
 
 function io($: EngineInterface): Io {
-  return {
+  const it: Io = {
     storeGet: key => $.store.get(key),
     storeSet: (key, value) => $.store.set(key, value),
     storeDelete: key => $.store.delete(key),
@@ -54,6 +57,7 @@ function io($: EngineInterface): Io {
         case 'current': return read($, current)
         case 'engaged': return read($, engaged)
         case 'dismissed': return read($, dismissed)
+        case 'openReported': return read($, openReported)
         case 'stats': return read($, stats)
       }
     }) as unknown as Io['get'],
@@ -66,6 +70,7 @@ function io($: EngineInterface): Io {
         case 'current': return update($, current, change)
         case 'engaged': return update($, engaged, change)
         case 'dismissed': return update($, dismissed, change)
+        case 'openReported': return update($, openReported, change)
         case 'stats': return update($, stats, change)
       }
     }) as unknown as Io['set'],
@@ -93,7 +98,24 @@ function io($: EngineInterface): Io {
     client: async () => toClient(await $.session.surface()),
     traits: async () => traitsOf(toClient(await $.session.surface())),
     version: async () => (await $.session.version()).version,
+    sessionId: () => $.session.id(),
+    httpPost: async (url, body) => {
+      const response = await $.http.fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body,
+      })
+      return { ok: response.ok }
+    },
   }
+  // Report after a placement. The wrapper runs once `it` exists, so reportOpen can use this same io.
+  const openPane = it.openPane
+  it.openPane = async focus => {
+    const placed = await openPane(focus)
+    if (placed) void reportOpen(it)
+    return placed
+  }
+  return it
 }
 
 async function claudeEvent($: EngineInterface, e: ClaudeEvent): Promise<void> {

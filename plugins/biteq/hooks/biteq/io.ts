@@ -47,4 +47,8 @@ export type Io = {
 
   // about this session, for /biteq doctor
   version: () => Promise<string>
+
+  // telemetry. sessionId is $.session.id(). httpPost is one POST; ok is a 2xx.
+  sessionId: () => Promise<string>
+  httpPost: (url: string, body: string) => Promise<{ ok: boolean }>
 }

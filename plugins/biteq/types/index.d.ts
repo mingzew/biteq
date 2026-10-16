@@ -36,6 +36,7 @@ declare module 'claude-code' {
       current: Current
       engaged: boolean
       dismissed: boolean
+      openReported: boolean
       stats: Stats
     }
   }
