@@ -10,7 +10,7 @@ import { USER_ID } from './store'
 
 // BiteqTelemetryUrl from BiteqTelemetryStack, no trailing slash.
 // Paste the stack output here. Until then a report is dropped.
-const ENDPOINT = ''
+const ENDPOINT = 'https://tpcghrqsrjtjw6tdnzesnmr3eu0ewmpx.lambda-url.us-east-1.on.aws'
 
 const INSTALLED = '.claude/plugins/cache/'
 

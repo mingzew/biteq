@@ -267,7 +267,10 @@ ddb.transact_write_items(TransactItems=[
     {"Update": {
         "TableName": "biteq-telemetry",
         "Key": {"pk": {"S": "counters"}, "sk": {"S": "totals"}},
-        "UpdateExpression": "ADD users :one",
+        # users is a DynamoDB reserved word. The alias is only for this expression.
+        # The attribute stored on the item is still users.
+        "UpdateExpression": "ADD #users :one",
+        "ExpressionAttributeNames": {"#users": "users"},
         "ExpressionAttributeValues": {":one": {"N": "1"}},
     }},
 ])
@@ -405,7 +408,7 @@ The function's log group is `/aws/lambda/biteq-telemetry`, retention 30 days. On
 
 CloudWatch dashboard `biteq-telemetry`, region `us-east-1`, same account as the Lambda. One page:
 
-1. **All-time**, a custom widget that invokes this Lambda. On `describe` the function returns `{ "markdown": "biteq all-time" }`. On `widgetContext` it `GetItem`s the counter row and returns `{ "html": "..." }` with four figures (users, opens, sessions, answers) and under them the terminal and desktop split. This widget is not the public URL.
+1. **All-time**, a custom widget that invokes this Lambda. On `describe` the function returns `{ "markdown": "biteq all-time" }`. On `widgetContext` it `GetItem`s the counter row and returns the HTML string for four figures (users, opens, sessions, answers) and under them the terminal and desktop split. A JSON object would be shown as text. This widget is not the public URL.
 2. **Last 12 weeks, one day wide.** Four line widgets, statistic `Sum`, metrics `NewUsers`, `Opens`, `Sessions`, `Answers`. Each widget has two lines, `Harness=terminal` and `Harness=desktop`.
 
 Metrics are standard resolution (60 seconds). The Lambda calls `PutMetricData` only after the matching transaction commits. A duplicate request emits nothing.
@@ -451,7 +454,7 @@ A report is skipped when `io.pluginRoot` does not contain `.claude/plugins/cache
 `biteq-infra/biteq_infra/handler.py`. Python 3.12, arm64, 128 MB, timeout 5 seconds, reserved concurrency 5.
 
 - Function URL, auth `NONE`, invoke mode `BUFFERED`, CORS off. `POST /v1/opens` and `POST /v1/answers` follow the write steps above. Any other path or method is `404`. A body over 1024 bytes, or a body that fails the field rules, is `400`. A transaction that fails for a reason other than its condition is `500`.
-- On a CloudWatch custom-widget invoke, `describe` returns `{ "markdown": "biteq all-time" }`, and `widgetContext` returns `{ "html": "..." }` for the four all-time figures plus the terminal and desktop split. That invoke is IAM, not the public URL. It `GetItem`s `pk=counters`, `sk=totals`. Missing attributes read as `0`.
+- On a CloudWatch custom-widget invoke, `describe` returns `{ "markdown": "biteq all-time" }`, and `widgetContext` returns the HTML string for the four all-time figures plus the terminal and desktop split. That invoke is IAM, not the public URL. It `GetItem`s `pk=counters`, `sk=totals`. Missing attributes read as `0`.
 - Emit `NewUsers`, `Opens`, `Sessions`, and `Answers` in namespace `Biteq` only after the matching transaction commits. A duplicate emits nothing. Standard resolution.
 - Write one JSON log line per request that passed validation. `result` is `created`, `promoted`, `answered`, or `duplicate`. An invalid request and a `500` log the status only.
 
