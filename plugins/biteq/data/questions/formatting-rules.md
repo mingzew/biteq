@@ -48,16 +48,25 @@ The pane renders `title`, `prompt`, `code`, options, and `explanation` as plain 
 
 ## Practicality
 
-The bank exists to keep coding skills sharp for professional and hobby coders who now write less code by hand. Prefer code people will actually see and write over "gotcha" or "what would this even do" puzzles. `practicality` records where a question sits:
+The bank exists to keep coding skills sharp for professional and hobby coders who now write less code by hand. Prefer code people will actually see and write over "gotcha" or "what would this even do" puzzles. `practicality` (1-10) records how close a question is to that goal.
 
-| Score | Meaning | Examples |
+### How we score it
+
+Ask, in this order, and take the first row that fits:
+
+| Score | Ask | Examples |
 |---|---|---|
-| 9–10 | Code you write or review every week, or a bug you will hit in real work | `[10, 9, 1].sort()`, mutable default arguments, `forEach` with `async`, `LEFT JOIN` + `WHERE` |
-| 6–8 | Common APIs and everyday behaviour; well-known gotchas worth knowing | `splice` vs `slice`, `??`, `find_by` vs `find`, `0.1 + 0.2` |
-| 3–5 | Real but less common: language corners, data-structure theory, rarely used APIs | generators, `Object.defineProperty`, AVL balance factor |
-| 1–2 | Trivia, history, or contrived code nobody writes | "When did Python first appear?", bytes in a zettabyte, `typeof typeof 1` |
+| 9-10 | Would someone write or review this exact code this week, or hit this bug in real work? | `[10, 9, 1].sort()`, mutable default arguments, `forEach` with `async`, `LEFT JOIN` + `WHERE`, `find_by` vs `find` |
+| 6-8 | Is it an everyday API, or a well-known gotcha people do run into? | `splice` vs `slice`, `??`, `push()` returning the length, `0.1 + 0.2`, `Hash.new([])` |
+| 3-5 | Is it real but uncommon: a language corner, data-structure theory, a rarely used API? | generators, `Object.defineProperty`, Big-O of a textbook algorithm, Ruby variable sigils |
+| 1-2 | Is it trivia, history, a definition to memorise, or contrived code nobody writes? | "When did Python first appear?", bytes in a zettabyte, `typeof typeof 1`, emoji string tricks |
 
-A common gotcha people actually run into scores higher than an obscure one. Score quickly; a person reviews the scores later.
+Then adjust by one point at most:
+
+- **Up** if the trap causes silent wrong results in production (data loss, a wrong total, a missed await) rather than a loud error.
+- **Down** if the code only exists to set up the trick (names like `foo`/`bar`, chains no one would write), or the answer depends on one runtime (browser-only output, console formatting).
+
+Score the question as asked, not its topic: "What does `typeof []` return?" is practical; "How many falsy values are there?" is trivia about the same idea. Score quickly; a person reviews the scores, in [docs/import-review.md](../../../../docs/import-review.md) for imports or in the diff for hand-written questions.
 
 ## Importing questions
 
@@ -72,7 +81,8 @@ Every question brought in from another source must be converted to this format b
 7. **Plain text.** Strip Markdown, HTML, backticks and escapes (`\$`, `&nbsp;`). Drop image references and pointers to other questions or articles; rewrite the sentence so it stands alone.
 8. **Verify, then fix.** Run every snippet (`python3`, `node`, `ruby -e`) and make the correct option exactly what it prints. Fix wrong answers and explanations, and replace a wrong option that is also correct. For browser-only behaviour, say so in the prompt ("in a browser").
 9. **Drop** duplicates (of the source or of the bank) and questions with no coherent answer, and note them in `ATTRIBUTION.md`.
-10. **Score `practicality`** for every question.
+10. **Score `practicality`** for every question (see [Practicality](#practicality)).
+11. **Record it for review.** Add the source to the Imports table in [docs/import-review.md](../../../../docs/import-review.md), and an entry for every question whose answer, options, prompt or explanation you changed: the source's version, ours, a one-line *Why*, whether the explanation was rewritten, the practicality, and an unticked `- [ ] Checked by us`. Never tick that box yourself; a person does after reviewing.
 
 ## `code` spacing (Ruby / similar)
 
