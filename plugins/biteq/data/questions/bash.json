@@ -6,6 +6,7 @@
     "code": "x=5\necho \"$x\" '$x'",
     "options": ["5 5", "5 $x", "$x $x", "$x 5"],
     "answer": 1,
-    "explanation": "Double quotes expand variables. Single quotes keep the text exactly as written."
+    "explanation": "Double quotes expand variables. Single quotes keep the text exactly as written.",
+    "practicality": 8
   }
 ]
