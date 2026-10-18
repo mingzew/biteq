@@ -10,7 +10,7 @@ import { STATS, loadJson, saveJson } from './store'
 
 export const DEFAULT_STATS: Stats = {
   answered: 0, correct: 0, streak: 0, best_streak: 0,
-  waits: 0, engaged_waits: 0, seen: [], wrong: [], by_lang: {},
+  waits: 0, engaged_waits: 0, seen: [], wrong: [], one_shot: {}, by_lang: {},
 }
 
 const REQUIRED = ['id', 'prompt', 'options', 'answer', 'explanation', 'practicality'] as const

@@ -34,7 +34,7 @@ export type ClientTraits = {
   alignStart: boolean
   /** The first answer (and Next / Serve next question) takes the focus ring when drawn. */
   autoFocus: boolean
-  /** The quiz is drawn by the surface module quiz-client.tsx, which also counts the thinking timer itself. */
+  /** The quiz is drawn by the surface module quiz-client.tsx. */
   clientModule: boolean
   /** A new wait asks for the pane's keyboard (the composer is empty then), so the first click is a press. */
   focusOnWait: boolean

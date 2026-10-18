@@ -20,9 +20,12 @@ between Claude Code releases; the engine's own declarations are the authority (s
   headless) gets the `FALLBACK` behaviour in `client.ts`; don't add work for it unless asked.
 - **When Claude is done, don't serve a new question** (unless the person opted out with "Always serve" or
   `/biteq pause off`). They can finish the one on screen.
-- **Questions are served one language at a time**, selected languages first (default Ruby), then the rest A-Z.
-- **CLI keys:** answers are arrow-selectable buttons with `a`-`d`; Next/Skip/Close are a hint bar on the pane's
-  bottom row (`n: skip · q: close`, `⏎ next` after answering) and are never in the focus ring.
+- **Questions are served as a mix of the selected banks only** (default `cs`, general CS). Unselected banks are
+  never served; once every selected question is answered the pane says so and offers **Start over** (SUP-15).
+- **CLI keys:** answers are arrow-selectable buttons with `a`-`d`; Next/Skip/Banks/Close are a hint bar on the pane's
+  bottom row (`n: skip · z: banks · q: close`, `⏎ next` after answering) and are never in the focus ring.
+- **Banks are switched in the pane** (`z`, any time): a screen of toggles, digits `1`-`9` in the CLI, saved as
+  they change, at least one kept checked. `z` again goes back to the quiz.
 - **Desktop:** everything is clickable; action buttons are framed so they read as buttons; no key hints.
 
 ## Layout
@@ -35,10 +38,10 @@ plugins/biteq/
 │   ├── io.ts                the operations modules may perform through the engine (built in register.ts)
 │   ├── cli.ts               /biteq subcommands; signal(): every status change goes through it
 │   ├── claude.ts            engine event -> status (parse)
-│   ├── pane.tsx             questions, answering, resting when done, press(), render()
+│   ├── pane.tsx             questions, answering, resting when done, the bank screen, press(), render()
 │   ├── quiz-client.tsx      drawQuiz (shared drawing) + the desktop surface module
 │   ├── draw.tsx             re-exports drawQuiz for the hook side
-│   ├── quiz.ts              question banks, stats, validation, serving order
+│   ├── quiz.ts              question banks, stats, validation
 │   ├── config.ts            remembered languages, pause-when-done
 │   ├── store.ts             store keys, JSON helpers, session status
 │   ├── debug.ts             event log, on after /biteq debug
@@ -69,7 +72,6 @@ docs/lesson-plan.md          guided tour of the codebase
   question (`answer:2:<id>`, `next:<id>`), so a press only acts if that question is still on screen.
 - **One state write first, stats after.** Each engine round trip costs ~25-60 ms; make the visible change in a
   single write (`current` holds question + pick together) so a click feels instant and can't double-count.
-- **The desktop module timer** must start once per instance (`started` WeakSet), or it runs at double speed.
 
 ## Develop and verify
 

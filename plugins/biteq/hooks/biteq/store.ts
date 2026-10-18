@@ -35,13 +35,9 @@ export async function saveJson(io: Io, key: string, value: unknown): Promise<voi
   await io.storeSet(key, value)
 }
 
-/** Record this session's status; returns the previous one. `since` only moves on a change. */
+/** Record this session's status; returns the previous one. */
 export async function setStatus(io: Io, next: Status): Promise<Status> {
   const prev = await io.get('status')
-  if (prev !== next) {
-    await io.set('status', () => next)
-    const now = await io.now()
-    await io.set('since', () => now)
-  }
+  if (prev !== next) await io.set('status', () => next)
   return prev
 }

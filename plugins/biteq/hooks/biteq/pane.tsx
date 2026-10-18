@@ -10,20 +10,27 @@ import type { Question, Stats, Status } from '../../types'
 import type { ClientTraits } from './client'
 import { drawQuiz, keys, type PaneView } from './draw'
 import type { Io } from './io'
-import { getPauseWhenDone, setPauseWhenDone } from './config'
-import { loadStats, saveStats } from './quiz'
+import { getLangs, getPauseWhenDone, setLangs, setPauseWhenDone } from './config'
+import { languageCounts, languageOrder, loadQuestions, loadStats, saveStats } from './quiz'
 import { reportAnswer } from './telemetry'
 
 export type { PaneView } from './draw'
 
-// Every question, grouped by language in the order they're served (quiz.languageOrder);
-// set by boot, which runs again on every reload
+// Every question in the selected banks (no others are served); set by boot, which runs again
+// on every reload
 let questions: Question[] = []
+// The bank screen's rows: every bank with questions and its count, in the order shown (the
+// selection when it opened first, then A-Z, held still while it's open); set by banks()
+let shown: { lang: string; count: number }[] = []
 
 export async function boot(io: Io, chosen: Question[]): Promise<void> {
   questions = chosen
   const saved = await loadStats(io)
   await io.set('stats', () => saved)
+  // The banks changed (/biteq --lang): an unanswered question from a bank no longer selected goes
+  // (open() serves one from the new banks). An answered one stays so its explanation can be read.
+  const ids = new Set(chosen.map(q => q.id))
+  await io.set('current', c => (c.question && c.picked === null && !ids.has(c.question.id) ? { question: null, picked: null } : c))
 }
 
 // ---------------------------------------------------------------- quiz
@@ -34,35 +41,33 @@ export async function boot(io: Io, chosen: Question[]): Promise<void> {
 // questions. The one write that redraws the pane comes first; stats are saved after.
 
 /**
- * The next question: one language at a time. The first language (in serving order) that still
- * has unseen questions is the current one; it's served until all of its questions are answered,
- * then the next language starts. Within it: usually a random unseen
- * question, 30% of the time one you missed in that language. Once every language is done, the
- * cycle restarts from the first.
+ * The next question, mixed across the selected banks: a random bank that still has unseen
+ * questions, then a random unseen question in it (picking the bank first keeps a small bank from
+ * being drowned out by a big one). 30% of the time it's one you missed instead, and only missed
+ * ones once nothing is unseen. Null once every question has been answered and none is still
+ * missed: the pane says so (finished) and offers to start over.
  */
-function pick(s: Stats, cur: Question | null): { q: Question | null; restart: boolean } {
-  const langs = [...new Set(questions.map(q => q.lang))]
-  const unseenIn = (lang: string) => questions.filter(q => q.lang === lang && q.id !== cur?.id && !s.seen.includes(q.id))
-  let lang = langs.find(l => unseenIn(l).length)
-  const restart = lang === undefined
-  lang ??= langs[0]
-  const inLang = questions.filter(q => q.lang === lang)
-  const pool = inLang.filter(q => q.id !== cur?.id)
-  const from = pool.length ? pool : inLang
-  const wrong = from.filter(q => s.wrong.includes(q.id))
-  if (wrong.length && Math.random() < 0.3) return { q: randomOf(wrong), restart }   // light spaced repetition
-  const unseen = restart ? from : from.filter(q => !s.seen.includes(q.id))
-  return { q: randomOf(unseen.length ? unseen : from), restart }
+function pick(s: Stats, cur: Question | null): Question | null {
+  // the question on screen (skipped, or just missed) comes back only when it's the last one left
+  const notCur = (qs: Question[]) => qs.filter(q => q.id !== cur?.id)
+  const unseen = questions.filter(q => !s.seen.includes(q.id))
+  const from = notCur(unseen).length ? notCur(unseen) : unseen
+  const missed = questions.filter(q => s.wrong.includes(q.id))
+  if (notCur(missed).length && (!from.length || Math.random() < 0.3)) return randomOf(notCur(missed))   // light spaced repetition
+  if (!from.length) return missed.length ? randomOf(missed) : null
+  const lang = randomOf([...new Set(from.map(q => q.lang))])
+  return randomOf(from.filter(q => q.lang === lang))
+}
+
+/** Every selected question has been answered, and every missed one answered right since. */
+function finished(s: Stats): boolean {
+  return questions.length > 0 && questions.every(q => s.seen.includes(q.id) && !s.wrong.includes(q.id))
 }
 
 /** Move on from `from` (the question on screen), unless something already moved on. */
 async function advance(io: Io, from: Question | null, s: Stats): Promise<void> {
-  const { q, restart } = pick(s, from)
+  const q = pick(s, from)
   await io.set('current', c => (c.question?.id === from?.id ? { question: q, picked: null } : c))
-  if (restart) {   // everything seen: start the cycle again
-    const saved = await saveStats(io, st => ({ ...st, seen: [] }))
-    await io.set('stats', () => saved)
-  }
 }
 
 /**
@@ -108,6 +113,74 @@ export async function always(io: Io): Promise<void> {
   await serve(io)
 }
 
+/**
+ * "Start over" once every selected question is answered: forget which of them were seen (other
+ * banks keep their progress) and serve one, unless Claude is done and the pane is resting.
+ */
+export async function restart(io: Io): Promise<void> {
+  if ((await io.get('current')).question !== null) return   // already serving
+  const ids = new Set(questions.map(q => q.id))
+  const s = await saveStats(io, st => ({ ...st, seen: st.seen.filter(id => !ids.has(id)) }))
+  await io.set('stats', () => s)
+  if (await resting(io)) return
+  await advance(io, null, s)
+  const now = (await io.get('current')).question
+  if (now) await io.focus(keys.answer(now, 0))
+}
+
+// ---------------------------------------------------------------- the bank screen
+//
+// z opens it at any time, over whatever is on screen; z (or Done) goes back. Each bank is a
+// toggle Button whose key names the state it sets (`bank:on:cs`), so a click from an old drawing
+// can't undo the one before it. Every toggle is saved at once; the last bank can't be unchecked.
+
+/** z: show the bank screen, or leave it. */
+export async function banks(io: Io): Promise<void> {
+  if ((await io.get('picker')).open) return leaveBanks(io)
+  const counts = await languageCounts(io)
+  const langs = await getLangs(io)
+  const order = languageOrder(langs, Object.keys(counts)).filter(l => counts[l])
+  shown = order.map(lang => ({ lang, count: counts[lang] ?? 0 }))
+  const selected = langs.filter(l => counts[l])
+  await io.set('picker', () => ({ open: true, selected }))
+  const first = shown[0]
+  if (first) await io.focus(keys.bank(first.lang, !selected.includes(first.lang)))
+}
+
+/** Check (`on`) or uncheck a bank on the bank screen, and serve from the new selection. */
+export async function setBank(io: Io, lang: string, on: boolean): Promise<void> {
+  let changed = false as boolean   // set inside the write
+  await io.set('picker', p => {
+    if (!p.open || !shown.some(b => b.lang === lang) || p.selected.includes(lang) === on) return p
+    const selected = on ? [...p.selected, lang] : p.selected.filter(l => l !== lang)
+    if (!selected.length) return p   // keep at least one bank
+    changed = true
+    return { ...p, selected }
+  })
+  if (!changed) return
+  // the latest selection, in case another toggle landed meanwhile
+  const selected = (await io.get('picker')).selected
+  await setLangs(io, selected)
+  questions = await loadQuestions(io, selected)
+  await io.focus(keys.bank(lang, !on))
+}
+
+/**
+ * Back to the quiz. An unanswered question from a bank no longer checked is replaced (as is
+ * the empty screen once every question was answered), unless Claude is done and the pane rests.
+ * The question is settled under the bank screen, then one write shows it.
+ */
+async function leaveBanks(io: Io): Promise<void> {
+  const s = await freshStats(io)
+  const rest = await resting(io)
+  const ids = new Set(questions.map(q => q.id))
+  await io.set('current', c =>
+    c.question && (c.picked !== null || ids.has(c.question.id)) ? c : { question: rest ? null : pick(s, null), picked: null })
+  await io.set('picker', p => ({ ...p, open: false }))
+  const { question, picked } = await io.get('current')
+  if (question) await io.focus(keys.answer(question, picked ?? 0))
+}
+
 async function nextQuestion(io: Io): Promise<void> {
   await advance(io, (await io.get('current')).question, await freshStats(io))
 }
@@ -137,6 +210,8 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
       by_lang: { ...s.by_lang, [q.lang]: [c + (ok ? 1 : 0), n + 1] },
       seen: s.seen.includes(q.id) ? s.seen : [...s.seen, q.id],
       wrong: ok ? s.wrong.filter(id => id !== q.id) : s.wrong.includes(q.id) ? s.wrong : [...s.wrong, q.id],
+      // only the first answer ever counts; one seen before one_shot existed never does
+      one_shot: q.id in s.one_shot ? s.one_shot : { ...s.one_shot, [q.id]: ok && !s.seen.includes(q.id) },
       engaged_waits: s.engaged_waits + (counts ? 1 : 0),
     }
   })
@@ -163,12 +238,6 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
       void io.openPane((await io.traits()).focusOnWait)
     }
   }
-}
-
-/** Once a second: redraw while thinking, so the timer counts. */
-export async function tick(io: Io): Promise<void> {
-  if ((await io.traits()).clientModule) return   // the surface module counts on its own frame clock
-  if ((await io.get('status')) === 'thinking') io.redraw()
 }
 
 /** Open (or retitle) the pane. Returns false when the surface can't place it yet. */
@@ -201,6 +270,10 @@ export async function close(io: Io): Promise<void> {
  */
 export async function press(io: Io, key: string): Promise<void> {
   const [action = '', ...rest] = key.split(':')
+  if (action === 'banks') return banks(io)
+  if (action === 'bank') return setBank(io, rest.slice(1).join(':'), rest[0] === 'on')
+  // a click from the quiz's last drawing while the bank screen shows: the quiz isn't on screen
+  if (action !== 'close' && (await io.get('picker')).open) return
   if (action === 'answer') {
     const qid = rest.slice(1).join(':')
     const c = await io.get('current')
@@ -210,6 +283,7 @@ export async function press(io: Io, key: string): Promise<void> {
   }
   else if (action === 'next' || action === 'skip') await next(io, rest.join(':'))
   else if (action === 'serve') await serve(io)
+  else if (action === 'restart') await restart(io)
   else if (action === 'always') await always(io)
   else if (action === 'close') await close(io)
 }
@@ -219,18 +293,23 @@ export async function press(io: Io, key: string): Promise<void> {
 /** Everything render() needs, read from the session's state (this subscribes the pane to it). */
 export async function view(io: Io): Promise<PaneView> {
   const { question, picked } = await io.get('current')
-  const since = await io.get('since')
   const status = await io.get('status')
+  const stats = await io.get('stats')
+  const done = question === null && finished(stats)
+  const p = await io.get('picker')
   return {
-    status,
     // Claude is done and Next rested: say so instead of showing a question
-    resting: status === 'done' && question === null && questions.length > 0,
-    since,
-    elapsedMs: (await io.now()) - since,
+    resting: status === 'done' && question === null && questions.length > 0 && !done,
+    finished: done,
+    banks: [...new Set(questions.map(q => q.lang))].map(lang => {
+      const inBank = questions.filter(q => q.lang === lang)
+      return { lang, count: inBank.length, oneShot: inBank.filter(q => stats.one_shot[q.id]).length }
+    }),
+    picking: p.open ? shown.map(b => ({ ...b, on: p.selected.includes(b.lang) })) : null,
     bank: questions.length,
     question,
     picked,
-    stats: await io.get('stats'),
+    stats,
   }
 }
 
