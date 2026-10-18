@@ -10,6 +10,8 @@ export type Question = {
   answer: number
   explanation: string
   hard?: boolean
+  practicality: number   // 1-10: how close to code people write day to day (10) vs trivia or a contrived trick (1)
+  source?: string        // where an imported question came from; licences in data/questions/ATTRIBUTION.md
 }
 
 // Persisted in the plugin store under `stats`, shared by every session

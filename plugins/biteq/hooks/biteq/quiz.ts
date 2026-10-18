@@ -13,7 +13,7 @@ export const DEFAULT_STATS: Stats = {
   waits: 0, engaged_waits: 0, seen: [], wrong: [], by_lang: {},
 }
 
-const REQUIRED = ['id', 'prompt', 'options', 'answer', 'explanation'] as const
+const REQUIRED = ['id', 'prompt', 'options', 'answer', 'explanation', 'practicality'] as const
 
 export async function loadStats(io: Io): Promise<Stats> {
   return { ...DEFAULT_STATS, ...(await loadJson<Partial<Stats>>(io, STATS, {})) }
@@ -103,6 +103,10 @@ export async function validate(io: Io): Promise<{ summary: string; errors: strin
       if (n < 2 || n > 4) errors.push(`${qid}: needs 2-4 options`)
       const answer = typeof q.answer === 'number' ? q.answer : -1
       if (answer < 0 || answer >= n) errors.push(`${qid}: answer out of range`)
+      const p = q.practicality
+      if ('practicality' in q && !(Number.isInteger(p) && (p as number) >= 1 && (p as number) <= 10)) {
+        errors.push(`${qid}: practicality must be a whole number from 1 to 10`)
+      }
     })
   }
   const total = Object.values(counts).reduce((a, b) => a + b, 0)

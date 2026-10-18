@@ -24,7 +24,8 @@ Each file is a JSON **array** of question objects.
   "options": ["Active Record", "Nobody (it inserts)", "Action Controller", "The database"],
   "answer": 1,
   "explanation": "insert_all writes SQL and skips Active Record validations and callbacks.\n\n…",
-  "hard": true
+  "hard": true,
+  "practicality": 7
 }
 ```
 
@@ -38,10 +39,40 @@ Each file is a JSON **array** of question objects.
 | `answer` | yes | 0-based index into `options`. |
 | `explanation` | yes | Shown after they pick. See below. |
 | `hard` | no | `true` only. Not a string, not `"difficulty"`. Omit on ordinary questions. |
+| `practicality` | yes | Whole number 1–10. See [Practicality](#practicality). |
+| `source` | imports | Where an imported question came from, e.g. `"lydiahallie/javascript-questions #12"`. Not shown. See [Importing questions](#importing-questions). |
 
 `hard: true` prefixes the title with `[BYE STREAK]` if the current streak is > 0, otherwise `[OOF]`.
 
 The pane renders `title`, `prompt`, `code`, options, and `explanation` as plain `Text`. `**bold**` and other Markdown do nothing. Do not use Markdown in any of those fields.
+
+## Practicality
+
+The bank exists to keep coding skills sharp for professional and hobby coders who now write less code by hand. Prefer code people will actually see and write over "gotcha" or "what would this even do" puzzles. `practicality` records where a question sits:
+
+| Score | Meaning | Examples |
+|---|---|---|
+| 9–10 | Code you write or review every week, or a bug you will hit in real work | `[10, 9, 1].sort()`, mutable default arguments, `forEach` with `async`, `LEFT JOIN` + `WHERE` |
+| 6–8 | Common APIs and everyday behaviour; well-known gotchas worth knowing | `splice` vs `slice`, `??`, `find_by` vs `find`, `0.1 + 0.2` |
+| 3–5 | Real but less common: language corners, data-structure theory, rarely used APIs | generators, `Object.defineProperty`, AVL balance factor |
+| 1–2 | Trivia, history, or contrived code nobody writes | "When did Python first appear?", bytes in a zettabyte, `typeof typeof 1` |
+
+A common gotcha people actually run into scores higher than an obscure one. Score quickly; a person reviews the scores later.
+
+## Importing questions
+
+Every question brought in from another source must be converted to this format before it lands in a bank. `/biteq check` must pass.
+
+1. **Licence.** Only import from sources whose licence allows it (MIT, BSD, CC BY, …). Add the source, commit and full licence text to `ATTRIBUTION.md`, and list what you changed.
+2. **Ids and source.** Ids are `<lang>-<source>-<n>` (`js-lydia-012`, `python-fcc-045`), with `<n>` the question's number in the source. Set `source` to `"<owner>/<repo> <file> #<n>"`.
+3. **Exactly 4 options and an explanation.** Bring 2- and 3-option questions up to 4 with plausible wrong answers; cut 5+ options down to 4. Every option must differ. Add an explanation where the source has none.
+4. **Shuffle the answer.** Sources often put the correct answer first. Spread `answer` across 0–3; keep "All of the above" / "None of the above" last.
+5. **No language prefix.** The pane already shows `[python]`, so drop "In Python," / "In JavaScript," and similar. Keep the name where the language is the subject ("Who created Python?").
+6. **Code goes in `code`.** Move code that the source put in the prompt into `code`, one statement per line, and reword the prompt ("What does this print?").
+7. **Plain text.** Strip Markdown, HTML, backticks and escapes (`\$`, `&nbsp;`). Drop image references and pointers to other questions or articles; rewrite the sentence so it stands alone.
+8. **Verify, then fix.** Run every snippet (`python3`, `node`, `ruby -e`) and make the correct option exactly what it prints. Fix wrong answers and explanations, and replace a wrong option that is also correct. For browser-only behaviour, say so in the prompt ("in a browser").
+9. **Drop** duplicates (of the source or of the bank) and questions with no coherent answer, and note them in `ATTRIBUTION.md`.
+10. **Score `practicality`** for every question.
 
 ## `code` spacing (Ruby / similar)
 
@@ -136,6 +167,7 @@ A single small word must not carry the whole trap (`no NOT NULL` is easy to misr
 ## Do not
 
 - Add `"lang"` or `"difficulty"` to the JSON
+- Add a question without `practicality`
 - Use more than 4 options
 - Point explanations at other questions
 - Put Markdown in question fields

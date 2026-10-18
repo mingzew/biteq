@@ -8,13 +8,13 @@ import type { Engine, Mounted } from 'claude-code/testing'
 
 const BANKS: Record<string, unknown[]> = {
   python: [
-    { id: 'python-a', title: 'A', prompt: 'Pick a', options: ['a1', 'a2'], answer: 0, explanation: 'because' },
-    { id: 'python-b', title: 'B', prompt: 'Pick b', options: ['b1', 'b2'], answer: 0, explanation: 'because' },
+    { id: 'python-a', title: 'A', prompt: 'Pick a', options: ['a1', 'a2'], answer: 0, explanation: 'because', practicality: 5 },
+    { id: 'python-b', title: 'B', prompt: 'Pick b', options: ['b1', 'b2'], answer: 0, explanation: 'because', practicality: 5 },
   ],
-  js: [{ id: 'js-a', title: 'J', prompt: 'Pick j', options: ['j1', 'j2'], answer: 0, explanation: 'because' }],
+  js: [{ id: 'js-a', title: 'J', prompt: 'Pick j', options: ['j1', 'j2'], answer: 0, explanation: 'because', practicality: 5 }],
   ruby: [
-    { id: 'ruby-a', title: 'R', prompt: 'Pick r', options: ['r1', 'r2'], answer: 0, explanation: 'because' },
-    { id: 'ruby-b', title: 'S', prompt: 'Pick s', options: ['s1', 's2'], answer: 0, explanation: 'because' },
+    { id: 'ruby-a', title: 'R', prompt: 'Pick r', options: ['r1', 'r2'], answer: 0, explanation: 'because', practicality: 5 },
+    { id: 'ruby-b', title: 'S', prompt: 'Pick s', options: ['s1', 's2'], answer: 0, explanation: 'because', practicality: 5 },
   ],
   go: [],
 }
@@ -416,7 +416,8 @@ describe('presses', () => {
     expect((await banner())?.props.color).toBe('yellow')
     expect((await find(ui, { type: 'Text', text: /^Pick / }))?.props.dimColor).toBe(true)
     expect((await find(ui, { type: 'Button', text: option }))?.props.dimColor).toBe(true)
-    expect((await find(ui, { type: 'Button', text: /^Skip$/ }))?.props.dimColor).toBe(true)
+    // the CLI's skip is a hint-bar button, dim whether or not the pane has focus
+    expect((await find(ui, { type: 'Button', text: /skip$/ }))?.props.dimColor).toBe(true)
 
     await ui.redraw({ ...PANE.props, isFocused: true })
     expect((await title())?.props.dimColor).toBeUndefined()
@@ -596,6 +597,22 @@ describe('/biteq commands', () => {
     expect(out).toContain("ERROR wrong-id: id must start with 'python-'")
     expect(out).toContain('ERROR wrong-id: needs 2-4 options')
     expect(out).toContain('ERROR wrong-id: answer out of range')
+  })
+
+  test('check requires a practicality from 1 to 10', async ($, on) => {
+    const q = { prompt: 'p', options: ['x', 'y'], answer: 0, explanation: 'e' }
+    world(on, { python: [
+      { id: 'python-ok', practicality: 10, ...q },
+      { id: 'python-none', ...q },
+      { id: 'python-zero', practicality: 0, ...q },
+      { id: 'python-half', practicality: 2.5, ...q },
+    ] })
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const out = await run($, 'check')
+    expect(out).not.toContain('python-ok')
+    expect(out).toContain('ERROR python-none: missing practicality')
+    expect(out).toContain('ERROR python-zero: practicality must be a whole number from 1 to 10')
+    expect(out).toContain('ERROR python-half: practicality must be a whole number from 1 to 10')
   })
 })
 

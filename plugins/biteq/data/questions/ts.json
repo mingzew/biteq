@@ -6,7 +6,8 @@
     "code": "type A = { kind: \"a\"; x: number } | { kind: \"b\"; y: string };\n\nfunction f(v: A) {\n  if (v.kind === \"a\") return v.y;\n}",
     "options": ["Compiles; returns undefined", "Error: Property 'y' does not exist", "Error: not all code paths return", "Compiles; return type is string"],
     "answer": 1,
-    "explanation": "Checking v.kind narrows v to { kind: \"a\"; x: number }, which has no y. Discriminated unions make this check exact."
+    "explanation": "Checking v.kind narrows v to { kind: \"a\"; x: number }, which has no y. Discriminated unions make this check exact.",
+    "practicality": 8
   },
   {
     "id": "ts-unknown-vs-any",
@@ -15,6 +16,7 @@
     "code": "const a: any = JSON.parse(s);\nconst u: unknown = JSON.parse(s);\na.foo();      // line 3\nu.foo();      // line 4",
     "options": ["Line 3", "Line 4", "Both", "Neither"],
     "answer": 1,
-    "explanation": "unknown requires you to narrow it before you use it. any switches type checking off, which is why unknown is the safer choice for untrusted data."
+    "explanation": "unknown requires you to narrow it before you use it. any switches type checking off, which is why unknown is the safer choice for untrusted data.",
+    "practicality": 7
   }
 ]

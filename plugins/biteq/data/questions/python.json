@@ -6,7 +6,8 @@
     "code": "def add(x, items=[]):\n    items.append(x)\n    return items\n\nadd(1)\nprint(add(2))",
     "options": ["[2]", "[1, 2]", "TypeError", "None"],
     "answer": 1,
-    "explanation": "Default values are evaluated once, when the function is defined, so every call shares the same list. Use items=None and create the list inside the function."
+    "explanation": "Default values are evaluated once, when the function is defined, so every call shares the same list. Use items=None and create the list inside the function.",
+    "practicality": 10
   },
   {
     "id": "python-late-binding",
@@ -15,7 +16,8 @@
     "code": "fs = [lambda: i for i in range(3)]\nprint([f() for f in fs])",
     "options": ["[0, 1, 2]", "[2, 2, 2]", "[3, 3, 3]", "NameError"],
     "answer": 1,
-    "explanation": "Closures look up i when they are called, not when they are created. By then the loop has finished with i == 2. Fix it with lambda i=i: i."
+    "explanation": "Closures look up i when they are called, not when they are created. By then the loop has finished with i == 2. Fix it with lambda i=i: i.",
+    "practicality": 7
   },
   {
     "id": "python-is-vs-eq",
@@ -24,7 +26,8 @@
     "code": "a = [1, 2]\nb = [1, 2]\nprint(a == b, a is b)",
     "options": ["True True", "True False", "False False", "False True"],
     "answer": 1,
-    "explanation": "== compares values. is compares identity, and these are two separate list objects."
+    "explanation": "== compares values. is compares identity, and these are two separate list objects.",
+    "practicality": 8
   },
   {
     "id": "python-dict-hash-collide",
@@ -33,7 +36,8 @@
     "code": "d = {1: 'a', True: 'b', 1.0: 'c'}\nprint(d)",
     "options": ["{1: 'a', True: 'b', 1.0: 'c'}", "{1: 'c'}", "{1.0: 'c'}", "{True: 'b'}"],
     "answer": 1,
-    "explanation": "1, True and 1.0 are equal and have the same hash, so they count as one key. The first key object (1) is kept and the last value ('c') wins."
+    "explanation": "1, True and 1.0 are equal and have the same hash, so they count as one key. The first key object (1) is kept and the last value ('c') wins.",
+    "practicality": 3
   },
   {
     "id": "python-slice-step",
@@ -42,7 +46,8 @@
     "code": "s = \"abcdef\"\nprint(s[::-2])",
     "options": ["\"fdb\"", "\"eca\"", "\"ace\"", "\"fedcba\""],
     "answer": 0,
-    "explanation": "A negative step starts at the end (index 5, 'f') and moves back by 2: indexes 5, 3, 1, which are f, d, b."
+    "explanation": "A negative step starts at the end (index 5, 'f') and moves back by 2: indexes 5, 3, 1, which are f, d, b.",
+    "practicality": 6
   },
   {
     "id": "python-generator-exhausted",
@@ -51,7 +56,8 @@
     "code": "g = (x * x for x in range(3))\nprint(sum(g), sum(g))",
     "options": ["5 5", "5 0", "0 0", "TypeError"],
     "answer": 1,
-    "explanation": "A generator can only be consumed once. The first sum gets 0+1+4 = 5 and the second gets an empty iterator, which sums to 0."
+    "explanation": "A generator can only be consumed once. The first sum gets 0+1+4 = 5 and the second gets an empty iterator, which sums to 0.",
+    "practicality": 8
   },
   {
     "id": "python-finally-return",
@@ -60,7 +66,8 @@
     "code": "def f():\n    try:\n        return 1\n    finally:\n        return 2",
     "options": ["1", "2", "None", "SyntaxError"],
     "answer": 1,
-    "explanation": "finally always runs, and a return inside it overrides the earlier return. It also swallows exceptions, which is why linters flag it."
+    "explanation": "finally always runs, and a return inside it overrides the earlier return. It also swallows exceptions, which is why linters flag it.",
+    "practicality": 4
   },
   {
     "id": "python-floor-div-negative",
@@ -69,7 +76,8 @@
     "code": "print(-7 // 2, -7 % 2)",
     "options": ["-3 -1", "-4 1", "-3 1", "-4 -1"],
     "answer": 1,
-    "explanation": "// rounds toward negative infinity, so -3.5 becomes -4. % has the sign of the divisor: -7 == 2 * -4 + 1."
+    "explanation": "// rounds toward negative infinity, so -3.5 becomes -4. % has the sign of the divisor: -7 == 2 * -4 + 1.",
+    "practicality": 6
   },
   {
     "id": "python-list-multiply-alias",
@@ -78,7 +86,8 @@
     "code": "a = [[0] * 2] * 2\na[0][0] = 1\nprint(a)",
     "options": ["[[1, 0], [0, 0]]", "[[1, 0], [1, 0]]", "[[1, 1], [0, 0]]", "[[1, 1], [1, 1]]"],
     "answer": 1,
-    "explanation": "The outer * 2 copies the reference, so both rows are the same list object. Use [[0] * 2 for _ in range(2)]."
+    "explanation": "The outer * 2 copies the reference, so both rows are the same list object. Use [[0] * 2 for _ in range(2)].",
+    "practicality": 8
   },
   {
     "id": "python-mutate-while-iterating",
@@ -87,7 +96,8 @@
     "code": "nums = [1, 2, 2, 3]\nfor n in nums:\n    if n == 2:\n        nums.remove(n)\nprint(nums)",
     "options": ["[1, 3]", "[1, 2, 3]", "RuntimeError", "[1, 2, 2, 3]"],
     "answer": 1,
-    "explanation": "Removing the first 2 shifts the list left, so the iterator skips the second 2. Lists don't raise an error here (dicts do). Build a new list instead."
+    "explanation": "Removing the first 2 shifts the list left, so the iterator skips the second 2. Lists don't raise an error here (dicts do). Build a new list instead.",
+    "practicality": 9
   },
   {
     "id": "python-regex-greedy",
@@ -96,7 +106,8 @@
     "code": "import re\nprint(re.findall(r\"a.*b\", \"a1b a2b\"))",
     "options": ["['a1b', 'a2b']", "['a1b a2b']", "['a1b']", "[]"],
     "answer": 1,
-    "explanation": ".* is greedy and matches as much as it can, up to the last b. Use .*? for a non-greedy match."
+    "explanation": ".* is greedy and matches as much as it can, up to the last b. Use .*? for a non-greedy match.",
+    "practicality": 8
   },
   {
     "id": "python-binary-search-bug",
@@ -105,6 +116,1478 @@
     "code": "def bs(a, t):\n    lo, hi = 0, len(a)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if a[mid] < t:\n            lo = mid\n        else:\n            hi = mid\n    return lo",
     "options": ["IndexError on an empty list", "It can loop forever", "It returns the wrong index for duplicates", "Nothing, it's correct"],
     "answer": 1,
-    "explanation": "When hi == lo + 1, mid == lo. If a[mid] < t, then lo = mid makes no progress. It should be lo = mid + 1."
+    "explanation": "When hi == lo + 1, mid == lo. If a[mid] < t, then lo = mid makes no progress. It should be lo = mid + 1.",
+    "practicality": 7
+  },
+  {
+    "id": "python-fcc-001",
+    "prompt": "What does this print?",
+    "code": "print(list(range(3, 6)))",
+    "options": ["[3, 6]", "[3, 4, 5, 6]", "[3, 3, 3, 3, 3, 3]", "[3, 4, 5]"],
+    "answer": 3,
+    "explanation": "The list(range(3, 6)) function returns a list of numbers from 3, increments by 1 (by default), and stops at 5 (excluding 6).",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #1"
+  },
+  {
+    "id": "python-fcc-002",
+    "prompt": "Which method removes whitespace from both ends of a string?",
+    "options": ["remove()", "chomp()", "trim()", "strip()"],
+    "answer": 3,
+    "explanation": "strip() removes leading and trailing whitespace (or the characters you pass it). lstrip() and rstrip() do one end only.\n\n'  hi  '.strip()    # 'hi'\n'  hi  '.rstrip()   # '  hi'",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #2"
+  },
+  {
+    "id": "python-fcc-003",
+    "prompt": "Which method is used to write text to a file?",
+    "options": ["writing()", "read()", "write()", "appending()"],
+    "answer": 2,
+    "explanation": "In Python the write() method is used to write text to a file.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #3"
+  },
+  {
+    "id": "python-fcc-004",
+    "prompt": "Which of the following is the correct syntax for a key-value pair in a dictionary?",
+    "options": ["key1: value1", "5j", "'count'", "'key'"],
+    "answer": 0,
+    "explanation": "A Python dictionary is a sequence of key-value pairs separated by commas. Here is the correct syntax: key1: value1.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #4"
+  },
+  {
+    "id": "python-fcc-005",
+    "prompt": "What does this print?",
+    "code": "print(len('Hello world!'))",
+    "options": ["10", "12", "11", "13"],
+    "answer": 1,
+    "explanation": "The len function returns all characters within a string. Every single character(and space) in Hello world! would result in a length of 12.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #5"
+  },
+  {
+    "id": "python-fcc-006",
+    "prompt": "What are anonymous functions called?",
+    "options": ["Type function", "Lambda function", "Sorted Function", "beta functions"],
+    "answer": 1,
+    "explanation": "Lambda functions are anonymous functions that can contain only one expression.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #6"
+  },
+  {
+    "id": "python-fcc-007",
+    "prompt": "Which operator is used to perform Bitwise XOR operations?",
+    "options": ["~", "&", "^", "|"],
+    "answer": 2,
+    "explanation": "The ^ operator is bitwise XOR: each result bit is 1 where exactly one of the operands has a 1.\n\n5 ^ 3   # 6  (0b101 ^ 0b011 = 0b110)",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #7"
+  },
+  {
+    "id": "python-fcc-008",
+    "prompt": "What does this print?",
+    "code": "organization = 'freeCodeCamp'\nprint(type(organization))",
+    "options": ["<class 'str'>", "<class 'var'>", "error", "<class 'char'>"],
+    "answer": 0,
+    "explanation": "Python's type() method returns the class type for the object.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #8"
+  },
+  {
+    "id": "python-fcc-009",
+    "prompt": "What does this print?",
+    "code": "list = ['rahul', 'monica', 'george', 'ross', 'george', 'ross']\nprint(len(set(list)) - len(list))",
+    "options": ["2", "6", "0", "-2"],
+    "answer": 3,
+    "explanation": "Lists can have duplicate items while Sets only contain unique items.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #9"
+  },
+  {
+    "id": "python-fcc-010",
+    "prompt": "What does this print?",
+    "code": "word = 'free'\nphrase = 'code camp'\nprint(word + phrase)",
+    "options": ["free + code camp", "freecode camp", "free code camp", "code campfree"],
+    "answer": 1,
+    "explanation": "+ joins strings exactly as they are, without adding a space. 'free' has no trailing space, so the result is 'freecode camp'.\n\n'free' + ' ' + 'code camp'   # 'free code camp'\nf'{word} {phrase}'           # same, with an f-string",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #10"
+  },
+  {
+    "id": "python-fcc-011",
+    "prompt": "Which operator is used to perform Bitwise NOT operations?",
+    "options": ["--", "++", "~", "!"],
+    "answer": 2,
+    "explanation": "The ~ operator is used in Python to perform Bitwise NOT operations.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #11"
+  },
+  {
+    "id": "python-fcc-012",
+    "prompt": "Which operator is used to perform Bitwise OR operations?",
+    "options": ["x", "|", ">>>", "<<<"],
+    "answer": 1,
+    "explanation": "The | operator is used in Python to perform Bitwise OR operations.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #12"
+  },
+  {
+    "id": "python-fcc-013",
+    "prompt": "Which operator is used to perform Bitwise AND operations?",
+    "options": ["&", "{{", "&&", "<"],
+    "answer": 0,
+    "explanation": "The & operator is used in Python to perform Bitwise AND operations.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #13"
+  },
+  {
+    "id": "python-fcc-014",
+    "prompt": "Which method is used to count the set bits in an integer?",
+    "options": ["double.bit_count()", "int.bit_count()", "float.bit_count()", "int.count()"],
+    "answer": 1,
+    "explanation": "int.bit_count() is used to count set bits in an integer",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #14"
+  },
+  {
+    "id": "python-fcc-015",
+    "prompt": "Which module supports regular expressions?",
+    "options": ["regex", "pyregex", "pythonre", "re"],
+    "answer": 3,
+    "explanation": "The Python re module provides regular expression support.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #15"
+  },
+  {
+    "id": "python-fcc-016",
+    "prompt": "What keyword is used to raise exceptions?",
+    "options": ["try", "raise", "goto", "except"],
+    "answer": 1,
+    "explanation": "The raise keyword is used in Python to throw exceptions.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #16"
+  },
+  {
+    "id": "python-fcc-017",
+    "prompt": "Which one is the correct way to get the last item for the following list: numbers = [1, 2, 3, 4, 5]?",
+    "options": ["numbers.pop()", "numbers[len(numbers)-1]", "numbers[-1]", "All of the above"],
+    "answer": 3,
+    "explanation": "All three get the last item. numbers[-1] and numbers[len(numbers)-1] read it; numbers.pop() also removes it from the list.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #17"
+  },
+  {
+    "id": "python-fcc-018",
+    "prompt": "Which of the following is not a complex number?",
+    "options": ["2 + 3l", "complex(2, 3)", "2 + 3j", "2 + 3J"],
+    "answer": 0,
+    "explanation": "Python 3 has no l suffix: 2 + 3l is a SyntaxError. (In Python 2, l or L marked a long integer.) j or J marks the imaginary part, and complex(2, 3) builds 2+3j.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #18"
+  },
+  {
+    "id": "python-fcc-019",
+    "prompt": "Which of the following list methods directly modifies the original list?",
+    "options": ["reversed()", "sorted()", "sort()", "None of the above"],
+    "answer": 2,
+    "explanation": "sort() and reverse() directly modify the original list, while sorted() and reversed() return a copy of the original list.",
+    "practicality": 9,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #19"
+  },
+  {
+    "id": "python-fcc-020",
+    "prompt": "Which of the following options will reverse this string: sentence='freeCodeCamp rules'?",
+    "options": ["sentence.sort(reverse=True)", "sentence[::-1]", "reversed(sentence)", "sentence.reverse()"],
+    "answer": 1,
+    "explanation": "In Python, [::-1] will return a reversed copy of the string.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #20"
+  },
+  {
+    "id": "python-fcc-021",
+    "prompt": "Which module provides a framework for writing line-oriented command interpreters?",
+    "options": ["sys", "cmd", "io", "os"],
+    "answer": 1,
+    "explanation": "The cmd module makes it easier to use a series of commands within command-line interfaces (CLI)",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #21"
+  },
+  {
+    "id": "python-fcc-022",
+    "prompt": "Which module provides a way of using operating system dependent functionality?",
+    "options": ["os", "builtins", "sys", "io"],
+    "answer": 0,
+    "explanation": "The Python os module is a set of functions used within the operating system. Some of these functions include fetching directory contents or creating new directories.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #22"
+  },
+  {
+    "id": "python-fcc-023",
+    "prompt": "Which module is used to capture command-line arguments given at a file's runtime ?",
+    "options": ["sys", "collections", "os", "itertools"],
+    "answer": 0,
+    "explanation": "We can use sys.argv to get a list of command line arguments.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #23"
+  },
+  {
+    "id": "python-fcc-024",
+    "prompt": "What does this evaluate to?",
+    "code": "2 // 4",
+    "options": ["2", "0", "0.5", "0.0"],
+    "answer": 1,
+    "explanation": "// is floor division: it divides and rounds down to a whole number. 2 / 4 is 0.5, so 2 // 4 is 0 (an int, since both operands are ints).",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #24"
+  },
+  {
+    "id": "python-fcc-025",
+    "prompt": "Which function is used to accept input from the user?",
+    "options": ["string()", "inputing()", "input()", "raw_input()"],
+    "answer": 2,
+    "explanation": "To take input from the user we use the input() function",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #25"
+  },
+  {
+    "id": "python-fcc-026",
+    "prompt": "What does a class's __init__() method do?",
+    "options": ["It initializes any imports you may have included at the top of your file.", "It is included to preserve backwards compatibility issues.", "It is a method that acts as a constructor and is called automatically whenever a new object is created from a class. It sets the initial state of a new object.", "It is a method that acts as a destructor and is called automatically whenever an object is destroyed."],
+    "answer": 2,
+    "explanation": "__init__() is a special method that is called whenever a new object is instantiated from a class. It is used to initialize the attributes of the class.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #26"
+  },
+  {
+    "id": "python-fcc-027",
+    "prompt": "Which of the following is NOT a parameter of the sorted() method?",
+    "options": ["reverse", "iloc", "iterable", "key"],
+    "answer": 1,
+    "explanation": "The sorted() method can accept up to 3 parameters which are iterable, key and reverse",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #27"
+  },
+  {
+    "id": "python-fcc-028",
+    "prompt": "Which of the following is not an attribute of the datetime.now() function?",
+    "options": ["month", "year", "day", "week"],
+    "answer": 3,
+    "explanation": "The attributes of the datetime.now() function are year, month, day, hour, minute, second and microsecond",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #28"
+  },
+  {
+    "id": "python-fcc-029",
+    "prompt": "What does this print?",
+    "code": "print((10, 20, 30, 40, 50, 60, 70, 80)[2:5])",
+    "options": ["(30, 40, 50)", "(30, 40, 50, 60)", "(10, 20, 30)", "(20, 30, 40)"],
+    "answer": 0,
+    "explanation": "A slice [2:5] starts at index 2 and stops before index 5, so it takes indexes 2, 3 and 4: (30, 40, 50).",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #29"
+  },
+  {
+    "id": "python-fcc-030",
+    "prompt": "What does this print?",
+    "code": "print((100,) * 2)",
+    "options": ["(100, 100)", "(200,)", "200", "((100,), (100,))"],
+    "answer": 0,
+    "explanation": "* repeats a tuple's items. (100,) is a one-item tuple (the comma makes it a tuple), so (100,) * 2 is (100, 100).",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #30"
+  },
+  {
+    "id": "python-fcc-031",
+    "prompt": "Which of the following outputs 'camp'?",
+    "options": ["print('freecodecamp'[-4:10])", "print('freecodecamp'[-4:])", "print('freecodecamp'[8:11])", "print('freecodecamp'[8::-1])"],
+    "answer": 1,
+    "explanation": "Here we use the negative index to start slicing at the 4th index from the end of the string.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #31"
+  },
+  {
+    "id": "python-fcc-032",
+    "prompt": "Which Type casting method lets users convert a specific data type into a required data type?",
+    "options": ["Default Type Conversion", "Widening Type Conversion", "Explicit Type Conversion", "Implicit Type Conversion"],
+    "answer": 2,
+    "explanation": "In Explicit Type Conversion, users convert the data type of an object to the required data type.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #32"
+  },
+  {
+    "id": "python-fcc-033",
+    "prompt": "Which one of these is not a Dunder method?",
+    "options": ["__len__", "__init__", "__func", "__add__"],
+    "answer": 2,
+    "explanation": "Dunder methods are names that are preceded and succeeded by double underscores, hence __func method is not a Dunder method.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #33"
+  },
+  {
+    "id": "python-fcc-034",
+    "prompt": "What do these return?",
+    "code": "type(1)\ntype((1,))",
+    "options": ["<class 'dict'>  <class 'list'>", "<class 'int'>  <class 'tuple'>", "<class 'int'> <class 'int'>", "<class 'str'> <class 'int'>"],
+    "answer": 1,
+    "explanation": "type(1) will return <class 'int'> and type((1,)) will return <class 'tuple'>",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #34"
+  },
+  {
+    "id": "python-fcc-035",
+    "prompt": "Which method can be used to replace parts of a string?",
+    "options": ["replace()", "repl()", "switch()", "find()"],
+    "answer": 0,
+    "explanation": "If you need to search through a string for a pattern, and replace it with another pattern, you can use the replace() method.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #35"
+  },
+  {
+    "id": "python-fcc-036",
+    "prompt": "What is the correct way to create a function?",
+    "options": ["function function_name(parameter):", "def function_name(parameters):", "definition function_name {[parameters]}:", "create function_name(parameters):"],
+    "answer": 1,
+    "explanation": "The following snippet shows the general syntax to define a function in Python: def function_name(parameters):",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #36"
+  },
+  {
+    "id": "python-fcc-037",
+    "prompt": "What is a correct syntax to output 'Hello World'?",
+    "options": ["print('Hello World')", "p('Hello World')", "echo('Hello World')", "printf('Hello World')"],
+    "answer": 0,
+    "explanation": "To print anything in Python, you use the print() function.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #37"
+  },
+  {
+    "id": "python-fcc-038",
+    "prompt": "How can you create an empty dictionary?",
+    "options": ["{}", "[]", "list()", "()"],
+    "answer": 0,
+    "explanation": "You can create an empty dictionary with {} in Python.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #38"
+  },
+  {
+    "id": "python-fcc-039",
+    "prompt": "How can you create an empty set?",
+    "options": ["set()", "{}", "()", "dict()"],
+    "answer": 0,
+    "explanation": "You must call the set() function to create an empty set in Python.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #39"
+  },
+  {
+    "id": "python-fcc-040",
+    "prompt": "The value of empty sequences, collections, and the number 0 are all ...",
+    "options": ["FALSENESS", "Falsy", "Truthy", "TRUENESS"],
+    "answer": 1,
+    "explanation": "Empty sequences, collections, and the number 0 are falsy values in Python.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #40"
+  },
+  {
+    "id": "python-fcc-041",
+    "prompt": "What operator can you use to check if a value is in a sequence?",
+    "options": ["in", "member", "inside", "partof"],
+    "answer": 0,
+    "explanation": "The in operator is a membership operator in Python. It can be used to check if a value is in a sequence or not because it returns True if the value is in the list and False if it is not in the list.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #41"
+  },
+  {
+    "id": "python-fcc-042",
+    "prompt": "A value that evaluates to True in a boolean context is known as...",
+    "options": ["Falsy", "TRUENESS", "Truthful", "Truthy"],
+    "answer": 3,
+    "explanation": "A value that evaluates to True in a boolean context is known as a truthy value.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #42"
+  },
+  {
+    "id": "python-fcc-043",
+    "prompt": "What logical operator returns True if both operands are True?",
+    "options": ["and", "or", "not", "list"],
+    "answer": 0,
+    "explanation": "The and operator returns True if both operands are True and False otherwise.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #43"
+  },
+  {
+    "id": "python-fcc-044",
+    "prompt": "What is the “greater than” operator?",
+    "options": ["<=", "<", ">", ">="],
+    "answer": 2,
+    "explanation": "The “greater than” operator is > in Python. It returns True if the value on the left is greater than the value on the right. We can also use it to compare strings in alphabetical order.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #44"
+  },
+  {
+    "id": "python-fcc-045",
+    "prompt": "The canonical implementation of the Python programming language, as distributed on python.org is known as...",
+    "options": ["QPython", "CPython", "PPython", "MPython"],
+    "answer": 1,
+    "explanation": "CPython is the reference implementation of Python, written in C and distributed on python.org. Others include PyPy and Jython.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #45"
+  },
+  {
+    "id": "python-fcc-046",
+    "prompt": "When did Python first appear?",
+    "options": ["2021", "2001", "2011", "1991"],
+    "answer": 3,
+    "explanation": "Python first appeared in 1991.",
+    "practicality": 1,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #46"
+  },
+  {
+    "id": "python-fcc-047",
+    "prompt": "What is the addition assignment operator?",
+    "options": ["==", "=+", "+", "+="],
+    "answer": 3,
+    "explanation": "The += operator lets you add a value (right operand) to the current value of a variable and store the result of the calculation in the same variable (left operand). This is shorter than using + and then = separately.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #47"
+  },
+  {
+    "id": "python-fcc-048",
+    "prompt": "What is the meaning of PEP?",
+    "options": ["Python Enhancement Proposal", "Python Excellent Performance", "Python Environmental Protection", "Python Experimentation Platform"],
+    "answer": 0,
+    "explanation": "In the context of Python, PEP means Python Enhancement Proposal. A PEP is a design document that provides information to the Python community, or describes a new feature for Python or its processes or environment.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #48"
+  },
+  {
+    "id": "python-fcc-049",
+    "prompt": "What is the correct way to write Boolean values?",
+    "options": ["true/false", "tRuE/FaLsE", "TRUE/FALSE", "True/False"],
+    "answer": 3,
+    "explanation": "In Python, we have to write Boolean values like this: True and False. If we don't write them like this, they will not be recognized as keywords in the program.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #49"
+  },
+  {
+    "id": "python-fcc-050",
+    "prompt": "What does this evaluate to?",
+    "code": "'Hi' * 2",
+    "options": ["A TypeError", "'HiHi'", "'Hi2'", "'HiHiHiHi'"],
+    "answer": 1,
+    "explanation": "* with a string and an int repeats the string: 'Hi' * 2 is 'HiHi'.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #50"
+  },
+  {
+    "id": "python-fcc-051",
+    "prompt": "What is the name of a value associated with an object that can be referenced by its name using dot notation?",
+    "options": ["Attribute", "Characteristic", "Method", "Property"],
+    "answer": 0,
+    "explanation": "An attribute is a value associated with an object that can be referenced by its name using dot notation.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #51"
+  },
+  {
+    "id": "python-fcc-052",
+    "prompt": "What is the “less than or equal to” operator?",
+    "options": ["<=", ">", ">=", "<"],
+    "answer": 0,
+    "explanation": "The “less than or equal to” operator is <= in Python. It returns True if the value on the left is less than or equal to the value on the right. We can also use it to compare strings in alphabetical order.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #52"
+  },
+  {
+    "id": "python-fcc-053",
+    "prompt": "What built-in function returns the largest item in an iterable or the largest of two or more arguments?",
+    "options": ["maximum()", "largest()", "max()", "min()"],
+    "answer": 2,
+    "explanation": "The max() function returns the largest item in an iterable or the largest of two or more arguments.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #53"
+  },
+  {
+    "id": "python-fcc-054",
+    "prompt": "Which of these is not a keyword?",
+    "options": ["forward", "if", "return", "for"],
+    "answer": 0,
+    "explanation": "The words if, return, and for, are Python keywords but forward is not a Python keyword. Python keywords are reserved words, so they cannot be used as variable names, function names, or any other identifiers in a Python program.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #54"
+  },
+  {
+    "id": "python-fcc-055",
+    "prompt": "What built-in data structure can store key-value pairs?",
+    "options": ["Boolean", "String", "List", "Dictionary"],
+    "answer": 3,
+    "explanation": "A dictionary can store key-value pairs, which are pairs of associated values. We use the key to access its corresponding value in the dictionary.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #55"
+  },
+  {
+    "id": "python-fcc-056",
+    "prompt": "What method is used to remove a key-value pair from a dictionary and return its value?",
+    "options": [".insert()", ".push()", ".pop()", ".append()"],
+    "answer": 2,
+    "explanation": "The .pop() method is used to remove a key-value pair from the dictionary and return the value.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #56"
+  },
+  {
+    "id": "python-fcc-057",
+    "prompt": "What is the floor division operator?",
+    "options": ["*", "**", "//", "/"],
+    "answer": 2,
+    "explanation": "The floor division operator in Python is //. This operator performs a mathematical division that rounds down to the nearest integer.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #57"
+  },
+  {
+    "id": "python-fcc-058",
+    "prompt": "What value does a function return by default if it doesn't have a return statement?",
+    "options": ["0", "An empty string", "None", "An empty list"],
+    "answer": 2,
+    "explanation": "Python functions return the special value of None if they do not have an explicit return statement.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #58"
+  },
+  {
+    "id": "python-fcc-059",
+    "prompt": "What keyword is used to define a class?",
+    "options": ["def", "create", "blueprint", "class"],
+    "answer": 3,
+    "explanation": "The class keyword is used in Python to define a class.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #59"
+  },
+  {
+    "id": "python-fcc-060",
+    "prompt": "What built-in function returns the smallest item in an iterable or the smallest of two or more arguments?",
+    "options": ["minimum()", "max()", "smallest()", "min()"],
+    "answer": 3,
+    "explanation": "The min() function returns the smallest item in an iterable or the smallest of two or more arguments.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #60"
+  },
+  {
+    "id": "python-fcc-061",
+    "prompt": "What is the name of the exception raised when a name that you are referencing in the code doesn't exist?",
+    "options": ["NameError", "IndexError", "TypeError", "KeyError"],
+    "answer": 0,
+    "explanation": "A NameError is raised in Python when a name that you are referencing in the code doesn't exist.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #61"
+  },
+  {
+    "id": "python-fcc-062",
+    "prompt": "Which one of these operators is used to raise a number to the power of an exponent?",
+    "options": ["*", "^", "!", "**"],
+    "answer": 3,
+    "explanation": "The power operator is ** in Python. We use it to raise the number on the left to the power of the exponent on the right. For example, 5 ** 3 means 5 raised to the power 3. The result would be 125.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #62"
+  },
+  {
+    "id": "python-fcc-063",
+    "prompt": "What built-in function returns a number rounded to a given number of digits of precision after the decimal point?",
+    "options": ["approximate()", "rounding()", "round()", "decimal()"],
+    "answer": 2,
+    "explanation": "The round() function returns a number rounded to a given number of digits of precision after the decimal point.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #63"
+  },
+  {
+    "id": "python-fcc-064",
+    "prompt": "Non-empty sequences, non-empty collections, and numerical values different from 0 are...",
+    "options": ["FALSENESS", "TRUENESS", "Truthy", "Falsy"],
+    "answer": 2,
+    "explanation": "Non-empty sequences, collections, and numerical values different from 0 are truthy values.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #64"
+  },
+  {
+    "id": "python-fcc-065",
+    "prompt": "How can you create an empty list?",
+    "options": ["dict()", "(())", "[]", "??"],
+    "answer": 2,
+    "explanation": "You can create an empty list with [] or with list() in Python.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #65"
+  },
+  {
+    "id": "python-fcc-066",
+    "prompt": "What is the name of the exception raised when an operation or function is applied to an object of an inappropriate type?",
+    "options": ["NameError", "IndexError", "KeyError", "TypeError"],
+    "answer": 3,
+    "explanation": "A TypeError is raised in Python when an operation or function is applied to an object of an inappropriate type.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #66"
+  },
+  {
+    "id": "python-fcc-067",
+    "prompt": "What function returns True if any element of the iterable evaluates to True?",
+    "options": ["any()", "one()", "none()", "all()"],
+    "answer": 0,
+    "explanation": "The any() function returns True if any element of the iterable passed as an argument evaluates to True. Else, it returns False.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #67"
+  },
+  {
+    "id": "python-fcc-068",
+    "prompt": "How can you write a “Hello, World” program?",
+    "options": ["print(\"Hello, World!\")", "echo(\"Hello, World!\")", "show(\"Hello, World!\")", "console.log(\"Hello, World!\")"],
+    "answer": 0,
+    "explanation": "In Python, we use the built-in print() function to print a value to the console. We pass the value as an argument within parentheses.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #68"
+  },
+  {
+    "id": "python-fcc-069",
+    "prompt": "How do you define a variable?",
+    "options": ["<variable_name> <= <value>", "<variable_name> = <value>", "<value> = <variable_name>", "<value> <= <variable_name>"],
+    "answer": 1,
+    "explanation": "In Python, we define a variable with <variable_name> = <value>.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #69"
+  },
+  {
+    "id": "python-fcc-070",
+    "prompt": "String literals prefixed with 'f' or 'F' are commonly called...",
+    "options": ["x-string", "strings-f", "p-string", "f-strings"],
+    "answer": 3,
+    "explanation": "f-strings are string literals prefixed with 'f' and 'F' in Python.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #70"
+  },
+  {
+    "id": "python-fcc-071",
+    "prompt": "What is the modulo operator?",
+    "options": ["/", "%", "//", "^"],
+    "answer": 1,
+    "explanation": "The modulo operator in Python is %. It returns the remainder of dividing the left hand operand by right hand operand.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #71"
+  },
+  {
+    "id": "python-fcc-072",
+    "prompt": "What function can you call to get interactive help on writing Python programs and using Python modules?",
+    "options": ["assistance()", "helpme()", "please()", "help()"],
+    "answer": 3,
+    "explanation": "The help() function can be called in Python to get interactive help on writing Python programs and using Python modules.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #72"
+  },
+  {
+    "id": "python-fcc-073",
+    "prompt": "What logical operator returns True if any of the operands are True?",
+    "options": ["or", "and", "console", "not"],
+    "answer": 0,
+    "explanation": "The or operator returns True if any of the operands is True.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #73"
+  },
+  {
+    "id": "python-fcc-074",
+    "prompt": "What keyword is used to return a value from a function?",
+    "options": ["continue", "pass", "break", "return"],
+    "answer": 3,
+    "explanation": "The return keyword is used to return a value from a function.This terminates the execution of the function to return the value.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #74"
+  },
+  {
+    "id": "python-fcc-075",
+    "prompt": "Which one of these operators has the highest precedence?",
+    "options": ["**", "/", "*", "and"],
+    "answer": 0,
+    "explanation": "The exponentiation operator ** has the highest precedence of these four options.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #75"
+  },
+  {
+    "id": "python-fcc-076",
+    "prompt": "What is the “less than” operator?",
+    "options": ["<=", ">=", ">", "<"],
+    "answer": 3,
+    "explanation": "The “less than” operator is < in Python. It returns True if the value on the left is less than the value on the right. We can also use it to compare strings in alphabetical order.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #76"
+  },
+  {
+    "id": "python-fcc-077",
+    "prompt": "What is the name of the exception raised when you try to divide by zero?",
+    "options": ["ZeroDivisionError", "KeyError", "NameError", "TypeError"],
+    "answer": 0,
+    "explanation": "A ZeroDivisionError is raised in Python when you try to divide by zero.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #77"
+  },
+  {
+    "id": "python-fcc-078",
+    "prompt": "What logical operator returns True if the operand is False?",
+    "options": ["or", "and", "not", "array"],
+    "answer": 2,
+    "explanation": "The not operator returns True if the operand is False and False if the operand is True.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #78"
+  },
+  {
+    "id": "python-fcc-079",
+    "prompt": "What function can you call to open a file?",
+    "options": ["open()", "print()", "extend()", "read()"],
+    "answer": 0,
+    "explanation": "The open() function opens a file in a Python program.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #79"
+  },
+  {
+    "id": "python-fcc-080",
+    "prompt": "What module provides access to the mathematical functions defined by the C standard?",
+    "options": ["functions", "calculus", "math", "algebra"],
+    "answer": 2,
+    "explanation": "The math module provides access to the mathematical functions defined by the C standard in Python.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #80"
+  },
+  {
+    "id": "python-fcc-081",
+    "prompt": "The integer used to refer to a character in a string or an element in a list or tuple is known as an...",
+    "options": ["index", "location", "position", "integer"],
+    "answer": 0,
+    "explanation": "Strings, lists, tuples, and other sequences in Python have indices, which are integers used to refer to its elements.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #81"
+  },
+  {
+    "id": "python-fcc-082",
+    "prompt": "How can you check if the key \"Nora\" is in the \"names\" dictionary?",
+    "options": ["\"Nora\" in names", "names is in \"Nora\"", "names in \"Nora\"", "\"Nora\" is in names"],
+    "answer": 0,
+    "explanation": "To check if a key is in a dictionary, first we write the key followed by in and then the name of the dictionary. In this case, the correct option is \"Nora\" in names.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #82"
+  },
+  {
+    "id": "python-fcc-083",
+    "prompt": "What method takes an iterable as an argument and adds the elements of that iterable to a list as individual elements?",
+    "options": [".add()", ".append()", ".join()", ".extend()"],
+    "answer": 3,
+    "explanation": "The .extend() method takes an iterable as an argument and adds the elements of that iterable to a list as individual elements.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #83"
+  },
+  {
+    "id": "python-fcc-084",
+    "prompt": "Are lists mutable or immutable?",
+    "options": ["Neither Mutable or Immutable", "Mutable", "Immutable", "Both Mutable and Immutable"],
+    "answer": 1,
+    "explanation": "Lists are mutable built-in data structures in Python. This means that you can add new elements to a list, update the elements of a list, and remove elements from a list.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #84"
+  },
+  {
+    "id": "python-fcc-085",
+    "prompt": "What function returns True if all the elements of an iterable evaluate to True?",
+    "options": ["all()", "any()", "none()", "zero()"],
+    "answer": 0,
+    "explanation": "The all() function returns True if all the elements of the iterable passed as an argument evaluate to True. Else, it returns False.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #85"
+  },
+  {
+    "id": "python-fcc-086",
+    "prompt": "What function can you use to transform a number represented as a string into an integer?",
+    "options": ["complex()", "bin()", "int()", "float()"],
+    "answer": 2,
+    "explanation": "The int() function takes a string as an argument and returns an integer.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #86"
+  },
+  {
+    "id": "python-fcc-087",
+    "prompt": "What is the “greater than or equal to” operator?",
+    "options": ["<=", "<", ">", ">="],
+    "answer": 3,
+    "explanation": "The “greater than or equal to” operator is >= in Python. It returns True if the value on the left is greater than or equal to the value on the right. We can also use it to compare strings in alphabetical order.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #87"
+  },
+  {
+    "id": "python-fcc-088",
+    "prompt": "The first index of a sequence is...",
+    "options": ["0", "2", "-1", "1"],
+    "answer": 0,
+    "explanation": "The first index of a sequence in Python is 0.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #88"
+  },
+  {
+    "id": "python-fcc-089",
+    "prompt": "What keyword is used to define a function?",
+    "options": ["def", "if", "return", "class"],
+    "answer": 0,
+    "explanation": "The def keyword is used to define a function in Python.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #89"
+  },
+  {
+    "id": "python-fcc-090",
+    "prompt": "Strings are...",
+    "options": ["Immutable", "Unstoppable", "Maintainable", "Mutable"],
+    "answer": 0,
+    "explanation": "Strings are immutable, so we can't update or remove their characters after they have been defined in the program.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #90"
+  },
+  {
+    "id": "python-fcc-091",
+    "prompt": "Who created the Python programming language?",
+    "options": ["Guido van Rossum", "Alan Turing", "Tim Berners-Lee", "Ada Lovelace"],
+    "answer": 0,
+    "explanation": "Guido van Rossum created the Python programming language.",
+    "practicality": 1,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #91"
+  },
+  {
+    "id": "python-fcc-092",
+    "prompt": "Which of the following operators is NOT a bitwise operator?",
+    "options": ["%", "|", "~", "&"],
+    "answer": 0,
+    "explanation": "% is the modulo operator in Python. The operators &, |, and ~ are bitwise operators.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #92"
+  },
+  {
+    "id": "python-fcc-093",
+    "prompt": "What is the data type of the value returned by the input() function?",
+    "options": ["Integer", "Boolean", "String", "List"],
+    "answer": 2,
+    "explanation": "The built-in function input() always returns a string. If you need to work with this value as a different data type, you will need to convert it.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #93"
+  },
+  {
+    "id": "python-fcc-094",
+    "prompt": "What built-in function returns a reverse iterator that allows you to iterate over the elements of an iterable in reverse order?",
+    "options": ["sorted()", "reversing()", "reversed()", "backwards()"],
+    "answer": 2,
+    "explanation": "The reversed() function returns a reverse iterator that you can use to iterate over an iterable in reverse order.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #94"
+  },
+  {
+    "id": "python-fcc-095",
+    "prompt": "The keys of a dictionary must be...",
+    "options": ["Strings only", "Mutable", "Either; any value works", "Hashable (in practice, immutable types like str, int and tuple)"],
+    "answer": 3,
+    "explanation": "Dictionary keys must be hashable, so their hash can't change while they're in the dict. str, int and tuples of hashable values work; a list or dict as a key raises TypeError: unhashable type.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #95"
+  },
+  {
+    "id": "python-fcc-096",
+    "prompt": "It is recommended to write variable names in lowercase with words separated by...",
+    "options": ["an asterisk", "a hash symbol", "a question mark", "an underscore"],
+    "answer": 3,
+    "explanation": "PEP 8, the Style Guide for Python Code, recommends writing variable names in lowercase with words separated by an underscore as necessary to improve readability.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #96"
+  },
+  {
+    "id": "python-fcc-097",
+    "prompt": "Which one of the following options prints \"Hello, World!\" without starting a new line at the end?",
+    "options": ["print(\"Hello, World!\", end=\"\")", "print(\"Hello, World!\")", "print(\"Hello, World!\", end=\"\\n\")", "print(\"Hello, World!\", end=\"\\r\")"],
+    "answer": 0,
+    "explanation": "Adding end=\"\" as the second argument will print the string without adding a new line character at the end. An empty string will be used instead.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #97"
+  },
+  {
+    "id": "python-fcc-098",
+    "prompt": "What is the filename extension of a Python file?",
+    "options": [".py", ".js", ".p", ".html"],
+    "answer": 0,
+    "explanation": "Python files have a .py filename extension.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #98"
+  },
+  {
+    "id": "python-fcc-099",
+    "prompt": "How many spaces are recommended per level of indentation?",
+    "options": ["6", "2", "8", "4"],
+    "answer": 3,
+    "explanation": "In Python, it is recommended to use 4 spaces per level of indentation.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #99"
+  },
+  {
+    "id": "python-fcc-100",
+    "prompt": "The values of a dictionary can be...",
+    "options": ["Neither will work", "only immutable", "only mutable", "Both Mutable and Immutable"],
+    "answer": 3,
+    "explanation": "The values of a Python dictionary can be either mutable or immutable. Both will work correctly.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #100"
+  },
+  {
+    "id": "python-fcc-101",
+    "prompt": "Are tuples mutable or immutable?",
+    "options": ["Mutable", "Both Mutable and Immutable", "Neither Mutable or Immutable", "Immutable"],
+    "answer": 3,
+    "explanation": "Tuples are immutable built-in data structures in Python. This means that you cannot add new elements to a tuple, you cannot update existing elements and you cannot remove elements from a tuple.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #101"
+  },
+  {
+    "id": "python-fcc-102",
+    "prompt": "What built-in function allows you to iterate over multiple iterables in parallel by returning a tuple with an item from each one?",
+    "options": ["iterate()", "print()", "range()", "zip()"],
+    "answer": 3,
+    "explanation": "The zip() function allows you to iterate over multiple iterables in parallel by returning a tuple with an item from each one.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #102"
+  },
+  {
+    "id": "python-fcc-103",
+    "prompt": "What is the name of the exception raised when the interpreter detects that the maximum recursion depth is exceeded?",
+    "options": ["IndexError", "Infinite Loop", "NameError", "RecursionError"],
+    "answer": 3,
+    "explanation": "A RecursionError occurs when the interpreter detects that the maximum recursion depth is exceeded. This usually occurs when the recursive process never reaches the base case.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #103"
+  },
+  {
+    "id": "python-fcc-104",
+    "prompt": "What operator is used to check if two values are equal?",
+    "options": ["==", "===", "!==", "="],
+    "answer": 0,
+    "explanation": "The == operator is used to check if two values are equal in Python. It returns True if the values are equal and False otherwise.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #104"
+  },
+  {
+    "id": "python-fcc-105",
+    "prompt": "What operator is used to concatenate strings?",
+    "options": ["/", "*", "-", "+"],
+    "answer": 3,
+    "explanation": "When the operands are strings, the + operator concatenates them to create a new string. For example: “Hello” + “World” evaluates to 'HelloWorld'.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #105"
+  },
+  {
+    "id": "python-fcc-106",
+    "prompt": "Which one of these options is a valid variable name?",
+    "options": ["my_variable_59", "59my_variable", "my_variable59%", "my^_variable"],
+    "answer": 0,
+    "explanation": "Variable names in Python cannot start with a number, they must start with a letter or an underscore. They can only contain alphanumeric characters and underscores (A-Z, a-z, 0-9, and _).",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #106"
+  },
+  {
+    "id": "python-fcc-107",
+    "prompt": "What built-in function returns the length of a sequence?",
+    "options": ["length()", "s()", "size()", "len()"],
+    "answer": 3,
+    "explanation": "The len() function returns the length (number of items) of an object.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #107"
+  },
+  {
+    "id": "python-fcc-108",
+    "prompt": "What method adds an element to the end of a list?",
+    "options": [".end()", ".append()", ".add()", ".join()"],
+    "answer": 1,
+    "explanation": "The .append() method adds an element to the end of a list in Python.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #108"
+  },
+  {
+    "id": "python-fcc-109",
+    "prompt": "What is the name of the exception raised when you try to index a list, tuple, or string beyond the permitted boundaries?",
+    "options": ["TypeError", "NameError", "KeyError", "IndexError"],
+    "answer": 3,
+    "explanation": "An IndexError is raised in Python when you try to index a list, tuple, or string beyond the permitted boundaries.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #109"
+  },
+  {
+    "id": "python-fcc-110",
+    "prompt": "What module implements pseudo-random number generators for various distributions?",
+    "options": ["generate", "random_nums", "random_numbers", "random"],
+    "answer": 3,
+    "explanation": "The random module implements pseudo-random number generators for various distributions.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #110"
+  },
+  {
+    "id": "python-fcc-111",
+    "prompt": "What built-in function returns a new sorted list from the items in an iterable?",
+    "options": ["copy()", "print()", "sorted()", "sorting()"],
+    "answer": 2,
+    "explanation": "The sorted() function returns a new sorted list from the items in an iterable.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #111"
+  },
+  {
+    "id": "python-fcc-112",
+    "prompt": "What is the name of the exception raised when you try to access the value of a key that doesn't exist in a dictionary?",
+    "options": ["KeyError", "IndexError", "TypeError", "NameError"],
+    "answer": 0,
+    "explanation": "A KeyError is raised in Python when you try to access the value of a key that doesn't exist in a dictionary.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #112"
+  },
+  {
+    "id": "python-fcc-113",
+    "prompt": "How can you cast a value of any data type into a string?",
+    "options": ["Using the int() function", "Using the str() function", "Using the integer() function", "Using the string() function"],
+    "answer": 1,
+    "explanation": "The str() function converts a value of any data type into a string.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #113"
+  },
+  {
+    "id": "python-fcc-114",
+    "prompt": "A value that evaluates to False in a boolean context is known as...",
+    "options": ["Falsy", "Truth", "FALSENESS", "Truthy"],
+    "answer": 0,
+    "explanation": "A value that evaluates to False in a boolean context is known as a falsy value.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #114"
+  },
+  {
+    "id": "python-fcc-115",
+    "prompt": "What function returns the string representing a character whose Unicode code point is the integer passed as an argument?",
+    "options": ["str()", "code()", "ord()", "chr()"],
+    "answer": 3,
+    "explanation": "The chr() function returns the string representing a character whose Unicode code point is the integer passed as an argument.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #115"
+  },
+  {
+    "id": "python-fcc-116",
+    "prompt": "Which one of these options is a valid comment?",
+    "options": ["* This is a comment", "///* This is a comment *///", "//! This is a comment", "# This is a comment"],
+    "answer": 3,
+    "explanation": "In Python, we start a comment with a hash symbol #. A line that starts with this symbol will be interpreted as a comment in a Python program.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #116"
+  },
+  {
+    "id": "python-fcc-117",
+    "prompt": "Which type of programming paradigm does Python support?",
+    "options": ["structured programming", "functional", "object-oriented programming", "all of the mentioned paradigms"],
+    "answer": 3,
+    "explanation": "Python is an interpreted programming language, which supports object-oriented, structured, and functional programming.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #117"
+  },
+  {
+    "id": "python-fcc-118",
+    "prompt": "Which file marks a directory as a regular Python package?",
+    "options": ["main.py", "__init__.py", "__package__.py", "__main__.py"],
+    "answer": 1,
+    "explanation": "__init__.py marks a directory as a regular package and runs when the package is imported. Since Python 3.3, a directory without one can still be imported as a namespace package. __main__.py is what python -m package runs.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #118"
+  },
+  {
+    "id": "python-fcc-119",
+    "prompt": "What does the partition() function do?",
+    "options": ["Split the string at any occurrence of the given argument", "Splits the string at the first occurrence and returns a list", "Splits the string at the first occurrence and returns a tuple", "Splits the string equally"],
+    "answer": 2,
+    "explanation": "The partition() method searches for a specified string, and splits the string into a tuple containing three elements.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #119"
+  },
+  {
+    "id": "python-fcc-120",
+    "prompt": "What is an empty/null statement called?",
+    "options": ["over", "continue", "pass", "goto"],
+    "answer": 2,
+    "explanation": "An empty statement is a statement that does nothing. Python offers the pass statement as an empty statement.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #120"
+  },
+  {
+    "id": "python-fcc-121",
+    "prompt": "Function range(4) will yield an iterable sequence like:",
+    "options": ["[0, 1, 2, 3, 4]", "[4]", "[0, 1, 2, 3]", "[1, 2, 3, 4]"],
+    "answer": 2,
+    "explanation": "range(4) starts at 0 by default and stops before 4: 0, 1, 2, 3.",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #121"
+  },
+  {
+    "id": "python-fcc-122",
+    "prompt": "Which function is used to read a single line from a file",
+    "options": ["read()", "readable()", "readline()", "readlines()"],
+    "answer": 2,
+    "explanation": "readline() function reads a single line from the file and returns the read bytes in the form of a string.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #122"
+  },
+  {
+    "id": "python-fcc-123",
+    "prompt": "Which method is used to convert a list into a string with a suitable delimiter?",
+    "options": [".join()", ".append()", ".pop()", ".extend()"],
+    "answer": 0,
+    "explanation": "You can use the .join string method to convert a list into a string",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #123"
+  },
+  {
+    "id": "python-fcc-124",
+    "prompt": "What is num_list after this runs?",
+    "code": "num_list = (1, 2, 3, [1, 2, 3])\nnum_list[3].extend([4, 5, 6])",
+    "options": ["(1, 2, 3, [1, 2, 3,],[ 4, 5, 6] )", "(1, 2, 3, [ 4, 5, 6])", "(1, 2, 3, [1, 2, 3, 4, 5, 6])", "Error"],
+    "answer": 2,
+    "explanation": "List is mutable in nature so it's size changes",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #124"
+  },
+  {
+    "id": "python-fcc-125",
+    "prompt": "What is the maximum possible length of an identifier?",
+    "options": ["16 characters", "79 characters", "there is no maximum length", "32 characters"],
+    "answer": 2,
+    "explanation": "Identifiers can be of any length.",
+    "practicality": 1,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #125"
+  },
+  {
+    "id": "python-fcc-126",
+    "prompt": "Which of these operators never works with a string operand?",
+    "options": ["*", "-", "+", "%"],
+    "answer": 1,
+    "explanation": "+ concatenates two strings, * repeats a string (with an int), and % formats one ('%s!' % 'hi'). - has no string meaning: 'ab' - 'b' raises TypeError.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #126"
+  },
+  {
+    "id": "python-fcc-127",
+    "prompt": "Which sorting algorithm is a hybrid between merge and insertion sort?",
+    "options": ["Tim Sort", "Insertion Sort", "Quick Sort", "Merge Sort"],
+    "answer": 0,
+    "explanation": "Python's default sort uses Tim Sort, which is a combination of both merge sort and insertion sort.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #127"
+  },
+  {
+    "id": "python-fcc-128",
+    "prompt": "Which of the following is a package-management system written in Python used to install and manage software packages?",
+    "options": ["pip", "pypit", "piip", "None of the above"],
+    "answer": 0,
+    "explanation": "Pip is a standard package manager used to install and manage Python packages",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #128"
+  },
+  {
+    "id": "python-fcc-129",
+    "prompt": "What does this print?",
+    "code": "import math\n\nprint(math.pow(3, 4))",
+    "options": ["43", "81.0", "34", "27"],
+    "answer": 1,
+    "explanation": "3 raised to the power of 4 is 81, and by default math.pow() converts both its arguments to type float",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #129"
+  },
+  {
+    "id": "python-fcc-130",
+    "prompt": "Which of the following is not a tuple method?",
+    "options": ["pop", "count", "index", "None of the above"],
+    "answer": 0,
+    "explanation": "There are only two tuple methods; count and index in Python",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #130"
+  },
+  {
+    "id": "python-fcc-131",
+    "prompt": "What will be the data type of 'John Doe'.split()?",
+    "options": ["List", "set", "string", "tuple"],
+    "answer": 0,
+    "explanation": "The result will be ['John', 'Doe'], which has a list data type",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #131"
+  },
+  {
+    "id": "python-fcc-132",
+    "prompt": "If my_nums = [8,9,10], which of the following can't be used to reverse the list?",
+    "options": ["reverse(my_nums)", "my_nums.reverse()", "my_nums[::-1]", "None of the above"],
+    "answer": 0,
+    "explanation": "reverse isn't a defined Python keyword",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #132"
+  },
+  {
+    "id": "python-fcc-133",
+    "prompt": "Which built-in function returns all properties and methods of the specified object without the values?",
+    "options": ["dir()", "dirs()", "all()", "obj()"],
+    "answer": 0,
+    "explanation": "The dir() function lists all the attributes and methods of a defined object.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #133"
+  },
+  {
+    "id": "python-fcc-134",
+    "prompt": "What does this print?",
+    "code": "num = 1.2345\nprint('%.2f' % num)",
+    "options": ["1.2", "1.25", "1.23", "12.3"],
+    "answer": 2,
+    "explanation": "It rounds the float number to two decimal places",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #134"
+  },
+  {
+    "id": "python-fcc-135",
+    "prompt": "How many mandatory arguments does the range() function have?",
+    "options": ["3", "0", "2", "1"],
+    "answer": 3,
+    "explanation": "The range() function has one required argument(stop) and two optional arguments(start and step).",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #135"
+  },
+  {
+    "id": "python-fcc-136",
+    "prompt": "What does this print?",
+    "code": "y = lambda x: x ** 2 + 7\nprint(y(3))",
+    "options": ["5", "24", "16", "11"],
+    "answer": 2,
+    "explanation": "A Lambda is an anonymous function that can have any number of arguments but only one expression, which is evaluated and returned.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #136"
+  },
+  {
+    "id": "python-fcc-137",
+    "prompt": "Which statement makes sure a file opened with open() gets closed?",
+    "options": ["pass", "await", "finally", "with"],
+    "answer": 3,
+    "explanation": "Calling the open() function while using the with statement automatically closes a file after being processed.",
+    "practicality": 9,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #137"
+  },
+  {
+    "id": "python-fcc-138",
+    "prompt": "Which one of these types is not mutable?",
+    "options": ["lists", "bool", "sets", "functions"],
+    "answer": 1,
+    "explanation": "a bool data type cannot change it's value after being created, therefore it is immutable.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #138"
+  },
+  {
+    "id": "python-fcc-139",
+    "prompt": "What does this evaluate to?",
+    "code": "True + True + False - True == 2",
+    "options": ["1", "Error", "False", "True"],
+    "answer": 2,
+    "explanation": "Since booleans in Python are seen as numeric types, you can perform basic math operations on them. True would equate to 1 while False would equate to 0.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #139"
+  },
+  {
+    "id": "python-fcc-140",
+    "prompt": "What does this print?",
+    "code": "print(list(map(len, ['Welcome', 'To', 'FreeCodeCamp'])))",
+    "options": ["[14, 4, 24]", "21", "[7, 2, 12]", "<map object at 0x10708b580>"],
+    "answer": 2,
+    "explanation": "The map function works as an iterator to return a result after applying the len function to every item for the words list and returns a map object.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #140"
+  },
+  {
+    "id": "python-fcc-141",
+    "prompt": "How do you check the memory usage for Object x?",
+    "options": ["sys.getsizeof(x)", "size(x)", "len(x)", "os.getsizeof(x)"],
+    "answer": 0,
+    "explanation": "When you import the sys module and use the getsizeof() method, Python will calculate how much memory that object has consumed.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #141"
+  },
+  {
+    "id": "python-fcc-142",
+    "prompt": "Which of the following is a good way to input n space separated integers?",
+    "options": ["input().split()", "list(map(int, input().split()))", "list(mapping(int, input().split()))", "int(input())"],
+    "answer": 1,
+    "explanation": "The map() function is used to apply a function to each item in an iterable (like a Python list or dictionary).",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #142"
+  },
+  {
+    "id": "python-fcc-143",
+    "prompt": "Which of the following is the correct syntax to reverse a list?",
+    "options": ["list.reverse", "list.reverse()", "reverse(list)", "list=list.reversing()"],
+    "answer": 1,
+    "explanation": "The .reverse() method doesn't accept any arguments and doesn't have a return value – it only updates the existing list.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #143"
+  },
+  {
+    "id": "python-fcc-144",
+    "prompt": "Which of these is a standard GUI library?",
+    "options": ["Tkinter", "bs4", "Selenium", "Regex"],
+    "answer": 0,
+    "explanation": "Tkinter provides an object-oriented interface to the Tk GUI toolkit that is built-in to Python.",
+    "practicality": 2,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #144"
+  },
+  {
+    "id": "python-fcc-145",
+    "prompt": "What does this print?",
+    "code": "print(round(0.6) - round(-0.6))",
+    "options": ["2", "-1", "1", "0"],
+    "answer": 0,
+    "explanation": "In Python, round(0.6) will round up to 1 and round(-0.6) will round down to -1. The result for round(0.6)-round(-0.6) will be 2.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #145"
+  },
+  {
+    "id": "python-fcc-146",
+    "prompt": "What does this print?",
+    "code": "print({'apple', 'orange', 'apple', 'pear', 'orange', 'banana'})",
+    "options": ["A set of the 4 distinct strings, in no guaranteed order", "TypeError: a set literal cannot have duplicates", "A set of all 6 strings, in the order written", "A list of the 4 distinct strings, sorted"],
+    "answer": 0,
+    "explanation": "A set keeps one copy of each item, so the duplicates collapse to apple, orange, pear and banana. Sets are unordered: the printed order depends on string hashing and can change between runs.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #146"
+  },
+  {
+    "id": "python-fcc-147",
+    "prompt": "What does this print?",
+    "code": "x = 297.4887\nprint('%.3f' % x)",
+    "options": ["297.488", "297.49", "297.489", "297.4885"],
+    "answer": 2,
+    "explanation": "print('%.3f'%x) would round 297.4887 to 3 decimal places.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #147"
+  },
+  {
+    "id": "python-fcc-148",
+    "prompt": "What does this return?",
+    "code": "import math\n\nmath.trunc(3.1)",
+    "options": ["3.14", "0.1", "3", "3.5"],
+    "answer": 2,
+    "explanation": "In Python, math.trunc() will return the truncated integer part of the number. When the number is positive, math.trunc() is similar to the .floor() method. But if the number is negative, math.trunc() is similar to the .ceil() method",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #148"
+  },
+  {
+    "id": "python-fcc-149",
+    "prompt": "What does this print?",
+    "code": "print([10, 20, 60, 90][:2:])",
+    "options": ["[10, 20, 30]", "[10, 20]", "[70, 90]", "[10, 30, 50, 70, 90]"],
+    "answer": 1,
+    "explanation": "In Python, list slicing syntax is list[start:stop[:step]]. The start, stop and step parameters are all optional and if omitted will refer to the defaults of 0, length of sequence and 1 respectively.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #149"
+  },
+  {
+    "id": "python-fcc-150",
+    "prompt": "What does the clear() method in a list do?",
+    "options": ["To delete the last element of the list", "To delete the list", "To delete all the elements of the list", "To delete the specific element of the list"],
+    "answer": 2,
+    "explanation": "In Python, the clear() method in list is used to delete all the elements of the list.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #150"
+  },
+  {
+    "id": "python-fcc-151",
+    "prompt": "Which version of Python introduced the math.perm() and math.prod() functions?",
+    "options": ["Python 3.7", "Python 3.3", "Python 3.8", "Python 3.9"],
+    "answer": 2,
+    "explanation": "The release of Python 3.8 introduced the math.perm() and math.prod() functions.",
+    "practicality": 1,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #151"
+  },
+  {
+    "id": "python-fcc-152",
+    "prompt": "Which of the following is a built-in function?",
+    "options": ["print()", "getcwd()", "perm()", "mainloop()"],
+    "answer": 0,
+    "explanation": "Python's built in print() function is used to print messages to the screen.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #152"
+  },
+  {
+    "id": "python-fcc-153",
+    "prompt": "Which of the following statements is false?",
+    "options": ["Lists in Python are of a fixed size.", "Tuples are an ordered, immutable set of data.", "Dictionaries associate keywords with values.", "Python is an object-oriented language."],
+    "answer": 0,
+    "explanation": "In Python, lists are not fixed-size.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #153"
+  },
+  {
+    "id": "python-fcc-154",
+    "prompt": "Which of the following is NOT a built-in data type?",
+    "options": ["set", "frozenset", "class", "dict"],
+    "answer": 2,
+    "explanation": "In Python, a class is a user defined data type.",
+    "practicality": 3,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #154"
+  },
+  {
+    "id": "python-fcc-155",
+    "prompt": "Which of the following is NOT the right way to find 5 raised to the power of 9?",
+    "options": ["print(5**9)", "print(math.pow(5, 9))", "print(pow(5, 9))", "print(deg(5,9))"],
+    "answer": 3,
+    "explanation": "There is no built-in deg() function. 5**9, pow(5, 9) and math.pow(5, 9) all compute 5 to the 9th (math.pow returns a float).",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #155"
+  },
+  {
+    "id": "python-fcc-156",
+    "prompt": "Which of the following is NOT a list method?",
+    "options": ["pop()", "add()", "append()", "extend()"],
+    "answer": 1,
+    "explanation": "In Python, lists have several built-in methods to perform various operations. However, the method 'add()' is not a valid method for lists.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #156"
+  },
+  {
+    "id": "python-fcc-157",
+    "prompt": "Which of the following statements is true about the random module?",
+    "options": ["The random library is primarily used for generating random strings.", "The random library can generate true random numbers based on hardware entropy.", "The random library cannot be used to generate random numbers within a specified range.", "The random library can only generate pseudo-random numbers."],
+    "answer": 3,
+    "explanation": "The random module in Python generates pseudo-random numbers, which are generated by mathematical algorithms and are not truly random but are sufficiently unpredictable for many purposes. To generate truly random numbers, you may need specialized hardware or external services, which are not provided by the random module.",
+    "practicality": 4,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #157"
+  },
+  {
+    "id": "python-fcc-158",
+    "prompt": "Which of the following functions are known for posing security risks?",
+    "options": ["quit()", "input()", "eval()", "print()"],
+    "answer": 2,
+    "explanation": "If you use the eval() function to get input from an external source you don't know for sure if the code executed is malicious or not. This can pose a security risk to your codebase and it is recommended to avoid using the eval() function.",
+    "practicality": 7,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #158"
+  },
+  {
+    "id": "python-fcc-159",
+    "prompt": "What does this print?",
+    "code": "print([num * num for num in range(10)])",
+    "options": ["[0, 2, 4, 6, 8, 10, 12, 14, 16, 18]", "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]", "[0, 1, 4, 9, 16, 25, 36, 49, 64, 81]", "Error"],
+    "answer": 2,
+    "explanation": "This is a list comprehension that prints a list of squares from 0 to 9. We use list comprehensions to simplify one-liner operations in a for loop",
+    "practicality": 8,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #159"
+  },
+  {
+    "id": "python-fcc-160",
+    "prompt": "Which of the following dunder methods defines the behavior of the addition operator + for objects of a class?",
+    "options": ["__sub__", "__add__", "__mul__", "__len__"],
+    "answer": 1,
+    "explanation": "Dunder methods (Double underscore) are special methods reserved in Python which affect's the behavior of the object and the interaction of the object with other objects.",
+    "practicality": 6,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #160"
+  },
+  {
+    "id": "python-fcc-161",
+    "prompt": "Which of the following statements about decorators is false?",
+    "options": ["Decorators can be applied to classes as well as functions.", "Decorators are applied to a function at compile time.", "A decorator is a function that takes another function and extends its behavior without explicitly modifying it.", "Multiple decorators can be applied to a single function."],
+    "answer": 1,
+    "explanation": "Decorators in Python are applied at runtime, not at compile time. When a decorated function is defined, the decorator is executed immediately, and the result replaces the original function definition in the namespace.",
+    "practicality": 5,
+    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #161"
   }
 ]
