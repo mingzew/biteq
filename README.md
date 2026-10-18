@@ -76,8 +76,7 @@ Cursor's own chat agent is a different harness and doesn't run Claude Code plugi
 | `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered |
 | `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log |
 
-Debugging: `BITEQ_DEBUG=1` (set in the environment Claude Code runs in) records each event to
-`~/.biteq/events.log`. `BITEQ_HOME` changes that directory.
+Debugging: `/biteq debug` records each event to `~/.biteq/events.log`. `/biteq debug off` stops it. `BITEQ_HOME` changes that directory.
 
 ## Adding questions or a language
 

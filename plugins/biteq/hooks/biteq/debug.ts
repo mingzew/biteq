@@ -1,13 +1,24 @@
-// Optional raw event log. Enable with BITEQ_DEBUG=1 in the environment Claude Code runs in;
-// writes ~/.biteq/events.log (one line per event: ISO time, source, payload).
+// Optional raw event log. `/biteq debug` turns it on; writes ~/.biteq/events.log
+// (one line per event: ISO time, source, payload).
+import { getDebug } from './config'
 import type { Io } from './io'
 import { eventsLog } from './store'
 
 const MAX_BYTES = 1024 * 1024
 
+// The Claude event most recently handed to the plugin, so a telemetry line can name what came before the POST.
+let lastClaude: unknown
+
+export function rememberClaude(event: unknown): void {
+  lastClaude = event
+}
+
+export function lastClaudeEvent(): unknown {
+  return lastClaude ?? null
+}
+
 export async function enabled(io: Io): Promise<boolean> {
-  const value = ((await io.env('BITEQ_DEBUG')) ?? '').toLowerCase()
-  return !['', '0', 'false', 'no'].includes(value)
+  return getDebug(io)
 }
 
 /** Append one line. Never throws. (The engine's file API has no append: read, add, write.) */

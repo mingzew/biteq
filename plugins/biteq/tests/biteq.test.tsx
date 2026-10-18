@@ -35,7 +35,7 @@ const DONE = { reason: 'answer', answer: 'done', durationMs: 1, isAborted: false
 // Everything beneath the plugin: question banks, an in-memory store, no env, and the engine's answers.
 // Calls on $ answer { value } (or { deny }); events answer their own result.
 // `shared`: a store the test can also write to, standing for another Claude session using it
-function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal', shared?: Record<string, unknown>) {
+function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal', shared?: Record<string, unknown>, writes?: string[]) {
   const opened: { focus?: true }[] = []
   const clock = mock.clock(on, { now: 1_000_000 })
   if (shared) {
@@ -58,7 +58,10 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
     value: Object.keys(banks).map(lang => ({ name: `${lang}.json`, kind: 'file', size: 1, mtimeMs: 0, isLink: false })),
   }) as never)
   on('fs.read', ($, e) => ({ value: JSON.stringify(banks[String(e.path).split('/').pop()!.replace('.json', '')] ?? []) }))
-  on('fs.write', () => ({ value: undefined }))
+  on('fs.write', ($, e) => {
+    writes?.push(JSON.stringify(e))
+    return { value: undefined }
+  })
   on('command.register', () => ({ value: undefined }) as never)
   on('ui.open', ($, e) => {
     opened.push(e)
@@ -593,5 +596,64 @@ describe('/biteq commands', () => {
     expect(out).toContain("ERROR wrong-id: id must start with 'python-'")
     expect(out).toContain('ERROR wrong-id: needs 2-4 options')
     expect(out).toContain('ERROR wrong-id: answer out of range')
+  })
+})
+
+describe('telemetry', () => {
+  const run = async ($: Engine, args: string) =>
+    String(((await $.prompt.submit({ text: `/biteq ${args}`, wait: false } as never)) as { drop?: string }).drop)
+
+  test('a checkout load does not report an open or an answer', async ($, on) => {
+    const fetched: string[] = []
+    world(on)
+    on('http.fetch', ($, e) => {
+      fetched.push(e.url)
+      return { value: { status: 200, ok: true, headers: {}, text: '' } }
+    })
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'a'))
+    expect(fetched).toEqual([])
+  })
+
+  test('debug on records the Claude event and a checkout still does not report', async ($, on) => {
+    const shared: Record<string, unknown> = {}
+    const writes: string[] = []
+    const fetched: string[] = []
+    world(on, BANKS, 'desktop', shared, writes)
+    on('http.fetch', ($, e) => {
+      fetched.push(e.url)
+      return { value: { status: 200, ok: true, headers: {}, text: '' } }
+    })
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    expect(await run($, 'debug')).toContain('debug on')
+    expect(shared.config).toMatchObject({ debug: true })
+    expect(await run($, 'doctor')).toContain('debug log')
+    expect(await run($, 'doctor')).not.toContain('off (/biteq debug)')
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await click(ui, OPEN(ui, 'a'))
+    expect(fetched).toEqual([])
+    const logged = writes.join('\n')
+    expect(logged).toContain('turn.start')
+    expect(logged).toContain('No telemetry sent to /v1/opens because')
+    expect(logged).toContain('No telemetry sent to /v1/answers because')
+    expect(logged).toContain('the plugin path running outside of ~/.claude/plugins/cache')
+    expect(await run($, 'debug off')).toBe('biteq: debug off')
+    expect(shared.config).toMatchObject({ debug: false })
+    expect(await run($, 'debug maybe')).toBe('usage: /biteq debug [on|off]')
+  })
+
+  test('reset --all leaves the telemetry userId', async ($, on) => {
+    const shared: Record<string, unknown> = {
+      userId: '6b9f1a20-0c3e-4d5f-8a7b-9c0d1e2f3a4b',
+    }
+    world(on, BANKS, 'terminal', shared)
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    expect(await run($, 'reset --all')).toContain('removed: status, stats, config')
+    expect(shared.userId).toBe('6b9f1a20-0c3e-4d5f-8a7b-9c0d1e2f3a4b')
+    expect(shared.stats).toBeUndefined()
+    expect(shared.config).toBeUndefined()
   })
 })

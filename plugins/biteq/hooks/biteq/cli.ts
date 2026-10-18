@@ -1,9 +1,9 @@
-// biteq commands: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | reset [--all] | start | stop
+// biteq commands: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset [--all] | start | stop
 //
 // `/biteq` alone opens the pane. `signal` is the path every status takes: register.ts hands
 // engine events to claude.parse, and the status goes to store.setStatus, then pane.onStatus.
 import type { Status } from '../../types'
-import { getLangs, getPauseWhenDone, setLangs, setPauseWhenDone } from './config'
+import { getDebug, getLangs, getPauseWhenDone, setDebug, setLangs, setPauseWhenDone } from './config'
 import { enabled as debugEnabled } from './debug'
 import type { Io } from './io'
 import { boot as bootPane, onStatus, open as openPane } from './pane'
@@ -12,8 +12,8 @@ import { CONFIG, STATS, eventsLog, setStatus } from './store'
 
 export const COMMAND = {
   name: 'biteq',
-  description: 'biteq quiz pane: /biteq [--lang a,b] | langs | check | stats | doctor | pause on|off | reset',
-  argumentHint: '[pane|langs|check|stats|doctor|pause|reset] [--lang a,b]',
+  description: 'biteq quiz pane: /biteq [--lang a,b] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset',
+  argumentHint: '[pane|langs|check|stats|doctor|pause|debug|reset] [--lang a,b]',
 }
 
 /** Record a status and let the pane react (count the wait, serve a question, flash). */
@@ -111,7 +111,7 @@ async function cmdDoctor(io: Io): Promise<string> {
     `client        ${(await io.client()) ?? 'unsupported or none (headless)'}`,
     `store         ${storeOk}`,
     `status        ${await io.get('status')}`,
-    `debug log     ${(await debugEnabled(io)) ? await eventsLog(io) : 'off (set BITEQ_DEBUG=1 to record events)'}`,
+    `debug log     ${(await debugEnabled(io)) ? await eventsLog(io) : 'off (/biteq debug)'}`,
     `questions     ${total} (${Object.entries(counts).sort().map(([k, n]) => `${k} ${n}`).join(', ')})`,
     `selected      ${(await getLangs(io)).join(',')}`,
     `when done     ${(await getPauseWhenDone(io)) ? 'pause (no new question until Claude works again)' : 'keep serving'}`,
@@ -123,7 +123,7 @@ async function cmdReset(io: Io, all: boolean): Promise<string> {
   await setStatus(io, 'idle')
   if (all) {
     await io.storeDelete(STATS)
-    await io.storeDelete(CONFIG)
+    await io.storeDelete(CONFIG)   // userId stays: it is the machine the users total counts
     removed.push('stats', 'config')
     const log = await eventsLog(io)
     for (const path of [log, `${log}.1`]) {
@@ -135,6 +135,16 @@ async function cmdReset(io: Io, all: boolean): Promise<string> {
     await bootPane(io, await loadQuestions(io, await getLangs(io)))
   }
   return `removed: ${removed.join(', ')}`
+}
+
+/** `/biteq debug` turns the event log on. `off` stops it. Remembered. Does not change which loads send telemetry. */
+async function cmdDebug(io: Io, value: string | undefined): Promise<string> {
+  if (value === undefined || value === 'on') await setDebug(io, true)
+  else if (value === 'off') await setDebug(io, false)
+  else return 'usage: /biteq debug [on|off]'
+  return (await getDebug(io))
+    ? `biteq: debug on. Recording ${await eventsLog(io)}`
+    : 'biteq: debug off'
 }
 
 /** `pause on`: no new question once Claude is done (the default); `off`: keep serving. Remembered. */
@@ -164,9 +174,10 @@ export async function run(io: Io, args: string): Promise<string> {
     case 'doctor': return cmdDoctor(io)
     case 'reset': return cmdReset(io, words.includes('--all'))
     case 'pause': return cmdPause(io, words[1])
+    case 'debug': return cmdDebug(io, words[1])
     case 'start': await signal(io, 'thinking'); return 'biteq: marked thinking'
     case 'stop': await signal(io, 'done'); return 'biteq: marked done'
     default:
-      return 'usage: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | pause on|off | reset [--all] | start | stop'
+      return 'usage: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset [--all] | start | stop'
   }
 }

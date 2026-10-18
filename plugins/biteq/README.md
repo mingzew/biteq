@@ -29,14 +29,14 @@ hints there.)
 | `/biteq stats` | Your stats |
 | `/biteq doctor` | Claude Code version, plugin path, store, status, debug log, questions |
 | `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered |
+| `/biteq debug [on\|off]` | Turn the event log on or off. Remembered. Does not change which sessions send telemetry |
 | `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log |
 | `/biteq start` / `stop` | Manually mark Claude as thinking / done (debugging) |
 
 In the desktop app `/biteq` also works when the app doesn't list it: the plugin catches the typed
 text and never sends it to Claude.
 
-Debugging: `BITEQ_DEBUG=1` in the environment Claude Code runs in records each event to
-`~/.biteq/events.log` (`BITEQ_HOME` moves it).
+Debugging: `/biteq debug` records each event to `~/.biteq/events.log` (`BITEQ_HOME` moves it). `/biteq debug off` stops it.
 
 ## Layout
 
@@ -51,7 +51,7 @@ plugins/biteq/
 │   ├── pane.tsx             questions, answering, onStatus, press(), render()
 │   ├── quiz.ts              question banks, stats, validate
 │   ├── config.ts            remembered languages
-│   ├── debug.ts             BITEQ_DEBUG event log
+│   ├── debug.ts             event log, on after /biteq debug
 │   ├── macos.ts             STUBS: notify, focusApp
 │   └── io.ts                the operations modules get from the engine (see below)
 ├── types/index.d.ts         the session state's contract (what the pane draws from)

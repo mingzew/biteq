@@ -11,7 +11,7 @@ import type { Client, ClientTraits } from './client'
 export type View = PluginState['biteq']
 
 /** The environment variables biteq reads (the engine wants each read named literally). */
-export type EnvName = 'BITEQ_DEBUG' | 'BITEQ_HOME' | 'HOME' | 'USERPROFILE'
+export type EnvName = 'BITEQ_HOME' | 'HOME' | 'USERPROFILE'
 
 export type Io = {
   // persisted across sessions ($.store)
@@ -47,4 +47,8 @@ export type Io = {
 
   // about this session, for /biteq doctor
   version: () => Promise<string>
+
+  // telemetry. sessionId is $.session.id(). httpPost is one POST; ok is a 2xx.
+  sessionId: () => Promise<string>
+  httpPost: (url: string, body: string) => Promise<{ ok: boolean }>
 }

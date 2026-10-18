@@ -34,7 +34,7 @@ plugins/biteq/
 │       ├── pane.tsx     questions, answering, render()
 │       ├── quiz.ts      question banks, stats, validation
 │       ├── config.ts    remembered languages
-│       ├── debug.ts     BITEQ_DEBUG event log
+│       ├── debug.ts     event log, on after /biteq debug
 │       └── macos.ts     stubs, nothing calls them
 ├── types/index.d.ts             the session-state contract
 └── data/questions/*.json        8 banks: bash cs git js python ruby sql ts
@@ -352,7 +352,7 @@ the message box, so key hints there would be a lie.
 ```mermaid
 flowchart LR
   E["turn.start"] --> CE["claudeEvent($, e)"]
-  CE --> LOG["debug.logEvent (if BITEQ_DEBUG)"]
+  CE --> LOG["debug.logEvent (if /biteq debug)"]
   CE --> P["claude.parse(e)<br/>pure: event → Status | null"]
   P --> SG["cli.signal(io, status)"]
   SG --> SS["store.setStatus<br/>writes status + since IF CHANGED"]
@@ -361,7 +361,7 @@ flowchart LR
 
 Four hooks feed this path: `turn.start`, `turn.complete`, `tool.call` and `classic.Notification`, at
 `register.ts:117-137`. They all funnel into the same two-line helper, `claudeEvent`, which logs the
-event when `BITEQ_DEBUG` is set and then calls `signal(it, parse(e))`.
+event when debug is on (`/biteq debug`) and then calls `signal(it, parse(e))`.
 
 `claude.ts` is the **adapter**, and it is pure — no `io`, no side effects, just a function from
 event to `Status | null`. `null` means ignore this event. The rules are small enough to read whole:

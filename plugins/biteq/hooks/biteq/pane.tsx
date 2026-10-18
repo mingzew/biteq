@@ -12,6 +12,7 @@ import { drawQuiz, keys, type PaneView } from './draw'
 import type { Io } from './io'
 import { getPauseWhenDone, setPauseWhenDone } from './config'
 import { loadStats, saveStats } from './quiz'
+import { reportAnswer } from './telemetry'
 
 export type { PaneView } from './draw'
 
@@ -140,6 +141,7 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
     }
   })
   await io.set('stats', () => s)
+  void reportAnswer(io)
   // With Enter-to-next (the CLI) the ring stays on the picked option, so pressing it again moves on;
   // the hint bar is kept out of the ring. Otherwise the ring moves to the Next button.
   await io.focus((await io.traits()).enterMovesOn ? keys.answer(q, idx) : keys.next(q))
