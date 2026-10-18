@@ -9,7 +9,7 @@
 //   pane    the pane: questions, answering, render()
 //   quiz    question banks, stats, validation
 //   config  remembered languages
-//   debug   BITEQ_DEBUG event log
+//   debug   event log, on after /biteq debug
 //   macos   stubs
 //   telemetry  a placed pane and a recorded answer
 //   io      what the modules may do through the engine
@@ -20,7 +20,7 @@ import { parse } from './biteq/claude'
 import type { ClaudeEvent } from './biteq/claude'
 import { COMMAND, boot, run, signal, typedArgs } from './biteq/cli'
 import { toClient, traitsOf } from './biteq/client'
-import { logEvent } from './biteq/debug'
+import { logEvent, rememberClaude } from './biteq/debug'
 import type { Io, View } from './biteq/io'
 import { isHintKey } from './biteq/draw'
 import { closed, press, render, tick, view } from './biteq/pane'
@@ -81,7 +81,6 @@ function io($: EngineInterface): Io {
     exists: path => $.fs.exists(path),
     env: name => {
       switch (name) {
-        case 'BITEQ_DEBUG': return $.env.get('BITEQ_DEBUG')
         case 'BITEQ_HOME': return $.env.get('BITEQ_HOME')
         case 'HOME': return $.env.get('HOME')
         case 'USERPROFILE': return $.env.get('USERPROFILE')
@@ -120,6 +119,7 @@ function io($: EngineInterface): Io {
 
 async function claudeEvent($: EngineInterface, e: ClaudeEvent): Promise<void> {
   const it = io($)
+  rememberClaude(e)
   void logEvent(it, 'claude', e)
   await signal(it, parse(e))
 }

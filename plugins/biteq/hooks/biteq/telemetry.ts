@@ -4,7 +4,9 @@
 // A checkout (`--plugin-dir`, `claude plugin test`) is skipped, and so is any
 // client other than the CLI or the desktop Code tab. A thrown POST or a non-2xx
 // is dropped. The quiz does not wait on either report.
+// With /biteq debug on, a POST that is sent is also written to the debug log.
 import { Client } from './client'
+import { lastClaudeEvent, logEvent } from './debug'
 import type { Io } from './io'
 import { USER_ID } from './store'
 
@@ -43,14 +45,28 @@ export async function reportAnswer(io: Io): Promise<void> {
 }
 
 async function send(io: Io, path: Path): Promise<boolean> {
-  if (!ENDPOINT || !io.pluginRoot.includes(INSTALLED)) return false
+  if (!ENDPOINT || !io.pluginRoot.includes(INSTALLED)) {
+    const reasons = [
+      !ENDPOINT ? 'no endpoint is set' : '',
+      io.pluginRoot.includes(INSTALLED) ? '' : `the plugin path running outside of ~/.claude/plugins/cache (${io.pluginRoot})`,
+    ].filter(Boolean)
+    void logEvent(io, 'telemetry', `No telemetry sent to ${path} because ${reasons.join(', and ')}`)
+    return false
+  }
   if (path === '/v1/opens' && (await io.get('openReported'))) return false
   const harness = await harnessOf(io)
   if (!harness) return false
   const body = await payload(io, harness)
   if (!body) return false
-  const response = await io.httpPost(`${ENDPOINT}${path}`, JSON.stringify(body))
-  return response.ok
+  const after = lastClaudeEvent()
+  let ok = false
+  try {
+    const response = await io.httpPost(`${ENDPOINT}${path}`, JSON.stringify(body))
+    ok = response.ok
+    return ok
+  } finally {
+    void logEvent(io, 'telemetry', { endpoint: path, ok, after })
+  }
 }
 
 async function harnessOf(io: Io): Promise<Harness | null> {

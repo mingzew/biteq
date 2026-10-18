@@ -11,7 +11,7 @@ import type { Client, ClientTraits } from './client'
 export type View = PluginState['biteq']
 
 /** The environment variables biteq reads (the engine wants each read named literally). */
-export type EnvName = 'BITEQ_DEBUG' | 'BITEQ_HOME' | 'HOME' | 'USERPROFILE'
+export type EnvName = 'BITEQ_HOME' | 'HOME' | 'USERPROFILE'
 
 export type Io = {
   // persisted across sessions ($.store)

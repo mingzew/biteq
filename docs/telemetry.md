@@ -440,6 +440,8 @@ Stack outputs:
 
 A report is skipped when `io.pluginRoot` does not contain `.claude/plugins/cache/` (`claude --plugin-dir` and `claude plugin test` both load the checkout), when `io.client()` is not `terminal` or `desktop`, or when the POST throws or returns a non-2xx.
 
+`/biteq debug` turns on the event log (`~/.biteq/events.log`). It does not change that cache rule. While the log is on, a POST that is sent appends one line: the path (`/v1/opens` or `/v1/answers`), whether the response was ok, and the Claude event that happened before the POST. A report skipped for a missing endpoint or a checkout path appends `Would have sent telemetry to endpoint <url> but <reason>`. `/biteq debug off` stops the log. `/biteq reset --all` clears it with the rest of config.
+
 - `types/index.d.ts`. Add `openReported: boolean` to `PluginState['biteq']`.
 - `register.ts`. Declare the `openReported` atom, default `false`, and add a case to both `io()` switches. Implement `sessionId` and `httpPost`. From `openPane`, after `isPlaced` is true, call `reportOpen` without awaiting it.
 - `io.ts`. Add `sessionId(): Promise<string>` and `httpPost(url, body): Promise<{ ok: boolean }>` to `Io`.

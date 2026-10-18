@@ -90,7 +90,7 @@ Paths are relative to `plugins/biteq/`. Rows are in the order they happen.
 | `hooks/biteq/pane.tsx` | `advance()` calling `pick()` | Picks Q1 from the current language: the first one in serving order that still has unseen questions (Ruby here). Within it, usually a random unseen question, and 30% of the time one you previously missed in that language. Every Ruby question is served before the next language starts; once every language is done the cycle restarts. The first question appears at boot, before the first prompt. |
 | `hooks/register.ts` | `on('ui.render')` calling `pane.view()` then `pane.render()` | `view()` reads session state (which subscribes the pane to it); `render()` draws "○ idle" and Q1 with its options. |
 | `hooks/register.ts` | `on('prompt.submit')` calling `cli.typedArgs()` | **2. Prompt 1.** You submit a prompt. It isn't `/biteq`, so it passes through to Claude unchanged. (A typed `/biteq` would run here and never reach Claude; see below.) |
-| `hooks/register.ts` | `on('turn.start')` then `claudeEvent()` | Logs the event if `BITEQ_DEBUG=1` (`debug.logEvent`), then hands `{ event: 'turn.start' }` to `claude.parse()`. |
+| `hooks/register.ts` | `on('turn.start')` then `claudeEvent()` | Logs the event if debug is on (`/biteq debug`, `debug.logEvent`), then hands `{ event: 'turn.start' }` to `claude.parse()`. |
 | `hooks/biteq/claude.ts` | `parse()` | `turn.start` maps to `thinking`. |
 | `hooks/biteq/cli.ts` | `signal()` | Every status goes through here. It calls `store.setStatus()`, then `pane.onStatus()` with the old and new status. |
 | `hooks/biteq/store.ts` | `setStatus()` | Status `idle` → `thinking`: writes `status` and sets `since` to the engine clock's now. Returns the previous status. |

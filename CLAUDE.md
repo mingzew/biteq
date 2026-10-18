@@ -41,7 +41,7 @@ plugins/biteq/
 │   ├── quiz.ts              question banks, stats, validation, serving order
 │   ├── config.ts            remembered languages, pause-when-done
 │   ├── store.ts             store keys, JSON helpers, session status
-│   ├── debug.ts             BITEQ_DEBUG event log
+│   ├── debug.ts             event log, on after /biteq debug
 │   └── macos.ts             stubs
 ├── types/index.d.ts         session-state contract ($.state keys the pane draws from)
 ├── data/questions/*.json    one bank per language; see formatting-rules.md there
