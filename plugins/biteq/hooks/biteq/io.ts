@@ -35,10 +35,6 @@ export type Io = {
   openPane: (focus: boolean) => Promise<boolean>   // false: the surface can't place it yet
   closePane: () => Promise<void>
   focus: (key: string) => Promise<void>   // move the pane's focus ring; a deny is ignored
-  redraw: () => void   // draw the pane again, though no state changed (the thinking timer)
-
-  // the engine's clock (a test can move it), in milliseconds
-  now: () => Promise<number>
 
   // which supported client this session runs in (null: unsupported, or headless), and what that
   // means for biteq; see client.ts

@@ -1,6 +1,6 @@
 # biteq lesson plan: boot to a question answered
 
-A guided read of `plugins/biteq`, in fifteen steps, for someone seeing the code for the first
+A guided read of `plugins/biteq`, in fourteen steps, for someone seeing the code for the first
 time. Each step takes one small piece of the journey from the engine loading the plugin to the user
 answering a question, and explains it in under 350 words.
 
@@ -11,8 +11,8 @@ know the pieces. This document builds the pieces up one at a time. Paths are rel
 **Part A — Orientation** (steps 1–4) · what the files are, how the plugin is loaded, and the two
 abstractions everything else rests on.
 **Part B — Boot to first paint** (steps 5–8) · from `session.start` to a pane on screen.
-**Part C — Watching Claude** (steps 9–11) · how the plugin knows the agent is working.
-**Part D — Answering** (steps 12–15) · the press, the write, the next question.
+**Part C — Watching Claude** (steps 9–10) · how the plugin knows the agent is working.
+**Part D — Answering** (steps 11–14) · the press, the write, the next question.
 
 ---
 
@@ -80,8 +80,8 @@ Then `hooks/hooks.json`, which is one line:
 That is the entry point. The engine loads that module and everything it imports, as ES modules —
 there is no `require`, and a file with a suffix outside the allowed set simply is not loaded.
 
-Loading the module **runs its top level**. That is when the six `atom(...)` calls at
-`register.ts:33-38` build their descriptors. Nothing has been registered yet and no hook has fired.
+Loading the module **runs its top level**. That is when the seven `atom(...)` calls at
+`register.ts:40-46` build their descriptors. Nothing has been registered yet and no hook has fired.
 
 Finally the engine calls the module's `register` export:
 
@@ -117,13 +117,13 @@ filesystem, the store, the UI, the clock — the plugin environment has no `fs`,
 usable only in the file whose hook received it.
 
 That is a problem, because `pane.tsx` needs to read state and `quiz.ts` needs to read files. The
-answer is `io($)` at `register.ts:40-89`: a function that takes `$` and returns a plain object of
+answer is `io($)` at `register.ts:48-116`: a function that takes `$` and returns a plain object of
 small closures, each one capturing `$`:
 
 ```ts
 storeGet: key => $.store.get(key),
 read: async path => String(await $.fs.read(path)),
-now: () => $.clock.now(),
+exists: path => $.fs.exists(path),
 ```
 
 The object is ordinary data, so it *can* cross imports. Every other module takes it as its first
@@ -131,26 +131,27 @@ parameter — `boot(io)`, `answer(io, qid, idx)`, `loadStats(io)` — and never 
 
 `io.ts` is the matching type. It does not implement anything; it declares what the modules are
 allowed to do, grouped by kind: `storeGet`/`storeSet` for across-session storage, `get`/`set` for
-this session's state, `list`/`read`/`write`/`exists` for files, `openPane`/`toast`/`redraw` for the
-UI, `now` for the clock.
+this session's state, `list`/`read`/`write`/`exists` for files, `openPane`/`closePane`/`focus` for the
+pane, and `sessionId`/`httpPost` for telemetry.
 
 Two consequences worth noticing. Every hook builds a **fresh** `io` — you will see `io($)` written
 inline at each call site rather than stored in a variable, because `$` belongs to that dispatch.
 And because modules depend on a plain object rather than the engine, they can be tested by passing
 a hand-written `io`.
 
-### Step 4 — The state contract: a declaration, six atoms, and two switches
+### Step 4 — The state contract: a declaration, seven atoms, and two switches
 
 ```
 types/index.d.ts                register.ts                     io()
 ─────────────────               ───────────                     ────
 PluginState['biteq'] = {     const status  = atom(...)       get: key => switch (key) {
-  status:    Status         ──▶ const since   = atom(...)   ──▶   case 'status': read($, status)
-  since:     number             const current = atom(...)         case 'since':  read($, since)
-  current:   Current            const engaged = atom(...)         ...
-  engaged:   boolean            const dismissed = atom(...)     }
-  dismissed: boolean            const stats   = atom(...)
-  stats:     Stats
+  status:    Status         ──▶ const current = atom(...)   ──▶   case 'status':  read($, status)
+  current:   Current            const engaged = atom(...)         case 'current': read($, current)
+  engaged:   boolean            const dismissed = atom(...)       ...
+  dismissed: boolean            const openReported = atom(...)  }
+  openReported: boolean         const stats   = atom(...)
+  stats:     Stats              const picker  = atom(...)
+  picker:    Picker
 }
 ```
 
@@ -160,19 +161,19 @@ Three layers describe one thing, and each exists for a different reason.
 This is types only — no runtime effect. Its job is to make `io.get('stats')` return `Stats`, and to
 make a typo like `io.get('statz')` a compile error.
 
-`register.ts:33-38` **names** the six values as atoms. An atom is an address plus a default; it
+`register.ts:40-46` **names** the seven values as atoms. An atom is an address plus a default; it
 holds no value itself. The `as const` on each is required so TypeScript narrows `'biteq'` and
 `'status'` to literals and can look them up in the declaration above.
 
-Then the **switches** in `io()` at lines 45–66. These look like boilerplate and people are tempted
+Then the **switches** in `io()` at lines 53–76. These look like boilerplate and people are tempted
 to replace them with a lookup table, so it is worth knowing why they cannot be: the engine requires
 every read and write to name its atom literally in source, so `read($, atoms[key])` is refused at
-load. Six cases is the price. The `as unknown as Io['get']` casts on lines 53 and 66 are there
+load. Seven cases is the price. The `as unknown as Io['get']` casts on lines 63 and 76 are there
 because TypeScript cannot prove the key-to-type correlation across the branches; the `Io` type
 restores exactness for callers.
 
-Why six separate values instead of one object? Because reading a value inside the render hook
-subscribes the drawing to it, so a write redraws the pane. Six values means a change to `status`
+Why seven separate values instead of one object? Because reading a value inside the render hook
+subscribes the drawing to it, so a write redraws the pane. Separate values mean a change to `status`
 does not have to carry `stats` along with it. The one place two things are deliberately bundled is
 `current`, which holds `{ question, picked }` together so that answering is one write and therefore
 one redraw.
@@ -181,48 +182,39 @@ one redraw.
 
 ## Part B — Boot to first paint
 
-### Step 5 — `session.start` fires: a command, a boot, and a heartbeat
+### Step 5 — `session.start` fires: a command and a boot
 
 ```mermaid
 flowchart TB
   S["session.start"] --> A["$.command.register(COMMAND)<br/>/biteq is now a slash command"]
   S --> B["await boot(io($))<br/>→ cli.cmdPane(...)"]
-  S --> C["$.clock.every(1000, tick)<br/>the thinking timer"]
   A --> N["return next(e)"]
   B --> N
-  C --> N
 ```
 
-The first hook to run is at `register.ts:99-104`, and it does three unrelated things:
+The first hook to run is at `register.ts:132-136`, and it does two things:
 
 ```ts
 on('session.start', async ($, e, next) => {
   await $.command.register(COMMAND)
   await boot(io($))
-  $.clock.every(1000, () => void tick(io($)))
   return next(e)
 })
 ```
 
 `$.command.register(COMMAND)` registers `/biteq` with its description and argument hint, defined at
-`cli.ts:15-19`. From here the engine lists it in the slash-command menu and routes `/biteq …` to
+`cli.ts:13-17`. From here the engine lists it in the slash-command menu and routes `/biteq …` to
 the `command.run` hook.
 
 `boot(io($))` is the interesting one and step 6 follows it in. Note the `await`: the engine awaits
 the first `session.start`, so work done here is finished before turn one.
 
-`$.clock.every(1000, ...)` starts the repeating timer that makes the elapsed-seconds counter move.
-The callback stays in the plugin's environment and runs there each time the wait resolves. Note it
-builds a fresh `io($)` on every tick rather than closing over one, for the reason from step 3.
-
 Then `return next(e)`. This hook **observes** — it passes the event down the chain unchanged. Most
 of `biteq`'s hooks do this; the exceptions are the ones that deliberately take over, which you will
-see in steps 12 and 13.
+see in steps 11 and 12.
 
 Two details that catch people out. This hook fires **again after every hot reload**, so `/biteq` is
-re-registered and `boot` re-runs — both are written to be safe to repeat. And a second
-`$.clock.every` is started on each reload, which is worth knowing when you are editing the file
-repeatedly in one session.
+re-registered and `boot` re-runs — both are written to be safe to repeat.
 
 ### Step 6 — `boot` → `cmdPane`: choosing languages, loading banks
 
@@ -230,7 +222,7 @@ repeatedly in one session.
 flowchart TB
   B["cli.boot(io)"] --> P["cmdPane(io, lang=undefined, focus=false)"]
   P --> LC["quiz.languageCounts(io)<br/>io.list + io.read over data/questions"]
-  P --> GL["config.getLangs(io)<br/>store 'config' → ['python']"]
+  P --> GL["config.getLangs(io)<br/>store 'config' → ['cs']"]
   GL --> LQ["quiz.loadQuestions(io, langs)"]
   LQ --> Q["Question[] tagged with q.lang"]
   Q --> E{"empty?"}
@@ -238,24 +230,24 @@ flowchart TB
   E -->|no| ON["pane.boot + pane.open → step 7"]
 ```
 
-`boot` at `cli.ts:29-31` is a one-liner: it calls `cmdPane(io, undefined, false)`. The same function
+`boot` at `cli.ts:27-29` is a one-liner: it calls `cmdPane(io, undefined, false)`. The same function
 backs the `/biteq` command, which is why booting and typing `/biteq` land in the same place. The
 two arguments say *no explicit language* and *do not take the keyboard*.
 
-`cmdPane` at `cli.ts:43-68` runs in four stages.
+`cmdPane` at `cli.ts:41-68` runs in four stages.
 
 **Count what exists.** `languageCounts` walks `data/questions/` with `io.list`, keeps the `.json`
 files, and reads each one to count its questions. The filename minus `.json` is the language name —
 there is no language registry anywhere, the directory *is* the registry.
 
 **Decide which languages.** No `--lang` was passed, so it calls `config.getLangs(io)`, which reads
-the store's `config` key and falls back to `DEFAULT_LANGS = ['python']`. If `--lang` *had* been
+the store's `config` key and falls back to `DEFAULT_LANGS = ['cs']`. If `--lang` *had* been
 given, it would be validated against the counts first, and a bad name returns an error string
 without touching anything.
 
 **Load the questions.** `loadQuestions` reads the banks for the chosen languages and tags each
 question with `q.lang` from its filename. A bank that fails to parse contributes nothing rather
-than throwing — `.catch(() => [])` on line 62 of `quiz.ts`.
+than throwing — `.catch(() => [])` on line 70 of `quiz.ts`.
 
 **Bail or continue.** No questions means a message telling the user to run `/biteq langs`, and the
 pane never opens. Otherwise it hands off to the pane (step 7) and returns a line of text — which
@@ -280,14 +272,14 @@ flowchart TB
 
 Two functions, both in `pane.tsx`.
 
-`boot` at lines 20-24 stores the chosen questions in a **module-level variable**, not in session
+`boot` at lines 26-34 stores the chosen questions in a **module-level variable**, not in session
 state. That is deliberate: the question bank is derived from files on disk and can be rebuilt at any
 time, so it does not need to survive a reload, and keeping it out of state avoids shipping the whole
 bank across the port on every read. It then copies the stored stats into the `stats` atom. That
 `io.set` is, in a normal session, the first entry `biteq` creates in the session state table —
 everything before it was reads.
 
-`open` at lines 117-122 does three things. It clears `dismissed`, because an explicit open overrides
+`open` at lines 244-250 does three things. It clears `dismissed`, because an explicit open overrides
 a previous close. It calls `io.openPane(false)`, which is `$.ui.open` with the pane id `biteq`; the
 `false` means do not take the keyboard. The result is `isPlaced` — **false is not an error**, it
 means the surface has nowhere to put the pane yet, typically a terminal that is not wide enough.
@@ -305,7 +297,7 @@ show up once this window is wide enough" warning, or a line telling the user how
 
 ```mermaid
 flowchart LR
-  R["ui.render<br/>component: Pane, requestId: biteq"] --> V["view(io)<br/>reads 4 atoms + io.now()"]
+  R["ui.render<br/>component: Pane, requestId: biteq"] --> V["view(io)<br/>reads 4 atoms"]
   V --> SUB["reading here SUBSCRIBES<br/>the drawing to each value"]
   R --> EL["$.ui.resolve(e)<br/>this surface's element table"]
   V --> RE["render(v, el, surface)"]
@@ -313,16 +305,24 @@ flowchart LR
   RE --> TREE["a tree of Box / Text / Button"]
 ```
 
-The render hook at `register.ts:145-146` is two lines and matched tightly to this plugin's own pane:
+The render hook at `register.ts:177-202` is matched tightly to this plugin's own pane. Stripped of
+the desktop branch, it is:
 
 ```ts
-on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) =>
-  render(await view(io($)), $.ui.resolve(e), e.surface))
+on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+  const quiz = await view(io($))
+  const traits = traitsOf(toClient(e.surface))
+  return render(quiz, $.ui.resolve(e), traits, fillRows(e.props))
+})
 ```
 
-`view(io)` at `pane.tsx:170-179` gathers everything the drawing needs: `current` (unpacked into
-`question` and `picked`), `status`, `stats`, and `elapsedMs` computed as `io.now() - since`. Four
-atom reads and a clock read. The important part is invisible: **reading a value inside a render hook
+On the desktop app (`traits.clientModule`) it returns a `Client` element instead, which loads
+`quiz-client.tsx` into the app and hands it the same `view` plus the traits as props; if that
+fails, it falls back to `render`.
+
+`view(io)` at `pane.tsx:294-314` gathers everything the drawing needs: `current` (unpacked into
+`question` and `picked`), `status` (to show the resting message once Claude is done), `stats`, and
+`picker`. Four atom reads. The important part is invisible: **reading a value inside a render hook
 subscribes this drawing to it**. That is the mechanism that makes a later `io.set('current', …)`
 redraw the pane with nobody calling invalidate. It is also why `view` is the only place these are
 read together.
@@ -331,17 +331,19 @@ read together.
 `Text` and `Button` differ between the terminal, the desktop tab and the editor, so the surface
 hands you its own constructors. This is why `render` takes `el` as a parameter.
 
-`render` at lines 181-251 is a pure function: data in, tree out, no `io`, no engine. It draws the
-status banner, the question, the options, and the buttons. Two details to note for later steps:
+`render` at `pane.tsx:321-323` hands straight on to `drawQuiz` at `quiz-client.tsx:105-256`, a pure
+function: data in, tree out, no `io`, no engine. It draws the streak line, the question, the
+options, and the buttons. It lives in `quiz-client.tsx` because the desktop module draws with the
+same function. Two details to note for later steps:
 
 Each Button's `key` encodes both the action and the question — `answer:1:python-03`, `next:<id>`,
-`skip:<id>`, `close`. Step 12 explains why.
+`skip:<id>`, `close`. Step 11 explains why.
 
-Every Button's `onPress` is `handled`, an empty function. The handlers are deliberately *not* where
-the work happens. Step 12 explains that too.
+`render` passes `drawQuiz` an empty `onPress`, so on a hook-drawn pane every Button's handler does
+nothing. The handlers are deliberately *not* where the work happens. Step 11 explains that too.
 
-The `key()` helper only returns a hotkey on the terminal, because the desktop keeps keystrokes in
-the message box, so key hints there would be a lie.
+The `key()` helper only returns a hotkey when `traits.hotkeys` is set (the CLI), because the
+desktop keeps keystrokes in the message box, so key hints there would be a lie.
 
 ---
 
@@ -355,12 +357,12 @@ flowchart LR
   CE --> LOG["debug.logEvent (if /biteq debug)"]
   CE --> P["claude.parse(e)<br/>pure: event → Status | null"]
   P --> SG["cli.signal(io, status)"]
-  SG --> SS["store.setStatus<br/>writes status + since IF CHANGED"]
+  SG --> SS["store.setStatus<br/>writes status IF CHANGED"]
   SS --> OS["pane.onStatus(was, now) → step 10"]
 ```
 
 Four hooks feed this path: `turn.start`, `turn.complete`, `tool.call` and `classic.Notification`, at
-`register.ts:117-137`. They all funnel into the same two-line helper, `claudeEvent`, which logs the
+`register.ts:149-169`. They all funnel into the same two-line helper, `claudeEvent`, which logs the
 event when debug is on (`/biteq debug`) and then calls `signal(it, parse(e))`.
 
 `claude.ts` is the **adapter**, and it is pure — no `io`, no side effects, just a function from
@@ -371,20 +373,20 @@ event to `Status | null`. `null` means ignore this event. The rules are small en
   done.
 - `tool.before` → `waiting` only for `AskUserQuestion` and `ExitPlanMode`, the tools that block on
   the person. Everything else is `null`.
-- `tool.after` → `thinking`, which is what resumes the banner after a question or a permission
-  prompt.
+- `tool.after` → `thinking`, which is how the status leaves `waiting` once a question or a
+  permission prompt is answered.
 - `notification` → `waiting` for `permission_prompt`, `done` for `idle_prompt`, else `null`.
 
 Keeping this pure is what makes the status rules testable without an engine, and it is the one file
 you would rewrite to support a different agent.
 
-`cli.signal` at `cli.ts:22-26` is the single choke point every status passes through — worth
+`cli.signal` at `cli.ts:20-24` is the single choke point every status passes through — worth
 remembering when you are hunting for where a status change came from. It drops `null`, calls
 `setStatus`, then hands the old and new status to the pane.
 
-`store.setStatus` at `store.ts:38-45` only writes **when the status actually changed**, and when it
-does it also resets `since` to `io.now()`. That guard is what keeps the elapsed timer from
-restarting on every tool call during a long turn.
+`store.setStatus` only writes **when the status actually changed**. Every tool call during a long
+turn maps to `thinking` again, and without that guard each one would rewrite the atom and redraw
+the pane.
 
 ### Step 10 — `onStatus`: counting the wait and serving a question
 
@@ -394,13 +396,10 @@ flowchart TB
   SAME -->|yes| STOP["return"]
   SAME -->|no| T{"now === thinking<br/>and was !== waiting?"}
   T -->|yes| A["engaged = false<br/>waits + 1<br/>advance if no/answered question<br/>openPane unless dismissed"]
-  T -->|no| W{"now === waiting?"}
-  W -->|yes| B["toast: Claude needs your input"]
-  W -->|no| D{"now === done<br/>from thinking/waiting?"}
-  D -->|yes| C["toast: Claude is done, go review"]
+  T -->|no| N["nothing to do"]
 ```
 
-`pane.onStatus` at `pane.tsx:96-110` is where the plugin's actual product logic lives: this is the
+`pane.onStatus` at `pane.tsx:226-241` is where the plugin's actual product logic lives: this is the
 function that decides a new AI wait has begun and that the user should be given something to do.
 
 The `thinking` branch is the substantial one, and each line earns its place.
@@ -416,61 +415,26 @@ been answered. An unanswered question is left alone — you do not lose your pla
 started a new turn.
 
 The pane is reopened unless `dismissed` is set. That flag is how an explicit close by the person
-sticks: `on('ui.close')` at `register.ts:140-143` sets it, but only when `e.origin.kind === 'person'`,
+sticks: `on('ui.close')` at `register.ts:172-175` sets it, but only when `e.origin.kind === 'person'`,
 so a close the plugin or the engine caused does not count as the user saying no.
 
 Note the `was !== 'waiting'` guard on the branch. Coming back from `waiting` to `thinking` — which
 happens every time a permission prompt is answered — is a *resumption*, not a new wait. Without that
 guard, approving three tool calls would count as three waits and inflate the metric.
 
-The other two branches only raise toasts. Nothing is paused when Claude finishes: the question stays
-on screen and the keys keep working.
-
-### Step 11 — The heartbeat: one tick a second
-
-```mermaid
-flowchart LR
-  CL["$.clock.every(1000)"] --> TK["tick(io)"]
-  TK --> Q{"status === thinking?"}
-  Q -->|no| N["do nothing"]
-  Q -->|yes| RD["io.redraw()<br/>$.ui.invalidate('ui.render')"]
-  RD --> RE["ui.render fires again"]
-  RE --> EL["view recomputes<br/>elapsedMs = now - since"]
-```
-
-`tick` at `pane.tsx:112-114` is three lines and exists for one reason: the banner shows
-`● Claude is thinking  0:07`, and nothing else would make that number change.
-
-This is worth dwelling on because it is the clearest example of the architecture's cost. Session
-state has not changed, so no subscription fires. To move the counter, the plugin has to *ask* for a
-redraw with `io.redraw()`, which is `$.ui.invalidate('ui.render')`.
-
-Follow what one tick costs. A clock dispatch wakes the plugin environment. `tick` reads `status`,
-which is a `state.get` across the port. If the status is `thinking`, `io.redraw()` is another
-message. That triggers a fresh `ui.render` dispatch, in which `view()` performs four `state.get`
-calls and a `clock.now`, and the resulting tree crosses back. Call it ten messages a second while
-Claude is working, for a counter.
-
-The guard matters: when the status is anything other than `thinking`, `tick` costs a single read and
-stops. An idle session is nearly free.
-
-The timer redraws once a second, not more often, because each repaint is a round trip to the
-engine. The counter stays correct either way — `elapsedMs` is computed from `since`, not
-accumulated — it just steps once a second.
-
-This is the part of `biteq` a `Client` surface module would most improve, by running the counter on
-the surface's own frame clock with no dispatch at all. That is a future option, not a defect.
+Every other change does nothing here. What `done` changes is in step 14: the pane rests instead of
+serving.
 
 ---
 
 ## Part D — Answering
 
-### Step 12 — The press: why the handler is empty
+### Step 11 — The press: why the handler is empty
 
 ```mermaid
 flowchart TB
   CLICK["user clicks option b"] --> EV["ui.press<br/>element: answer:1:python-03"]
-  EV --> HK["register.ts:150 hook"]
+  EV --> HK["register.ts:230 hook"]
   HK --> G{"ours?<br/>plugin and requestId"}
   G -->|no| NX["return next(e) — pass it on"]
   G -->|yes| PR["pane.press(io, e.element)"]
@@ -480,31 +444,33 @@ flowchart TB
   SPL --> CL["close → close(io)"]
 ```
 
-Here is the thing that confuses every reader of `pane.tsx`: every Button is drawn with
-`onPress={handled}`, and `handled` is `() => {}`. The buttons appear to do nothing.
+Here is the thing that confuses every reader of `pane.tsx`: `render` draws every Button with an
+`onPress` that is `() => {}`. The buttons appear to do nothing.
 
-The work happens one level up, in the `ui.press` hook at `register.ts:150-154`, which acts on the
-Button's **key** instead of its handler. The reason is in the comment at `pane.tsx:146-150`: every
+The work happens one level up, in the `ui.press` hook at `register.ts:230-234`, which acts on the
+Button's **key** instead of its handler. The reason is in the comment at `pane.tsx:267-269`: every
 redraw gives the Buttons new handlers, and the desktop app can deliver a click carrying the
 *previous* drawing's handler. The engine then finds no handler, logs `ui_press not handled`, and the
-click is lost. Since the timer redraws the pane every second (step 11), that race is not rare.
+click is lost. Every state write redraws the pane, and answering makes several in a row, so that
+race is real.
 
 A key is stable in a way a handler is not. `answer:1:python-03` means the same thing in any drawing,
 so acting on it works no matter which drawing the click came from.
 
-That is why the keys carry structure. `pane.tsx:137-143` builds them: `answer:<idx>:<qid>`,
-`next:<qid>`, `skip:<qid>`, and the bare `close`. `press` at lines 152-157 splits on `:`, reads the
-action, and rejoins the rest as the question id — rejoining matters because an id could itself
-contain a colon.
+That is why the keys carry structure. `keys` at `quiz-client.tsx:36-46` builds them:
+`answer:<idx>:<qid>`, `next:<qid>`, `skip:<qid>`, the bank screen's `bank:on:<lang>` /
+`bank:off:<lang>`, and bare ones such as `close`, `serve`, `restart` and `banks`. `press` at
+`pane.tsx:271-289` splits on `:`, reads the action, and rejoins the rest as the question id —
+rejoining matters because an id could itself contain a colon.
 
-Notice that the question id travels **in the key**. That is what lets the handlers in step 13 check
+Notice that the question id travels **in the key**. That is what lets the handlers in step 12 check
 that the question they were drawn for is still the one on screen, which is how a double click is
 prevented from counting twice.
 
 The hook currently has no matcher, so every press in the session reaches it and is passed on with
 `next(e)`. That is recorded as finding F1 in `docs/review-notes.md`.
 
-### Step 13 — `answer()`: one guarded write, then the bookkeeping
+### Step 12 — `answer()`: one guarded write, then the bookkeeping
 
 ```mermaid
 sequenceDiagram
@@ -521,7 +487,7 @@ sequenceDiagram
     A->>H: state.get then state.set stats — header redraw
 ```
 
-`answer` at `pane.tsx:64-93` is the most carefully written function in the codebase, and every bit of
+`answer` at `pane.tsx:188-223` is the most carefully written function in the codebase, and every bit of
 its awkwardness is load-bearing.
 
 It opens by writing `current` — before any scoring — because that is the write the pane is
@@ -548,10 +514,10 @@ Then the metric. `counts` is true only when the status is `thinking` or `waiting
 is still false — the first answer in this wait. That is what increments `engaged_waits`.
 
 Finally `saveStats` re-reads the store, applies every counter in one change (answered, correct,
-streak, best streak, `by_lang`, `seen`, `wrong`, `engaged_waits`), writes it, and the result is
+streak, best streak, `by_lang`, `seen`, `wrong`, `one_shot`, `engaged_waits`), writes it, and the result is
 mirrored into the `stats` atom so the header's streak redraws.
 
-### Step 14 — Moving on: `next`, `skip`, and how a question is chosen
+### Step 13 — Moving on: `next`, `skip`, and how a question is chosen
 
 ```mermaid
 flowchart TB
@@ -559,20 +525,20 @@ flowchart TB
   CHK -->|no| STOP["return — someone already moved on"]
   CHK -->|yes| ADV["advance(io, from, stats)"]
   ADV --> PK["pick(stats, from)"]
-  PK --> POOL["pool = all questions except `from`"]
-  POOL --> W{"any in stats.wrong<br/>AND random < 0.3?"}
+  PK --> W{"any missed (not the one on screen)<br/>AND (nothing unseen OR random < 0.3)?"}
   W -->|yes| R1["a question you missed"]
-  W -->|no| U{"any unseen?"}
-  U -->|yes| R2["a random unseen one"]
-  U -->|no| R3["any + restart: clear `seen`"]
+  W -->|no| U{"any unseen in the<br/>selected banks?"}
+  U -->|yes| R2["a random bank with unseen questions,<br/>then a random unseen one in it"]
+  U -->|no| R3["null: the pane says every question<br/>is cleared and offers Start over"]
 ```
 
-`next` at `pane.tsx:53-58` handles the Next and Skip buttons — they are the same operation, just
+`next` at `pane.tsx:84-95` handles the Next and Skip buttons — they are the same operation, just
 drawn at different times. It begins with the same staleness check as `answer`: if the question
 currently on screen is not the one this button was drawn for, someone already moved on and this
-press does nothing. Two fast clicks advance one question.
+press does nothing. Two fast clicks advance one question. If Claude is done, it rests instead of
+advancing (step 14).
 
-`advance` at lines 44-51 writes the new question into `current`, and the write itself carries the
+`advance` at lines 68-71 writes the new question into `current`, and the write itself carries the
 guard a second time:
 
 ```ts
@@ -581,43 +547,43 @@ await io.set('current', c => (c.question?.id === from?.id ? { question: q, picke
 
 If anything changed between picking and writing, the write is a no-op. Belt and braces, but cheap.
 
-`pick` at lines 34-41 is the selection policy, and it is the product in three lines. It excludes the
-current question so you never get the same one twice in a row. Then, **30% of the time**, if you
-have any wrong answers on record, it serves one of those — light spaced repetition. Otherwise it
-prefers a question you have never seen. If everything has been seen, it picks anything and flags
-`restart`, which clears the `seen` list so the cycle can begin again.
+`pick` is the selection policy. Only the selected banks are loaded, so it only ever serves those.
+It excludes the current question so you never get the same one twice in a row (unless it's the
+last one left, as after a Skip). Then, **30% of the time**, if you have any wrong answers on
+record, it serves one of those — light spaced repetition. Otherwise it picks a random bank that
+still has unseen questions, then a random unseen question in it: choosing the bank first keeps a
+5-question bank from being drowned out by a 44-question one. Once everything has been seen it serves
+only missed questions, until each is answered right; then it returns null, and the pane says every
+question in those banks is cleared, with each bank's one-shot score.
 
-That restart is the only place `seen` is emptied, and it happens through `saveStats` like every
-other stats change.
+**Start over** (`restart`) is the only place `seen` is emptied, and only for the selected banks'
+ids, so the other banks keep their progress. It goes through `saveStats` like every other stats
+change.
 
 One thing to note about `pick`: it is not pure, because it calls `Math.random()`. Everything around
 it is, which makes the rest testable; if you ever want deterministic tests over the policy itself,
 this is the seam to change.
 
-### Step 15 — Claude finishes, and nothing stops
+### Step 14 — Claude finishes, and the pane rests
 
 ```mermaid
 flowchart LR
   TC["turn.complete<br/>no agentId"] --> P["parse → done"]
-  P --> SIG["signal → setStatus<br/>status = done, since = now"]
-  SIG --> OS["onStatus(thinking, done)"]
-  OS --> TO["toast: Claude is done, go review"]
+  P --> SIG["signal → setStatus<br/>status = done"]
+  SIG --> OS["onStatus(thinking, done)<br/>nothing to do"]
   OS --> KEEP["question stays · keys still work · pane stays open"]
+  KEEP --> NX["Next → resting message,<br/>no new question"]
 ```
 
-The last step of the loop is deliberately uneventful, and the absence of behaviour is the lesson.
+`turn.complete` arrives without an `agentId`, so `parse` maps it to `done`. `signal` records it, and
+`onStatus` has nothing to do. The question on screen stays exactly where it is, with its
+explanation if it has been answered. The buttons still work. The pane does not close.
 
-`turn.complete` arrives without an `agentId`, so `parse` maps it to `done`. `signal` records it and
-`onStatus` takes the third branch: a toast, and nothing else. The question on screen stays exactly
-where it is, with its explanation if it has been answered. The buttons still work. The pane does not
-close.
-
-This matters because the alternative was considered and rejected — `docs/flow.md` records it as
-"Pause-on-done was dropped from V0 scope." Finishing a question after the agent comes back is still
-finishing a question; interrupting the user at that moment would be the plugin fighting them.
-
-The timer stops on its own, because `tick` only redraws while the status is `thinking`. The banner
-freezes at its final elapsed time rather than being cleared.
+What changes is Next. Claude being done is the moment to go and review its work, so `next` checks
+`resting()` (status `done` and the pause-when-done setting on) and, instead of serving, clears
+`current`. The pane then says "Claude is done, go review. The next time Claude cooks, we will serve
+the question." **Serve next question** serves one anyway; **Always serve** turns resting off for
+good (`/biteq pause on` turns it back on).
 
 What happens next depends on the user. If they prompt Claude again, `turn.start` fires, the status
 goes `done → thinking`, and step 10's branch runs: a new wait is counted, and because the question

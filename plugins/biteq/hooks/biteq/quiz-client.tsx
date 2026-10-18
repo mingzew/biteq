@@ -11,7 +11,7 @@
 // unmount the instance, and a desktop webview treats that as a crash.
 import type { ClientModule, Elements } from 'claude-code'
 
-import type { Question, Stats, Status } from '../../types'
+import type { Question, Stats } from '../../types'
 import type { ClientTraits } from './client'
 
 const AGENT = 'Claude'
@@ -20,6 +20,18 @@ const TITLE_COLOR = '#F58700'
 const TAGLINE = 'Bite Size Coding Questions'
 const LETTERS = 'abcd'
 const RESTING = `${AGENT} is done, go review. The next time ${AGENT} cooks, we will serve the question.`
+const BANKS = 'Choose the banks to practise. They are served mixed, and saved as you go.'
+const CONGRATS = 'Congratulations!'
+const FINISHED = "You've cleared every question in your banks:"
+const ONE_SHOT = (n: number, of: number) => `${n} of ${of} in one shot.`
+// how to go on, in the client's own terms: its hotkeys where it has them, its buttons where it doesn't
+const AGAIN = (hotkeys: boolean) => (hotkeys
+  ? 'Press n to start over, or z to choose other banks.'
+  : 'Click Start over to go again, or Banks to choose other banks.')
+// the remembered banks have no questions (one was removed or emptied): the bank screen fixes it
+const EMPTY = (hotkeys: boolean) => (hotkeys
+  ? 'No questions in the selected banks. Press z to choose other banks.'
+  : 'No questions in the selected banks. Click Banks to choose other banks.')
 
 export const keys = {
   answer: (q: Question, idx: number) => `answer:${idx}:${q.id}`,
@@ -28,6 +40,9 @@ export const keys = {
   close: 'close',
   serve: 'serve',     // while resting: one question now
   always: 'always',   // while resting: keep serving after Claude is done, remembered
+  restart: 'restart', // every selected question answered: serve them again
+  banks: 'banks',     // z: open the bank screen, or go back to the quiz
+  bank: (lang: string, on: boolean) => `bank:${on ? 'on' : 'off'}:${lang}`,   // check/uncheck a bank
 }
 
 /**
@@ -40,8 +55,13 @@ function hintBar(v: PaneView, el: QuizElements, onPress: (key: string) => void) 
   const q = v.question
   const hint = (k: string, label: string, hotkey: string) =>
     <Button key={k} label={label} hotkey={hotkey} plain dimColor onPress={() => onPress(k)} />
+  if (v.picking) {
+    const row = [<Text key="toggle" dimColor>⏎ toggle</Text>, hint(keys.banks, 'done', 'z'), hint(keys.close, 'close', 'q')]
+    return row.flatMap((item, i) => (i === 0 ? [item] : [<Text key={`sep-${i}`} dimColor> · </Text>, item]))
+  }
   const items =
-    q === null && v.resting ? [hint(keys.serve, 'serve next', 'n'), hint(keys.always, 'always serve', 's')]
+    q === null && v.finished ? [hint(keys.restart, 'start over', 'n')]
+    : q === null && v.resting ? [hint(keys.serve, 'serve next', 'n'), hint(keys.always, 'always serve', 's')]
     : q === null ? (v.bank > 0 ? [hint(keys.next(null), 'practice', 'n')] : [])
     : v.picked === null ? [hint(keys.skip(q), 'skip', 'n')]
     : [<Text key="enter" dimColor>⏎ next</Text>]
@@ -50,7 +70,7 @@ function hintBar(v: PaneView, el: QuizElements, onPress: (key: string) => void) 
       {hint(keys.next(q), 'next', 'n')}
     </Box>
   )
-  const row = [...items, hint(keys.close, 'close', 'q')]
+  const row = [...items, hint(keys.banks, 'banks', 'z'), hint(keys.close, 'close', 'q')]
   return [
     ...row.flatMap((item, i) => (i === 0 ? [item] : [<Text key={`sep-${i}`} dimColor> · </Text>, item])),
     ...(hidden ? [hidden] : []),
@@ -59,14 +79,15 @@ function hintBar(v: PaneView, el: QuizElements, onPress: (key: string) => void) 
 
 /** The pane keys the terminal's hint bar presses: never in the arrow keys' focus ring. */
 export function isHintKey(key: string): boolean {
-  return key === keys.close || key === keys.serve || key === keys.always || key.startsWith('next:') || key.startsWith('skip:')
+  return key === keys.close || key === keys.serve || key === keys.always || key === keys.restart || key === keys.banks || key.startsWith('next:') || key.startsWith('skip:')
 }
 
 export type PaneView = {
-  status: Status
   resting: boolean   // Claude is done and Next rested: no question until Claude works again
-  elapsedMs: number
-  since: number
+  finished: boolean   // every question in the selected banks is answered: offer to start over
+  // the selected banks that have questions; oneShot: how many were right the first time
+  banks: { lang: string; count: number; oneShot: number }[]
+  picking: { lang: string; count: number; on: boolean }[] | null   // the bank screen's rows, while it shows
   bank: number
   question: Question | null
   picked: number | null
@@ -79,14 +100,7 @@ export type PaneView = {
 /** What this module draws from: the quiz, plus the traits of the client it draws for. */
 type QuizProps = PaneView & { traits: ClientTraits }
 
-type Clock = { since: number; extra: number }
 type QuizElements = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
-
-let latest: PaneView | undefined
-// Instances whose timer is running. `state` stays undefined until the first tick, so an
-// instance drawn twice before then (new props on a prompt) would start a second timer and the
-// clock would run at double speed.
-const started = new WeakSet<object>()
 
 export function drawQuiz(
   v: PaneView,
@@ -119,12 +133,6 @@ export function drawQuiz(
       </Box>
     )
   }
-  const banner = {
-    thinking: { text: `● ${AGENT} is thinking  ${fmtSecs(v.elapsedMs)}`, color: 'yellow' },
-    waiting: { text: `! ${AGENT} needs your input`, color: 'magenta' },
-    done: { text: `✓ ${AGENT} is done, go review`, color: 'green' },
-    idle: { text: '○ idle', color: 'gray' },
-  }[v.status]
   // The high side uses the BiteQ colour, bold, and dims only while the pane is unfocused. At 0–0 the line stays dim.
   // A correct answer raises best to match streak, so the two are equal while the user is on their record.
   const mark = (n: number, other: number) =>
@@ -144,7 +152,40 @@ export function drawQuiz(
         <Text {...mark(s.best_streak, s.streak)}>best {s.best_streak}</Text>
       </Box>
 
-      {q === null && v.resting ? (
+      {v.picking ? (
+        <Box flexDirection="column" gap={1} alignItems={align}>
+          <Text dimColor={dim}>{BANKS}</Text>
+          <Box flexDirection="column" alignItems={align}>
+            {v.picking.map((b, i) => (
+              // keyed by the state a press sets, so the key changes with each toggle
+              <Button key={keys.bank(b.lang, !b.on)} label={`${b.on ? '[x]' : '[ ]'} ${b.lang.padEnd(8)} ${String(b.count).padStart(3)}`}
+                hotkey={key(i < 9 ? String(i + 1) : '')} plain dimColor={dim} autoFocus={i === 0 ? ring : undefined}
+                onPress={() => onPress(keys.bank(b.lang, !b.on))} />
+            ))}
+          </Box>
+        </Box>
+      ) : q === null && v.finished ? (
+        <Box flexDirection="column" gap={1} alignItems={align}>
+          <Box>
+            <Text bold color={TITLE_COLOR} dimColor={dim}>{CONGRATS}</Text>
+            {/* the total only with several banks: with one it would repeat that bank's line */}
+            {v.banks.length > 1 && (
+              <Text dimColor={dim}> {ONE_SHOT(v.banks.reduce((a, b) => a + b.oneShot, 0), v.banks.reduce((a, b) => a + b.count, 0))}</Text>
+            )}
+          </Box>
+          <Box flexDirection="column">
+            <Text dimColor={dim}>{FINISHED}</Text>
+            {v.banks.map(b => (
+              // a perfect bank is marked like a record streak
+              <Text key={`done:${b.lang}`} {...(b.oneShot === b.count ? { bold: true as const, color: TITLE_COLOR } : {})} dimColor={dim}>
+                {`  ✓ ${b.lang.padEnd(8)} one-shot ${String(b.oneShot).padStart(3)}/${b.count}`}
+              </Text>
+            ))}
+          </Box>
+          <Text dimColor={dim}>{AGAIN(traits.hotkeys)}</Text>
+          {!hints && action(keys.restart, 'Start over', { primary: true, focus: ring })}
+        </Box>
+      ) : q === null && v.resting ? (
         <Box flexDirection="column" gap={1} alignItems={align}>
           <Text>{RESTING}</Text>
           {!hints && (
@@ -159,7 +200,7 @@ export function drawQuiz(
           <Text dimColor>
             {v.bank
               ? 'No question yet. Prompt Claude and one will appear here, or practice now.'
-              : 'No questions for the selected languages. Try /biteq langs.'}
+              : EMPTY(traits.hotkeys)}
           </Text>
           {v.bank > 0 && !hints && action(keys.next(null), 'Practice now', { hotkey: 'n' })}
         </Box>
@@ -202,9 +243,11 @@ export function drawQuiz(
         </Box>
       ) : (
         <Box gap={2}>
-          {q !== null && (p !== null
+          {v.picking && action(keys.banks, 'Done', { primary: true, hotkey: 'z' })}
+          {!v.picking && q !== null && (p !== null
             ? action(keys.next(q), 'Next', { primary: true, hotkey: 'n', focus: ring })
             : action(keys.skip(q), 'Skip', { hotkey: 's' }))}
+          {!v.picking && action(keys.banks, 'Banks', { hotkey: 'z' })}
           {action(keys.close, 'Close', { hotkey: 'q', dismiss: true })}
         </Box>
       )}
@@ -212,29 +255,7 @@ export function drawQuiz(
   )
 }
 
-const Quiz: ClientModule<QuizProps, Clock> = (v, surface) => {
-  latest = v
-  if (!started.has(surface)) {
-    started.add(surface)
-    surface.every(1000, () => {
-      const now = latest
-      if (!now) return
-      const s = surface.state
-      surface.setState({
-        since: now.since,
-        // count on from the last tick, or from the elapsed time the plugin last drew
-        extra: (s && s.since === now.since ? s.extra : now.elapsedMs) + 1000,
-      })
-    })
-  }
-  const extra = surface.state?.since === v.since ? surface.state.extra : 0
-  const elapsedMs = v.status === 'thinking' ? Math.max(v.elapsedMs, extra) : v.elapsedMs
-  return drawQuiz({ ...v, elapsedMs }, surface.elements, v.traits, key => surface.post({ key }))
-}
+const Quiz: ClientModule<QuizProps> = (v, surface) =>
+  drawQuiz(v, surface.elements, v.traits, key => surface.post({ key }))
 
 export default Quiz
-
-function fmtSecs(ms: number): string {
-  const secs = Math.max(0, Math.floor(ms / 1000))
-  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`
-}

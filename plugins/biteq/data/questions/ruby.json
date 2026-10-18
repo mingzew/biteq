@@ -113,7 +113,6 @@
     "prompt": "Which line uses a symbol?",
     "code": "1  h = { \"id\" => 1 }\n2  h = { \"id\": 1 }\n3  id = 3\n4  h[id] = 4",
     "options": ["1", "4", "3", "2"],
-    "hard": true,
     "answer": 3,
     "explanation": "The quotes on line 2 are a label, not a String key. That label still becomes a Symbol:\n\n{ \"id\" => 1 }  # String key \"id\"\n{ \"id\": 1 }    # same as { id: 1 } — key is :id\n{ id: 1 }      # also :id\n\nLine 3's id is a local Integer. Line 4 uses that integer as the key."
   },
@@ -141,7 +140,6 @@
     "prompt": "What does this print?",
     "code": "x = true and false\np x",
     "options": ["nil", "false", "true", "SyntaxError"],
-    "hard": true,
     "answer": 2,
     "explanation": "and binds looser than assignment. The line is (x = true) and false, so x stays true.\n\nx = true and false  # => (x = true) and false\n# x is true\n\nx = true && false   # => x = (true && false)\n# x would be false\n\nUse && / || in expressions. Use and / or for control flow."
   },
@@ -151,7 +149,6 @@
     "prompt": "What does this print?",
     "code": "h = Hash.new([])\nh[:a] << 1\np h",
     "options": ["{:a=>[1]}", "NoMethodError", "{:a=>[1], :b=>[1]}", "{}"],
-    "hard": true,
     "answer": 3,
     "explanation": "h[:a] returns the shared default array without storing it under :a. << mutates that default; the hash stays empty.\n\nh = Hash.new([])\nh[:a] << 1  # mutates the default, does not write :a\np h         # => {}\nh[:b]       # => [1]  — same default array\n\nUse Hash.new { |hash, k| hash[k] = [] } to store a fresh array per key."
   },
@@ -347,7 +344,6 @@
   {
     "id": "ruby-class-eval-constants",
     "title": "class_eval constants",
-    "hard": true,
     "prompt": "What does this print?",
     "code": "X = :outer\nclass C\n  X = :inner\nend\n\np C.class_eval { X }",
     "options": ["NameError", ":inner", ":outer", ":inner then :outer"],
@@ -357,7 +353,6 @@
   {
     "id": "ruby-nested-class-constants",
     "title": "class M::C nesting",
-    "hard": true,
     "prompt": "What does this print?",
     "code": "module M\n  X = 1\nend\n\nclass M::C\n  p X\nend",
     "options": ["1", "M", "nil", "NameError"],
@@ -376,7 +371,6 @@
   {
     "id": "ruby-rails-after-save-rollback",
     "title": "after_save and rollback",
-    "hard": true,
     "prompt": "after_save does Mailer.welcome.deliver_now. What is true after this block?",
     "code": "User.transaction do\n  User.new(name: \"Ada\").save!\n  raise ActiveRecord::Rollback\nend",
     "options": ["User row exists, email sent", "User row exists, no email", "No User row, no email", "No User row, email sent"],
@@ -386,7 +380,6 @@
   {
     "id": "ruby-rails-includes-where-filter",
     "title": "includes with a where on the association",
-    "hard": true,
     "prompt": "Post 1 has 3 comments; 1 is approved. What does this print?",
     "code": "post = Post.includes(:comments)\n           .where(comments: { approved: true })\n           .find(1)\n\np post.comments.size",
     "options": ["3", "1", "0", "NoMethodError"],
@@ -396,7 +389,6 @@
   {
     "id": "ruby-float-sum-vs-add",
     "title": "sum vs +=",
-    "hard": true,
     "prompt": "What does this print?",
     "code": "prices = [0.1, 0.2, 0.3]\n\ntotal = 0.0\nprices.each { |price| total += price }\n\np [prices.sum == 0.6, total == 0.6]",
     "options": ["[true, false]", "[false, false]", "[true, true]", "[false, true]"],
