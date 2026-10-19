@@ -50,29 +50,27 @@ async function cmdPane(io: Io, lang: string | undefined, focus: boolean): Promis
   } else {
     langs = await getLangs(io)
   }
-  // The selected languages come first; once all of their questions are served, the others follow
-  const order = languageOrder(langs, Object.keys(available))
-  const questions = await loadQuestions(io, order)
+  // Only the selected banks are served, mixed; the others never are, even once these run out
+  const questions = await loadQuestions(io, langs)
   if (!questions.length) {
     const counts = Object.entries(available).sort().map(([k, v]) => `${k} ${v}`).join(', ')
-    return `biteq: no questions in any bank. Counts: ${counts}. Run /biteq check.`
+    return `biteq: no questions in ${langs.join(', ')}. Counts: ${counts}. Pick others with /biteq --lang a,b.`
   }
   if (lang !== undefined) await setLangs(io, langs)   // remembered for the next session
   await bootPane(io, questions)
   const placed = await openPane(io, focus)
   if (!placed) return 'biteq: the pane will show up once this window is wide enough.'
   const how = (await io.traits()).hotkeys
-    ? 'ctrl+x tab gives the pane the keyboard: a-d answer, n next, s skip, q close.'
+    ? 'ctrl+x tab gives the pane the keyboard: a-d answer, n next, z banks, q close.'
     : 'click an answer, then Next.'
-  const first = langs.filter(l => available[l]).map(l => `${l} ${available[l]}`).join(', ')
-  const start = first ? `${first} first, then the other languages` : `no ${langs.join(', ')} questions yet: the other languages`
-  return `biteq: ${start} (${questions.length} questions). ${how}`
+  const mix = langs.filter(l => available[l]).map(l => `${l} ${available[l]}`).join(', ')
+  return `biteq: serving ${mix} (${questions.length} questions). ${how}`
 }
 
 async function cmdLangs(io: Io): Promise<string> {
   const chosen = await getLangs(io)
   const counts = await languageCounts(io)
-  // in the order they're served: the selected languages first, then the rest A-Z
+  // the selected banks first (the only ones served), then the rest A-Z
   return languageOrder(chosen, Object.keys(counts))
     .map(lang => `${lang.padEnd(8)} ${String(counts[lang]).padStart(3)} questions${chosen.includes(lang) ? '   <- selected' : ''}`)
     .join('\n')
@@ -86,11 +84,18 @@ async function cmdCheck(io: Io): Promise<string> {
 async function cmdStats(io: Io): Promise<string> {
   const s = await loadStats(io)
   const pct = (a: number, b: number) => (b ? `${Math.floor((100 * a) / b)}%` : 'n/a')
+  const sizes = await languageCounts(io)
+  // correct: every attempt, re-asks included. one-shot: of the bank, right the first time
+  // (question ids start with "<lang>-")
+  const oneShot = (lang: string) => Object.keys(s.one_shot).filter(id => s.one_shot[id] && id.startsWith(`${lang}-`)).length
+  const langs = Object.entries(s.by_lang).sort()
   return [
     `answered      ${s.answered}  (${pct(s.correct, s.answered)} correct)`,
     `streak        ${s.streak}  (best ${s.best_streak})`,
     `AI waits      ${s.waits}  (you practiced during ${pct(s.engaged_waits, s.waits)} of them)`,
-    ...Object.entries(s.by_lang).sort().map(([lang, [c, n]]) => `  ${lang.padEnd(10)} ${c}/${n}`),
+    ...(langs.length ? [`${' '.repeat(13)}${'correct'.padEnd(10)}one-shot`] : []),
+    ...langs.map(([lang, [c, n]]) =>
+      `  ${lang.padEnd(10)} ${`${c}/${n}`.padEnd(9)} ${sizes[lang] ? `${oneShot(lang)}/${sizes[lang]}` : '-'}`),
     `to review     ${s.wrong.length} questions you missed`,
   ].join('\n')
 }

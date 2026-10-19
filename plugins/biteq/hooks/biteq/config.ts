@@ -4,7 +4,7 @@
 import type { Io } from './io'
 import { CONFIG, loadJson, saveJson } from './store'
 
-export const DEFAULT_LANGS = ['ruby']
+export const DEFAULT_LANGS = ['cs']
 
 type Config = { langs?: string[]; pauseWhenDone?: boolean; debug?: boolean }
 

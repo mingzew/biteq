@@ -23,8 +23,7 @@ Each file is a JSON **array** of question objects.
   "code": "create_table :users do |t|\n  t.string :name\nend\n\nclass User < ApplicationRecord\n  validates :name, presence: true\nend\n\nUser.insert_all([{ name: nil }])",
   "options": ["Active Record", "Nobody (it inserts)", "Action Controller", "The database"],
   "answer": 1,
-  "explanation": "insert_all writes SQL and skips Active Record validations and callbacks.\n\n…",
-  "hard": true
+  "explanation": "insert_all writes SQL and skips Active Record validations and callbacks.\n\n…"
 }
 ```
 
@@ -37,9 +36,6 @@ Each file is a JSON **array** of question objects.
 | `options` | yes | 2–4 strings. Mix which index is correct; do not always use `0` or last. |
 | `answer` | yes | 0-based index into `options`. |
 | `explanation` | yes | Shown after they pick. See below. |
-| `hard` | no | `true` only. Not a string, not `"difficulty"`. Omit on ordinary questions. |
-
-`hard: true` prefixes the title with `[BYE STREAK]` if the current streak is > 0, otherwise `[OOF]`.
 
 The pane renders `title`, `prompt`, `code`, options, and `explanation` as plain `Text`. `**bold**` and other Markdown do nothing. Do not use Markdown in any of those fields.
 

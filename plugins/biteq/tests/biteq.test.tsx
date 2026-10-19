@@ -16,6 +16,10 @@ const BANKS: Record<string, unknown[]> = {
     { id: 'ruby-a', title: 'R', prompt: 'Pick r', options: ['r1', 'r2'], answer: 0, explanation: 'because' },
     { id: 'ruby-b', title: 'S', prompt: 'Pick s', options: ['s1', 's2'], answer: 0, explanation: 'because' },
   ],
+  cs: [
+    { id: 'cs-a', title: 'C', prompt: 'Pick c', options: ['c1', 'c2'], answer: 0, explanation: 'because' },
+    { id: 'cs-b', title: 'K', prompt: 'Pick k', options: ['k1', 'k2'], answer: 0, explanation: 'because' },
+  ],
   go: [],
 }
 
@@ -37,7 +41,6 @@ const DONE = { reason: 'answer', answer: 'done', durationMs: 1, isAborted: false
 // `shared`: a store the test can also write to, standing for another Claude session using it
 function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal', shared?: Record<string, unknown>, writes?: string[]) {
   const opened: { focus?: true }[] = []
-  const clock = mock.clock(on, { now: 1_000_000 })
   if (shared) {
     on('store.get', ($, e) => ({ value: shared[e.key] }))
     on('store.set', ($, e) => {
@@ -68,7 +71,6 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
     return { value: { isPlaced: true } }
   })
   on('ui.close', () => ({ value: undefined }) as never)
-  on('ui.toast', () => ({ value: undefined }))
   on('ui.focus', () => ({}))   // beneath the plugin: the ring moves
   on('session.version', () => ({ value: { version: '2.1.x', base: '2.1.x' } }) as never)
   on('session.surface', () => ({ value: surface }) as never)
@@ -78,7 +80,7 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
-  return { clock, opened }
+  return { opened }
 }
 
 // The pane's Buttons are keyed by action and question (`answer:0:python-a`, `next:python-a`),
@@ -86,11 +88,11 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
 type Drawing = Mounted<'terminal' | 'desktop' | 'vscode', 'Pane'>
 const OPTION = (letter: string, surface?: string) =>
   new RegExp(`^${letter}${surface === 'desktop' ? ':' : '\\)'} `)
-// Terminal unanswered labels are the option text (hotkey paints "a:"); BANKS use a1, b1, j1, r1, s1.
+// Terminal unanswered labels are the option text (hotkey paints "a:"); BANKS use a1, b1, c1, j1, k1, m1, r1, s1.
 const OPEN = (ui: Drawing, letter: string) => {
   if (ui.surface === 'terminal') {
     const n = 'abcd'.indexOf(letter) + 1
-    return new RegExp(`^[abjrs]${n}$`)
+    return new RegExp(`^[abcjkmrs]${n}$`)
   }
   return OPTION(letter, ui.surface)
 }
@@ -121,11 +123,9 @@ describe('pane', () => {
         expect(await find(ui, { text: /^BiteQ$/ })).toBeDefined()
         expect(await find(ui, { text: /^ - Bite Size Coding Questions$/ })).toBeDefined()
       }
-      expect(await find(ui, { text: /idle/ })).toBeDefined()
 
       await $.turn.start({ text: 'fix the bug', turnId: 't1' })
-      expect(await find(ui, { text: /Claude is thinking/ })).toBeDefined()
-      expect(await find(ui, { text: /\[ruby\]/ })).toBeDefined()   // the default language
+      expect(await find(ui, { text: /\[cs\]/ })).toBeDefined()   // the default bank
 
       await click(ui, OPEN(ui, 'a'))
       expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeDefined()
@@ -133,7 +133,6 @@ describe('pane', () => {
       expect(await find(ui, { type: 'Button', text: ANSWERED(ui) })).toBeDefined()
 
       await $.turn.complete(DONE)
-      expect(await find(ui, { text: /Claude is done/ })).toBeDefined()
 
       // Claude is done: Next rests instead of serving (the terminal's Next is the hint bar's "next")
       await click(ui, ui.surface === 'terminal' ? /^next$/ : /^Next$/)
@@ -149,8 +148,8 @@ describe('pane', () => {
 
 describe('when Claude is done', () => {
   const RESTING_RE = RESTING
-  async function done($: Engine, on: On, surface: 'terminal' | 'desktop', shared?: Record<string, unknown>) {
-    world(on, BANKS, surface, shared)
+  async function done($: Engine, on: On, surface: 'terminal' | 'desktop', shared?: Record<string, unknown>, banks = BANKS) {
+    world(on, banks, surface, shared)
     await $.session.start({ cwd: '.', surface, isInteractive: true })
     const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
@@ -189,7 +188,9 @@ describe('when Claude is done', () => {
     })
 
     test(`${surface}: "serve next question" serves one now; the setting stays on`, async ($, on) => {
-      const ui = await done($, on, surface)
+      // a third question, so the second Next rests rather than saying every question is answered
+      const more = { id: 'cs-c', prompt: 'Pick m', options: ['m1', 'm2'], answer: 0, explanation: 'because' }
+      const ui = await done($, on, surface, undefined, { ...BANKS, cs: [...BANKS.cs!, more] })
       await click(ui, OPEN(ui, 'a'))
       await click(ui, NEXT(ui))
       await click(ui, surface === 'terminal' ? /^serve next$/ : /^Serve next question$/)
@@ -262,7 +263,7 @@ describe('terminal hint bar', () => {
     expect(await hint(ui, 'Close')).toBeUndefined()
     // the bar is the pane's last row
     const drawn = JSON.stringify(await ui.drawn())
-    expect(drawn.lastIndexOf('"close"')).toBeGreaterThan(drawn.lastIndexOf('Pick r'))
+    expect(drawn.lastIndexOf('"close"')).toBeGreaterThan(drawn.lastIndexOf('Pick '))
   })
 
   test('the arrow keys and Tab never land on the hint bar', async ($, on) => {
@@ -404,19 +405,14 @@ describe('presses', () => {
     const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     const title = () => find(ui, { type: 'Text', text: /^BiteQ$/ })
-    const banner = () => find(ui, { type: 'Text', text: /Claude is thinking/ })
     const option = OPEN(ui, 'a')
     expect((await title())?.props.dimColor).toBeUndefined()
-    expect((await banner())?.props.color).toBe('yellow')
-    expect((await banner())?.props.dimColor).toBeUndefined()
 
     await ui.redraw({ ...PANE.props, isFocused: false })
     expect((await title())?.props.dimColor).toBe(true)
-    expect((await banner())?.props.dimColor).toBe(true)
-    expect((await banner())?.props.color).toBe('yellow')
     expect((await find(ui, { type: 'Text', text: /^Pick / }))?.props.dimColor).toBe(true)
     expect((await find(ui, { type: 'Button', text: option }))?.props.dimColor).toBe(true)
-    expect((await find(ui, { type: 'Button', text: /^Skip$/ }))?.props.dimColor).toBe(true)
+    expect((await find(ui, { type: 'Button', text: /^skip$/ }))?.props.dimColor).toBe(true)   // the hint bar's
 
     await ui.redraw({ ...PANE.props, isFocused: true })
     expect((await title())?.props.dimColor).toBeUndefined()
@@ -427,13 +423,10 @@ describe('presses', () => {
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    const banner = () => find(ui, { type: 'Text', text: /Claude is thinking/ })
     const option = OPEN(ui, 'a')
     expect(await find(ui, { text: /^BiteQ$/ })).toBeUndefined()
 
     await ui.redraw({ ...PANE.props, isFocused: false })
-    expect((await banner())?.props.color).toBe('yellow')
-    expect((await banner())?.props.dimColor).toBeUndefined()
     expect((await find(ui, { type: 'Text', text: /^Pick / }))?.props.dimColor).toBeUndefined()
     expect((await find(ui, { type: 'Button', text: option }))?.props.dimColor).toBeUndefined()
     expect((await find(ui, { type: 'Button', text: /^Skip$/ }))?.props.dimColor).toBeUndefined()
@@ -458,33 +451,226 @@ describe('presses', () => {
     expect((await side(/^best 1$/))?.props.color).toBe('#F58700')
     expect((await side(/^best 1$/))?.props.bold).toBe(true)
   })
-
-  test('the thinking timer counts while Claude works', async ($, on) => {
-    const { clock } = world(on, BANKS, 'terminal')
-    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
-    await $.turn.start({ text: 'go', turnId: 't1' })
-    expect(await ui.find({ text: /thinking\s+0:00/ })).toBeDefined()
-    await clock.advance(65_000)
-    expect(await ui.find({ text: /thinking\s+1:05/ })).toBeDefined()
-  })
 })
 
 describe('serving order', () => {
-  test('every question in a language is served before the next language starts', async ($, on) => {
+  const FINISHED = /^You've cleared every question in your banks:$/
+
+  async function answerAll(ui: Drawing, n: number): Promise<string[]> {
+    const served: string[] = []
+    for (let i = 0; i < n; i++) {
+      served.push((await find(ui, { text: /^Pick / }))?.text ?? '?')
+      await click(ui, OPEN(ui, 'a'))   // every fixture answer is the first option, so nothing comes back as missed
+      await click(ui, /^Next$/)
+    }
+    return served
+  }
+
+  test('only the selected banks are served, mixed; then the pane says they are all answered', async ($, on) => {
+    world(on, BANKS, 'desktop')
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    expect(await find(ui, { text: /^\[cs\] $/ })).toBeDefined()   // served at boot, from the default bank
+    await $.prompt.submit({ text: '/biteq --lang ruby,js', wait: false } as never)
+    expect(await find(ui, { text: /^\[cs\] $/ })).toBeUndefined()   // unanswered, and no longer selected: replaced
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    const served = await answerAll(ui, 3)
+    // every selected question once; cs and python (not selected) never
+    expect([...served].sort()).toEqual(['Pick j', 'Pick r', 'Pick s'])
+    // congratulates, lists the banks answered, and says how to go on: on desktop by clicking
+    expect(await find(ui, { text: /^Congratulations!$/ })).toBeDefined()
+    expect(await find(ui, { text: /^ 3 of 3 in one shot\.$/ })).toBeDefined()
+    expect(await find(ui, { text: FINISHED })).toBeDefined()
+    expect((await find(ui, { text: /✓ ruby\s+one-shot\s+2\/2$/ }))?.props).toMatchObject({ bold: true, color: '#F58700' })
+    expect(await find(ui, { text: /✓ js\s+one-shot\s+1\/1$/ })).toBeDefined()
+    expect(await find(ui, { text: /cs|python/ })).toBeUndefined()
+    expect(await find(ui, { text: /^Click Start over to go again, or Switch Q banks to choose other banks\.$/ })).toBeDefined()
+    expect(await find(ui, { text: /--lang|Press n/ })).toBeUndefined()
+    expect(await find(ui, { text: /^Pick / })).toBeUndefined()
+    expect(await find(ui, { type: 'Button', text: /^Practice now$/ })).toBeUndefined()
+  })
+
+  test('the banks are mixed: a big bank does not crowd out a small one', async ($, on) => {
+    const big = Array.from({ length: 40 }, (_, i) =>
+      ({ id: `ruby-${i}`, prompt: `Pick r${i}`, options: ['r1', 'r2'], answer: 0, explanation: 'because' }))
+    world(on, { ruby: big, js: BANKS.js! }, 'desktop')
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    await $.prompt.submit({ text: '/biteq --lang ruby,js', wait: false } as never)
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    // picking the bank first serves js about half the time; by question, 1 in 41.
+    // The odds of 10 Ruby questions in a row are 1 in 1024.
+    expect(await answerAll(ui, 10)).toContain('Pick j')
+  })
+
+  test('Start over serves the selected banks again, and keeps the others\' progress', async ($, on) => {
+    const shared: Record<string, unknown> = { stats: { seen: ['python-a'] } }
+    world(on, BANKS, 'desktop', shared)
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await answerAll(ui, 2)
+    expect(await find(ui, { text: FINISHED })).toBeDefined()
+    await click(ui, /^Start over$/)
+    expect(await find(ui, { text: /^\[cs\] $/ })).toBeDefined()
+    expect((shared.stats as { seen: string[] }).seen).toEqual(['python-a'])
+  })
+
+  test('terminal: the hint bar offers "start over" (n)', async ($, on) => {
+    world(on, BANKS, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    for (let i = 0; i < 2; i++) {
+      await click(ui, OPEN(ui, 'a'))
+      await click(ui, /^next$/)
+    }
+    expect(await find(ui, { text: FINISHED })).toBeDefined()
+    expect((await find(ui, { type: 'Button', text: /^start over$/ }))?.props).toMatchObject({ hotkey: 'n', plain: true })
+    expect(await find(ui, { text: /^Press n to start over, or z to choose other banks\.$/ })).toBeDefined()
+    expect(await find(ui, { text: /✓ cs\s+one-shot\s+2\/2$/ })).toBeDefined()
+    expect(await find(ui, { text: /in one shot/ })).toBeUndefined()   // one bank: no total
+    await click(ui, /^start over$/)
+    expect(await find(ui, { text: /^\[cs\] $/ })).toBeDefined()
+  })
+
+  test('a skipped question is not counted as answered: it comes back last', async ($, on) => {
     world(on, BANKS, 'desktop')
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
-    const served: string[] = []
-    for (let i = 0; i < 5; i++) {
-      served.push((await find(ui, { text: /^\[[a-z]+\] $/ }))?.text.trim() ?? '?')
-      await click(ui, OPEN(ui, 'a'))   // every fixture answer is the first option, so nothing comes back as missed
-      await click(ui, /^Next$/)
-    }
-    // ruby (the default) twice, then the others A-Z (go has no questions), then the cycle restarts
-    expect(served).toEqual(['[ruby]', '[ruby]', '[js]', '[python]', '[python]'])
-    expect(await find(ui, { text: /^\[ruby\] $/ })).toBeDefined()
+    const skipped = (await find(ui, { text: /^Pick / }))?.text
+    await click(ui, /^Skip$/)
+    await answerAll(ui, 1)
+    expect((await find(ui, { text: /^Pick / }))?.text).toBe(skipped)
+  })
+
+  test('a missed question comes back once the rest are answered; finished only when it is right', async ($, on) => {
+    const shared: Record<string, unknown> = {}
+    world(on, BANKS, 'desktop', shared)
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    const missed = (await find(ui, { text: /^Pick / }))?.text
+    await click(ui, OPEN(ui, 'b'))   // every fixture answer is a, so b is wrong
+    await click(ui, /^Next$/)
+    expect((await find(ui, { text: /^Pick / }))?.text).not.toBe(missed)   // not straight back
+    await answerAll(ui, 1)
+    expect(await find(ui, { text: FINISHED })).toBeUndefined()
+    expect((await find(ui, { text: /^Pick / }))?.text).toBe(missed)
+    await answerAll(ui, 1)
+    expect(await find(ui, { text: FINISHED })).toBeDefined()
+    expect(await find(ui, { text: /✓ cs\s+one-shot\s+1\/2$/ })).toBeDefined()
+  })
+
+  test('one-shot counts only the first answer ever: Start over and earlier answers never add to it', async ($, on) => {
+    // cs-a was answered (and missed) before one-shot was tracked
+    const shared: Record<string, unknown> = { stats: { seen: ['cs-a'], wrong: ['cs-a'] } }
+    world(on, BANKS, 'desktop', shared)
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await answerAll(ui, 2)   // cs-b, then cs-a (missed, so it comes back), both right
+    expect(await find(ui, { text: /✓ cs\s+one-shot\s+1\/2$/ })).toBeDefined()
+    await click(ui, /^Start over$/)
+    await answerAll(ui, 2)   // both right again: repeats don't count
+    expect(await find(ui, { text: /✓ cs\s+one-shot\s+1\/2$/ })).toBeDefined()
+    expect((shared.stats as { one_shot: unknown }).one_shot).toEqual({ 'cs-b': true, 'cs-a': false })
+  })
+})
+
+describe('bank screen', () => {
+  const ROW = (on: boolean, lang: string) => new RegExp(`^\\[${on ? 'x' : ' '}\\] ${lang} `)
+  async function pane($: Engine, on: On, surface: 'terminal' | 'desktop', shared: Record<string, unknown> = {}) {
+    world(on, BANKS, surface, shared)
+    await $.session.start({ cwd: '.', surface, isInteractive: true })
+    const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    return ui
+  }
+  const BANKS_BUTTON = (ui: Drawing) => (ui.surface === 'terminal' ? /^banks$/ : /^Switch Q banks$/)
+  const DONE_BUTTON = (ui: Drawing) => (ui.surface === 'terminal' ? /^done$/ : /^Done$/)
+
+  test('terminal: z opens it over the question; each bank is a digit toggle; z goes back', async ($, on) => {
+    const ui = await pane($, on, 'terminal')
+    const question = (await find(ui, { text: /^Pick / }))?.text
+    expect((await find(ui, { type: 'Button', text: /^banks$/ }))?.props).toMatchObject({ hotkey: 'z', plain: true })
+    await click(ui, /^banks$/)
+    expect(await find(ui, { text: /^Pick / })).toBeUndefined()
+    // the selection first, then A-Z; banks with no questions (go) aren't listed
+    expect((await find(ui, { type: 'Button', text: ROW(true, 'cs') }))?.props).toMatchObject({ hotkey: '1' })
+    expect((await find(ui, { type: 'Button', text: ROW(false, 'js') }))?.props).toMatchObject({ hotkey: '2' })
+    expect((await find(ui, { type: 'Button', text: ROW(false, 'ruby') }))?.props).toMatchObject({ hotkey: '4' })
+    expect(await find(ui, { type: 'Button', text: /go/ })).toBeUndefined()
+    expect((await find(ui, { type: 'Button', text: /^done$/ }))?.props).toMatchObject({ hotkey: 'z' })
+    await click(ui, /^done$/)
+    expect((await find(ui, { text: /^Pick / }))?.text).toBe(question)   // the same question, still unanswered
+  })
+
+  for (const [surface, hint] of [['terminal', /^No questions in the selected banks\. Press z to choose other banks\.$/],
+    ['desktop', /^No questions in the selected banks\. Click Switch Q banks to choose other banks\.$/]] as const) {
+    test(`${surface}: remembered banks with no questions point to the bank screen`, async ($, on) => {
+      world(on, BANKS, surface, { config: { langs: ['go'] } })   // go was emptied since it was chosen
+      await $.session.start({ cwd: '.', surface, isInteractive: true })
+      const ui = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
+      expect(await find(ui, { text: hint })).toBeDefined()
+      expect(await find(ui, { text: /\/biteq/ })).toBeUndefined()
+      await click(ui, surface === 'terminal' ? /^banks$/ : /^Switch Q banks$/)
+      expect(await find(ui, { text: /^Choose the banks to practise/ })).toBeDefined()
+    })
+  }
+
+  test('toggles are saved at once, and the last bank cannot be unchecked', async ($, on) => {
+    const shared: Record<string, unknown> = {}
+    const ui = await pane($, on, 'terminal', shared)
+    await click(ui, /^banks$/)
+    await click(ui, ROW(false, 'ruby'))
+    expect(await find(ui, { type: 'Button', text: ROW(true, 'ruby') })).toBeDefined()
+    expect(shared.config).toMatchObject({ langs: ['cs', 'ruby'] })
+    await click(ui, ROW(true, 'cs'))
+    await click(ui, ROW(true, 'ruby'))   // the last one: stays checked
+    expect(await find(ui, { type: 'Button', text: ROW(true, 'ruby') })).toBeDefined()
+    expect(shared.config).toMatchObject({ langs: ['ruby'] })
+  })
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    test(`${surface}: going back replaces an unanswered question from an unchecked bank`, async ($, on) => {
+      const ui = await pane($, on, surface)
+      await click(ui, BANKS_BUTTON(ui))
+      await click(ui, ROW(false, 'js'))
+      await click(ui, ROW(true, 'cs'))
+      await click(ui, DONE_BUTTON(ui))
+      expect(await find(ui, { text: /^\[js\] $/ })).toBeDefined()
+    })
+  }
+
+  test('an answered question stays, so its explanation can still be read', async ($, on) => {
+    const ui = await pane($, on, 'desktop')
+    await click(ui, OPEN(ui, 'a'))
+    await click(ui, /^Switch Q banks$/)
+    await click(ui, ROW(false, 'js'))
+    await click(ui, ROW(true, 'cs'))
+    await click(ui, /^Done$/)
+    expect(await find(ui, { text: /^\[cs\] $/ })).toBeDefined()
+    expect(await find(ui, { text: /^because$/ })).toBeDefined()
+    await click(ui, /^Next$/)
+    expect(await find(ui, { text: /^\[js\] $/ })).toBeDefined()
+  })
+
+  test('desktop: a repeated click on a toggle does not undo it; quiz clicks are ignored meanwhile', async ($, on) => {
+    const ui = await pane($, on, 'desktop')
+    const desktop = ui as Mounted<'desktop', 'Pane'>   // only a desktop drawing has a Client to post from
+    const answer = await keyOf(ui, OPEN(ui, 'a'))
+    await click(ui, /^Switch Q banks$/)
+    expect(await find(ui, { type: 'Button', text: /^Skip$/ })).toBeUndefined()
+    // clicks as the desktop module sends them (surface.post), so a key from an old drawing still arrives
+    const check = await keyOf(ui, ROW(false, 'ruby'))
+    await desktop.post({ key: check }, { in: 'quiz' })
+    await desktop.post({ key: check }, { in: 'quiz' })   // from the drawing before the first took effect
+    expect(await find(ui, { type: 'Button', text: ROW(true, 'ruby') })).toBeDefined()
+    await desktop.post({ key: answer }, { in: 'quiz' })   // the question's option, from before the bank screen
+    await click(ui, /^Done$/)
+    expect(await find(ui, { text: /Correct!|Not quite\./ })).toBeUndefined()
   })
 })
 
@@ -497,49 +683,26 @@ describe('several sessions', () => {
     await $.turn.start({ text: 'go', turnId: 't1' })
     const mine = (await find(ui, { text: /^Pick / }))?.text
     await click(ui, OPEN(ui, 'a'))
-    // meanwhile another session answers the other Ruby question
+    // meanwhile another session answers the other cs question
     const stats = shared.stats as { seen: string[] }
-    const other = mine === 'Pick r' ? 'ruby-b' : 'ruby-a'
+    const other = mine === 'Pick c' ? 'cs-b' : 'cs-a'
     shared.stats = { ...stats, seen: [...stats.seen, other], answered: 2 }
     await click(ui, /^Next$/)
-    expect(await find(ui, { text: /^\[js\] $/ })).toBeDefined()   // both Ruby questions are done
+    expect(await find(ui, { text: /^Congratulations!$/ })).toBeDefined()   // both are done
   })
 })
 
 describe('claude events', () => {
-  test('AskUserQuestion shows waiting while it blocks, then thinking', async ($, on) => {
-    world(on)
-    let seen = ''
-    let ui: Mounted<'terminal', 'Pane'> | undefined
-    // the test's own hook stands in for the tool: read the banner while it "blocks"
-    on('tool.call', { tool: 'AskUserQuestion' }, async () => {
-      seen = (await ui?.find({ text: /needs your input/ }))?.text ?? ''
-      return { result: { answers: {} } } as never
-    })
-    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
-    await $.turn.start({ text: 'ask me', turnId: 't1' })
-    await $.tool.call({ tool: 'AskUserQuestion', input: { questions: [] } } as never)
-    expect(seen).toMatch(/needs your input/)
-    expect(await ui.find({ text: /Claude is thinking/ })).toBeDefined()
-  })
-
   test('a subagent finishing does not end the main turn', async ($, on) => {
     world(on)
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     await $.turn.complete({ ...DONE, turnId: 't2', agentId: 'sub' })
-    expect(await ui.find({ text: /Claude is thinking/ })).toBeDefined()
-  })
-
-  test('a permission prompt is waiting', async ($, on) => {
-    world(on)
-    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
-    await $.turn.start({ text: 'go', turnId: 't1' })
-    await $.classic.Notification({ message: 'ok?', notification_type: 'permission_prompt' } as never)
-    expect(await ui.find({ text: /needs your input/ })).toBeDefined()
+    // still thinking, so Next serves the next question instead of resting
+    await click(ui, /^skip$/)
+    expect(await find(ui, { text: RESTING })).toBeUndefined()
+    expect(await find(ui, { text: /^Pick / })).toBeDefined()
   })
 })
 
@@ -552,7 +715,7 @@ describe('/biteq commands', () => {
       world(on, BANKS, surface)
       await $.session.start({ cwd: '.', surface, isInteractive: true })
       const res = await $.prompt.submit({ text: '/biteq', wait: false } as never)
-      expect(res).toEqual({ drop: expect.stringContaining('ruby 2 first, then the other languages (5 questions)') } as never)
+      expect(res).toEqual({ drop: expect.stringContaining('serving cs 2 (2 questions)') } as never)
       const wrapped = await $.prompt.submit({ text: '<system-reminder>\nnote\n</system-reminder>\n/biteq', wait: false } as never)
       expect(wrapped).toEqual({ drop: expect.stringContaining('questions') } as never)
       const plain = await $.prompt.submit({ text: 'fix /biteq-related bug', wait: false } as never)
@@ -564,13 +727,14 @@ describe('/biteq commands', () => {
     world(on)
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
     expect(await run($, '--lang cobol')).toContain('unknown language cobol')
-    expect(await run($, '--lang go')).toContain('no go questions yet: the other languages')
-    expect(await run($, '--lang python,js')).toContain('python 2, js 1 first')
+    expect(await run($, '--lang go')).toContain('no questions in go')
+    expect(await run($, 'doctor')).toContain('selected      cs')   // an empty selection isn't remembered
+    expect(await run($, '--lang python,js')).toContain('serving python 2, js 1 (3 questions)')
     const langs = await run($, 'langs')
     expect(langs).toMatch(/js\s+1 questions\s+<- selected/)
     expect(langs).toMatch(/ruby\s+2 questions$/m)
-    // in serving order: the selected languages first, then the rest A-Z
-    expect(langs.split('\n').map(l => l.split(/\s+/)[0])).toEqual(['python', 'js', 'go', 'ruby'])
+    // the selected banks first, then the rest A-Z
+    expect(langs.split('\n').map(l => l.split(/\s+/)[0])).toEqual(['python', 'js', 'cs', 'go', 'ruby'])
   })
 
   test('stats, check, doctor, reset', async ($, on) => {
@@ -582,11 +746,15 @@ describe('/biteq commands', () => {
 
     const stats = await run($, 'stats')
     expect(stats).toContain('answered      1')
+    expect(stats).toMatch(/^ {13}correct {3}one-shot$/m)
+    expect(stats).toMatch(/^  cs {9}1\/1 {7}1\/2$/m)
     expect(stats).toContain('AI waits      1  (you practiced during 100% of them)')
-    expect(await run($, 'check')).toBe('5 questions in 4 banks: go 0, js 1, python 2, ruby 2')
-    expect(await run($, 'doctor')).toContain('selected      ruby')
+    expect(await run($, 'check')).toBe('7 questions in 5 banks: cs 2, go 0, js 1, python 2, ruby 2')
+    expect(await run($, 'doctor')).toContain('selected      cs')
     expect(await run($, 'reset --all')).toContain('removed: status, stats, config')
-    expect(await run($, 'stats')).toContain('answered      0')
+    const cleared = await run($, 'stats')
+    expect(cleared).toContain('answered      0')
+    expect(cleared).not.toContain('one-shot')
   })
 
   test('check reports broken banks', async ($, on) => {
