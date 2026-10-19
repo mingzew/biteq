@@ -64,7 +64,7 @@ Code tab, or the Claude Code extension in VS Code or Cursor.
    `ctrl+x tab` gives the pane the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter) answer, and the
    hint bar at the bottom names the rest: `n: skip · z: banks · q: close` before you answer, `⏎ next · z: banks ·
    q: close` after (Enter moves on; `n` still does too, though the bar no longer shows it).
-4. To change what you practise, press `z` (desktop: **Banks**) at any time. Check or uncheck banks with `1`–`9`
+4. To change what you practise, press `z` (desktop: **Switch Q banks**) at any time. Check or uncheck banks with `1`–`9`
    or the arrow keys and Enter; each change is saved at once. `z` (or **Done**) goes back to the quiz.
 
 Cursor's own chat agent is a different harness and doesn't run Claude Code plugins.

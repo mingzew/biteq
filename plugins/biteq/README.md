@@ -23,10 +23,10 @@ unseen). Once every selected question is answered, and every missed one answered
 "Congratulations! 38 of 47 in one shot." (the total only with several banks), lists each bank with how many of
 its questions you got right the first time you ever saw them (`✓ ruby  one-shot 35/44`, a perfect bank in
 the BiteQ colour) and says how to go on: "Press n to start over, or z to choose other banks." in the terminal,
-"Click Start over to go again, or Banks to choose other banks." in the desktop app; the bar reads
+"Click Start over to go again, or Switch Q banks to choose other banks." in the desktop app; the bar reads
 `n: start over · z: banks · q: close`.
 
-`z` (desktop: **Banks**) opens the bank screen at any time: one toggle per bank with its question count,
+`z` (desktop: **Switch Q banks**) opens the bank screen at any time: one toggle per bank with its question count,
 `1`–`9` in the terminal (or the arrow keys and Enter). Each change is saved at once, and the last checked
 bank can't be unchecked. `z` (or **Done**) goes back: an unanswered question from a bank you unchecked is
 replaced; an answered one stays so you can read its explanation.
