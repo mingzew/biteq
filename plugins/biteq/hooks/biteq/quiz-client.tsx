@@ -27,11 +27,11 @@ const ONE_SHOT = (n: number, of: number) => `${n} of ${of} in one shot.`
 // how to go on, in the client's own terms: its hotkeys where it has them, its buttons where it doesn't
 const AGAIN = (hotkeys: boolean) => (hotkeys
   ? 'Press n to start over, or z to choose other banks.'
-  : 'Click Start over to go again, or Banks to choose other banks.')
+  : 'Click Start over to go again, or Switch Q banks to choose other banks.')
 // the remembered banks have no questions (one was removed or emptied): the bank screen fixes it
 const EMPTY = (hotkeys: boolean) => (hotkeys
   ? 'No questions in the selected banks. Press z to choose other banks.'
-  : 'No questions in the selected banks. Click Banks to choose other banks.')
+  : 'No questions in the selected banks. Click Switch Q banks to choose other banks.')
 
 export const keys = {
   answer: (q: Question, idx: number) => `answer:${idx}:${q.id}`,
@@ -251,7 +251,7 @@ export function drawQuiz(
           {!v.picking && q !== null && (p !== null
             ? action(keys.next(q), 'Next', { primary: true, hotkey: 'n', focus: ring })
             : action(keys.skip(q), 'Skip', { hotkey: 's' }))}
-          {!v.picking && action(keys.banks, 'Banks', { hotkey: 'z' })}
+          {!v.picking && action(keys.banks, 'Switch Q banks', { hotkey: 'z' })}
           {action(keys.close, 'Close', { hotkey: 'q', dismiss: true })}
         </Box>
       )}

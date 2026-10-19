@@ -484,7 +484,7 @@ describe('serving order', () => {
     expect((await find(ui, { text: /✓ ruby\s+one-shot\s+2\/2$/ }))?.props).toMatchObject({ bold: true, color: '#F58700' })
     expect(await find(ui, { text: /✓ js\s+one-shot\s+1\/1$/ })).toBeDefined()
     expect(await find(ui, { text: /cs|python/ })).toBeUndefined()
-    expect(await find(ui, { text: /^Click Start over to go again, or Banks to choose other banks\.$/ })).toBeDefined()
+    expect(await find(ui, { text: /^Click Start over to go again, or Switch Q banks to choose other banks\.$/ })).toBeDefined()
     expect(await find(ui, { text: /--lang|Press n/ })).toBeUndefined()
     expect(await find(ui, { text: /^Pick / })).toBeUndefined()
     expect(await find(ui, { type: 'Button', text: /^Practice now$/ })).toBeUndefined()
@@ -588,7 +588,7 @@ describe('bank screen', () => {
     await $.turn.start({ text: 'go', turnId: 't1' })
     return ui
   }
-  const BANKS_BUTTON = (ui: Drawing) => (ui.surface === 'terminal' ? /^banks$/ : /^Banks$/)
+  const BANKS_BUTTON = (ui: Drawing) => (ui.surface === 'terminal' ? /^banks$/ : /^Switch Q banks$/)
   const DONE_BUTTON = (ui: Drawing) => (ui.surface === 'terminal' ? /^done$/ : /^Done$/)
 
   test('terminal: z opens it over the question; each bank is a digit toggle; z goes back', async ($, on) => {
@@ -608,14 +608,14 @@ describe('bank screen', () => {
   })
 
   for (const [surface, hint] of [['terminal', /^No questions in the selected banks\. Press z to choose other banks\.$/],
-    ['desktop', /^No questions in the selected banks\. Click Banks to choose other banks\.$/]] as const) {
+    ['desktop', /^No questions in the selected banks\. Click Switch Q banks to choose other banks\.$/]] as const) {
     test(`${surface}: remembered banks with no questions point to the bank screen`, async ($, on) => {
       world(on, BANKS, surface, { config: { langs: ['go'] } })   // go was emptied since it was chosen
       await $.session.start({ cwd: '.', surface, isInteractive: true })
       const ui = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
       expect(await find(ui, { text: hint })).toBeDefined()
       expect(await find(ui, { text: /\/biteq/ })).toBeUndefined()
-      await click(ui, surface === 'terminal' ? /^banks$/ : /^Banks$/)
+      await click(ui, surface === 'terminal' ? /^banks$/ : /^Switch Q banks$/)
       expect(await find(ui, { text: /^Choose the banks to practise/ })).toBeDefined()
     })
   }
@@ -647,7 +647,7 @@ describe('bank screen', () => {
   test('an answered question stays, so its explanation can still be read', async ($, on) => {
     const ui = await pane($, on, 'desktop')
     await click(ui, OPEN(ui, 'a'))
-    await click(ui, /^Banks$/)
+    await click(ui, /^Switch Q banks$/)
     await click(ui, ROW(false, 'js'))
     await click(ui, ROW(true, 'cs'))
     await click(ui, /^Done$/)
@@ -661,7 +661,7 @@ describe('bank screen', () => {
     const ui = await pane($, on, 'desktop')
     const desktop = ui as Mounted<'desktop', 'Pane'>   // only a desktop drawing has a Client to post from
     const answer = await keyOf(ui, OPEN(ui, 'a'))
-    await click(ui, /^Banks$/)
+    await click(ui, /^Switch Q banks$/)
     expect(await find(ui, { type: 'Button', text: /^Skip$/ })).toBeUndefined()
     // clicks as the desktop module sends them (surface.post), so a key from an old drawing still arrives
     const check = await keyOf(ui, ROW(false, 'ruby'))
