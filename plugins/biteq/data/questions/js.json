@@ -46,7 +46,7 @@
     "code": "console.log(1);\nsetTimeout(() => console.log(2));\nPromise.resolve().then(() => console.log(3));\nconsole.log(4);",
     "options": ["1 2 3 4", "1 4 2 3", "1 4 3 2", "1 3 4 2"],
     "answer": 2,
-    "explanation": "Synchronous code runs first (1, 4). Then the microtask queue runs (promise callbacks, 3), and after that macrotasks such as setTimeout (2).",
+    "explanation": "A microtask is a callback the engine runs as soon as the current code finishes (promise callbacks such as .then and await), while a macrotask is a separate job that waits for its own turn (timers like setTimeout, I/O, UI events). The engine empties the whole microtask queue before it takes the next macrotask, so the timer waits even at 0 ms.\n\nconsole.log(1);                               // sync, runs now => 1\nsetTimeout(() => console.log(2));             // macrotask, queued for later\nPromise.resolve().then(() => console.log(3)); // microtask, queued\nconsole.log(4);                               // sync => 4\n                                              // stack empty: microtask first => 3, then the macrotask => 2",
     "practicality": 7
   },
   {
