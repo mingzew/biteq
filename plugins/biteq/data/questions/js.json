@@ -185,7 +185,7 @@
     "code": "function bark() {\n  console.log('Woof!');\n}\n\nbark.animal = 'dog';",
     "options": ["Nothing, this is totally fine!", "SyntaxError. You cannot add properties to a function this way.", "\"Woof\" gets logged.", "ReferenceError"],
     "answer": 0,
-    "explanation": "This is possible in JavaScript, because functions are objects! (Everything besides primitive types are objects)\n\nA function is a special type of object. The code you write yourself isn't the actual function. The function is an object with properties. This property is invocable.",
+    "explanation": "Functions are objects, so you can add properties to them like any other object, and the function can still be called.\n\nfunction bark() {\n  console.log('Woof!');\n}\n\nbark.animal = 'dog';  // adds a property to the function object\n\nbark.animal           // => 'dog'\nbark()                // logs Woof!, it is still callable",
     "practicality": 2,
     "source": "lydiahallie/javascript-questions #10"
   },
