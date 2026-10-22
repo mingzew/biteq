@@ -12,21 +12,21 @@
   {
     "id": "cs-in-list",
     "title": "Hidden quadratic",
-    "prompt": "allowed is a list with n items and items has n items. What is the complexity?",
-    "code": "result = [x for x in items if x in allowed]",
+    "prompt": "`signups` and `blocked` are both lists of n email addresses. What is the time complexity?",
+    "code": "flagged = [email for email in signups if email in blocked]",
     "options": ["O(n)", "O(n log n)", "O(n²)", "O(1)"],
     "answer": 2,
-    "explanation": "x in list is a linear scan, and it runs n times. Converting allowed to a set first makes the whole thing O(n).",
+    "explanation": "email in blocked scans the blocked list from the start, so each check is O(n). It runs once per signup, so the whole line is O(n) * O(n) = O(n²).\n\nflagged = [email for email in signups   # n iterations\n           if email in blocked]         # list lookup: O(n) each\n\nblocked = set(blocked)                  # O(n) once; set lookup is O(1)\nflagged = [email for email in signups if email in blocked]   # now O(n) overall",
     "practicality": 9
   },
   {
     "id": "cs-lru",
     "title": "Data structures",
-    "prompt": "Which combination gives an LRU cache O(1) get and put?",
-    "code": "",
+    "prompt": "An LRU (least recently used) cache must do get and put in O(1), and evict the least recently used key when full. Which pair of data structures makes that possible?",
+    "code": "cache = LRUCache(capacity=2)\ncache.put(\"a\", 1)\ncache.put(\"b\", 2)\ncache.get(\"a\")      # \"a\" becomes the most recently used\ncache.put(\"c\", 3)   # full: evicts \"b\", the least recently used",
     "options": ["Hash map + min-heap", "Hash map + doubly linked list", "Sorted array + binary search", "Two stacks"],
     "answer": 1,
-    "explanation": "The map finds a node in O(1). The doubly linked list moves that node to the front, or evicts the tail, in O(1).",
+    "explanation": "A hash map from key to node finds any entry in O(1). A doubly linked list keeps the entries in order of use: on get or put, unlink the node and move it to the front in O(1); when full, drop the node at the back in O(1).\n\nget(key):  node = map[key]; move node to front; return node.value\nput(key):  add/move node to front; if over capacity, remove the back node and its map entry\n\nA min-heap would make every access O(log n), and a sorted array needs O(n) shifts to reorder.",
     "practicality": 6
   },
   {
@@ -36,7 +36,7 @@
     "code": "counter += 1",
     "options": ["Always 200,000", "At most 200,000, possibly less", "Possibly more than 200,000", "Always 100,000"],
     "answer": 1,
-    "explanation": "+= is a read-modify-write, so two threads can read the same value and one update gets lost. Even in CPython with the GIL this isn't atomic. Use a lock or an atomic.",
+    "explanation": "counter += 1 is three steps, not one: read counter, add 1, write it back. Two threads can interleave those steps, and then one increment is lost:\n\nThread A: read counter      # 5\nThread B: read counter      # 5 (A hasn't written yet)\nThread A: write 5 + 1       # counter = 6\nThread B: write 5 + 1       # counter = 6, A's increment is lost\n\nEach lost update makes the total smaller, never larger, so the result is at most 200,000 and usually less. This happens even in CPython with the GIL, because a thread can be switched between the read and the write. Guard it with a lock (with lock: counter += 1) or use an atomic counter.",
     "practicality": 7
   },
   {
@@ -46,7 +46,7 @@
     "code": "",
     "options": ["GET", "PUT", "DELETE", "POST"],
     "answer": 3,
-    "explanation": "Sending the same PUT or DELETE again leaves the server in the same state. POST makes no such promise, which is why retrying POST safely needs idempotency keys.",
+    "explanation": "Idempotent means sending the same request once or many times leaves the server in the same state. That makes it safe to retry after a timeout.\n\nPUT /users/7 {name: \"Ada\"}   # twice: user 7 is still named Ada\nDELETE /users/7               # twice: user 7 is still gone (the second may return 404)\nPOST /orders {item: 42}       # twice: two orders\n\nGET is idempotent too (it shouldn't change anything). POST makes no promise, which is why APIs that let clients retry a POST ask for an idempotency key.",
     "practicality": 7
   },
   {
@@ -59,15 +59,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #1"
   },
   {
-    "id": "cs-fcc-002",
-    "prompt": "What is the time complexity of the Edmonds-Karp algorithm (Ford-Fulkerson using BFS to find augmenting paths)?",
-    "options": ["O(V ^ 2 * E)", "O(V + E)", "O(V * E ^ 2)", "O(V ^ 3 * E ^ 2)"],
-    "answer": 2,
-    "explanation": "The time complexity of the Ford-Fulkerson algorithm depends on how the augmenting paths are found. If the paths are found using a breadth-first search (BFS), it can lead to the Edmonds-Karp implementation, which has a time complexity of O(V * E ^ 2).",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #2"
-  },
-  {
     "id": "cs-fcc-003",
     "prompt": "What is the base case in a recursive function?",
     "options": ["The initial input value to the recursive function", "The condition under which the recursive function starts calling itself", "The condition under which the recursive function stops calling itself", "The maximum number of times the recursive function can call itself"],
@@ -77,15 +68,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #3"
   },
   {
-    "id": "cs-fcc-004",
-    "prompt": "Which of the following is a primary application of computer vision?",
-    "options": ["Word processing", "Database management", "Spreadsheet calculations", "Object recognition"],
-    "answer": 3,
-    "explanation": "Computer vision primarily deals with enabling machines to interpret and make decisions based on visual data. Object recognition is a fundamental application of computer vision where the system identifies objects within an image or video.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #4"
-  },
-  {
     "id": "cs-fcc-005",
     "prompt": "What is the average time complexity of an element insertion in a hash table?",
     "options": ["O(1)", "O(logn)", "O(n)", "O(n^2)"],
@@ -93,15 +75,6 @@
     "explanation": "The average time complexity of an element insertion in a hash table is O(1). Unlike arrays, hash tables use a hashing function to generate a unique key or index for each element, ensuring constant time for element insertion.",
     "practicality": 8,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #5"
-  },
-  {
-    "id": "cs-fcc-006",
-    "prompt": "Which of the following methods can be used to solve the N-Queens problem?",
-    "options": ["Dynamic Programming", "Divide and Conquer", "Backtracking", "Greedy Paradigm"],
-    "answer": 2,
-    "explanation": "Backtracking is used to solve the N-Queens problem based on the condition that no two queens can be present in the same row, column or diagonal.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #6"
   },
   {
     "id": "cs-fcc-007",
@@ -131,33 +104,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #9"
   },
   {
-    "id": "cs-fcc-010",
-    "prompt": "What is the time complexity of Bellman Ford's Algorithm?",
-    "options": ["O(E)", "O(V)", "O(V*E)", "O(V+E)"],
-    "answer": 2,
-    "explanation": "Bellman Ford's algorithm is a shortest path finding algorithm for graphs that can have negative weights having the optimal time complexity of O(V*E).",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #10"
-  },
-  {
-    "id": "cs-fcc-011",
-    "prompt": "What is the acceptable range of Balance Factor for an AVL tree?",
-    "options": ["[-1,1]", "[0,1]", "[-1,0]", "None of the above"],
-    "answer": 0,
-    "explanation": "The self balancing property of an AVL tree is maintained by the balance factor. The value of balance factor should always be -1, 0 or +1",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #11"
-  },
-  {
-    "id": "cs-fcc-012",
-    "prompt": "Which approach involves duplicating the argument's value into the function's formal parameter?",
-    "options": ["Call by pointer", "Call by address", "Call by Value", "Call by reference"],
-    "answer": 2,
-    "explanation": "In the call-by-value approach, a replica of the argument's value is generated, and any modifications made to the formal parameter within the function do not affect the original argument outside of the function, as the function operates on its own isolated copy of the data.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #12"
-  },
-  {
     "id": "cs-fcc-013",
     "prompt": "Which of the following algorithms is used to find the shortest path between two points in a connected weighted graph?",
     "options": ["Kruskal Algorithm", "Dijkstra's Algorithm", "Prims Algorithms", "Floyd's Tortoise-Hare Algorithm"],
@@ -167,29 +113,11 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #13"
   },
   {
-    "id": "cs-fcc-014",
-    "prompt": "What does NFC stands for?",
-    "options": ["Narrow Field Communication", "Near-Field Communication", "Near-Fragile Communication", "Nearly Factory Communication"],
-    "answer": 1,
-    "explanation": "NFC stands for near-field communication and it is the standard for devices to communicate with each other wirelessly from a very close distance.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #14"
-  },
-  {
-    "id": "cs-fcc-015",
-    "prompt": "Which algorithm multiplies two n x n matrices in about O(n^2.81) time?",
-    "options": ["Kruskal's algorithm", "Strassen's Algorithm", "The schoolbook triple loop", "Horner's method"],
-    "answer": 1,
-    "explanation": "Strassen's algorithm replaces 8 recursive block multiplications with 7, giving O(n^log2(7)) which is about O(n^2.81). The schoolbook method is O(n^3).",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #15"
-  },
-  {
     "id": "cs-fcc-016",
-    "prompt": "Which of the following sorting algorithms is stable in nature?",
+    "prompt": "A stable sort keeps items that compare equal in their original order. Which of these sorting algorithms is stable?",
     "options": ["Merge Sort", "Selection sort", "Heap Sort", "Quick Sort"],
     "answer": 0,
-    "explanation": "Stable sorting algorithms maintain the relative order of elements with equal values, or keys. Merge sort is stable in nature.",
+    "explanation": "Merge sort is stable: when two items compare equal, the merge step takes the one from the left half first, so they keep their original order.\n\nSort [(\"Bo\", 30), (\"Al\", 25), (\"Cy\", 30)] by age:\nstable:     Al 25, Bo 30, Cy 30   # Bo stays before Cy\nnot stable: Al 25, Cy 30, Bo 30   # allowed for quick, heap or selection sort\n\nStability matters when you sort by one key after another, e.g. by name and then by age. Python's sorted() and JavaScript's Array.prototype.sort are stable.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #16"
   },
@@ -203,33 +131,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #17"
   },
   {
-    "id": "cs-fcc-018",
-    "prompt": "What is Object-Oriented Programming?",
-    "options": ["OOP is a programming pattern that is built around objects or entities.", "OOP is a list of Bitwise operators", "OOP is a set of sorting algorithms", "OOP is a topological paradigm to program things"],
-    "answer": 0,
-    "explanation": "OOP is a programming pattern that is built around objects or entities",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #18"
-  },
-  {
-    "id": "cs-fcc-019",
-    "prompt": "How can you divide a non-negative integer x by 8 with a bitwise operator?",
-    "options": ["x >> 3", "x ^ 8", "x << 3", "x & 8"],
-    "answer": 0,
-    "explanation": "Shifting right by one bit halves a non-negative integer (rounding down), so shifting right by 3 divides by 2^3 = 8. Compilers already do this for you; write x / 8 unless you need the bits.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #19"
-  },
-  {
-    "id": "cs-fcc-020",
-    "prompt": "Which of the following is NOT an in-place sorting algorithm?",
-    "options": ["Merge Sort", "Quick sort", "Bubble sort", "Insertion sort"],
-    "answer": 0,
-    "explanation": "Merge sort uses the Divide and Conquer paradigm and is not considered an in-place sorting algorithm.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #20"
-  },
-  {
     "id": "cs-fcc-021",
     "prompt": "Which term is used for removing elements from the front of the queue?",
     "options": ["Peek.", "Dequeue.", "isFull.", "Enqueue."],
@@ -239,47 +140,11 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #21"
   },
   {
-    "id": "cs-fcc-022",
-    "prompt": "Which problems are solved using Bellman Ford's Algorithm?",
-    "options": ["Maximum Flow", "Minimum Spanning Tree", "All Pair Shortest Path", "Single Source Shortest Path"],
-    "answer": 3,
-    "explanation": "Bellman-Ford finds single-source shortest paths and, unlike Dijkstra's, works with negative edge weights. It can also detect negative cycles.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #22"
-  },
-  {
-    "id": "cs-fcc-023",
-    "prompt": "Which of the following algorithms can be used to determine a minimum spanning tree in a graph?",
-    "options": ["Binary search", "Boruvka's algorithm", "Breadth first search", "Depth first search"],
-    "answer": 1,
-    "explanation": "Boruvka's algorithm can be used to determine a minimum spanning tree in a graph.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #23"
-  },
-  {
-    "id": "cs-fcc-024",
-    "prompt": "Which of the following is synonymous with an articulation point in a graph?",
-    "options": ["Cut set", "Leaf node", "Cut vertex", "Cut edge"],
-    "answer": 2,
-    "explanation": "In a graph, an articulation point is the same as a cut vertex.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #24"
-  },
-  {
-    "id": "cs-fcc-025",
-    "prompt": "Which of the following is synonymous with a bridge in a graph?",
-    "options": ["Cut edge", "Cut set", "Articulation point", "Directed edge"],
-    "answer": 0,
-    "explanation": "In a graph, a bridge is the same as a cut edge.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #25"
-  },
-  {
     "id": "cs-fcc-026",
-    "prompt": "Which is true of the optimization version of the Traveling Salesman Problem (find the shortest tour)?",
+    "prompt": "The Traveling Salesman Problem: given cities and the distance between each pair, find the shortest tour, a route that visits every city exactly once and returns to the start. Which is true of finding that shortest tour?",
     "options": ["It is an NP-Hard problem.", "It is an NP-Complete problem.", "It is a P problem.", "It is an NP problem."],
     "answer": 0,
-    "explanation": "Finding the shortest tour is NP-hard. The decision version (\"is there a tour shorter than k?\") is NP-complete.",
+    "explanation": "NP-hard means at least as hard as every problem in NP: no known algorithm solves it in polynomial time, and finding one would solve all of NP. Checking every tour of n cities takes about n! steps.\n\nFinding the shortest tour is NP-hard. It isn't NP-complete, because you can't check quickly that a given tour is the shortest. The yes/no version (\"is there a tour shorter than k?\") is in NP and is NP-complete.\n\nIn practice, route planners use heuristics and approximations that find a good tour, not a provably shortest one.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #26"
   },
@@ -295,56 +160,11 @@
   {
     "id": "cs-fcc-028",
     "prompt": "What is SOLID?",
-    "options": ["SOLID is an acronym which represents five principles of Object-Oriented design.", "It's a new group of technologies", "New kind of software", "It's a new type of Hardware"],
-    "answer": 0,
-    "explanation": "SOLID is a set of rules and best practices to follow while creating OOP designs.",
+    "options": ["A database consistency model, like ACID", "Five principles of object-oriented design", "Four principles of functional programming", "A naming convention for classes and files"],
+    "answer": 1,
+    "explanation": "SOLID is an acronym for five object-oriented design principles that keep code easy to change:\n\nS  Single responsibility: a class has one reason to change.\nO  Open/closed: open for extension, closed for modification; add behaviour without editing working code.\nL  Liskov substitution: a subclass can stand in anywhere its parent is used.\nI  Interface segregation: several small interfaces beat one large one clients only partly use.\nD  Dependency inversion: depend on abstractions (an interface), not concrete classes.\n\nACID (atomicity, consistency, isolation, durability) is the database one.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #28"
-  },
-  {
-    "id": "cs-fcc-029",
-    "prompt": "Which of the following is true for an adjacency list?",
-    "options": ["Looking up an edge takes time proportional to the node's degree, not O(1).", "It cannot be used to represent a cyclic graph.", "Edge weight lookup is O(1).", "Edge weight cannot be specified in adjacency list."],
-    "answer": 0,
-    "explanation": "An adjacency list stores each node's neighbours in a list, so finding a particular edge means scanning that list. An adjacency matrix answers it in O(1) but uses O(V^2) space.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #29"
-  },
-  {
-    "id": "cs-fcc-030",
-    "prompt": "Which of the following is true for an adjacency matrix?",
-    "options": ["Edge weight lookup is lower bounded by log(n).", "It is space efficient for representing sparse graphs.", "Space complexity is O(n).", "It is space efficient for representing dense graphs."],
-    "answer": 3,
-    "explanation": "If a graph is sparse then most spaces are wasted.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #30"
-  },
-  {
-    "id": "cs-fcc-031",
-    "prompt": "Which of the following is true for a graph?",
-    "options": ["A graph is bipartite if and only if it is two colorable.", "A graph is bipartite if and only if it is a directed acyclic graph", "A graph is bipartite if and only if it is three colorable.", "A graph is bipartite if and only if it does not contain an even length cycle."],
-    "answer": 0,
-    "explanation": "If a graph is two colorable then the nodes with same color can be grouped together to form two different groups.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #31"
-  },
-  {
-    "id": "cs-fcc-032",
-    "prompt": "Which of the following is true for an arborescence in graph theory?",
-    "options": ["A strongly connected and directed graph is an arborescence.", "A graph where the number of edges is twice the number of nodes is arborescence.", "All DAGs are arborescence but not all arborescence are DAGs.", "All arborescence are Directed Acyclic Graphs (DAGs) but not all DAGs are arborescence"],
-    "answer": 3,
-    "explanation": "An arborescence is a directed tree. Hence, it is a directed graph with no cycle. A graph with 4 nodes where three nodes are pointing towards a single node is not an arborescence but a DAG.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #32"
-  },
-  {
-    "id": "cs-fcc-033",
-    "prompt": "What is an arborescence in graph theory?",
-    "options": ["A graph having cycles", "A strongly connected and directed graph", "A rooted tree in which all edges point away from the root", "A graph where the number of edges is twice the number of nodes"],
-    "answer": 2,
-    "explanation": "A tree is rooted if the tree has a designated node called root node such that all edges either points towards the root or points away from the root. And if all edges point away from the root then it is called arborescence.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #33"
   },
   {
     "id": "cs-fcc-034",
@@ -356,15 +176,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #34"
   },
   {
-    "id": "cs-fcc-035",
-    "prompt": "What is the name for an error where the programmer writes invalid syntax resulting in the program failing to run?",
-    "options": ["Runtime Error", "Syntax Error", "Semantic Error", "Logical Error"],
-    "answer": 1,
-    "explanation": "A syntax error is when the programmer writes invalid code that violates the rules of that programming language.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #35"
-  },
-  {
     "id": "cs-fcc-036",
     "prompt": "Which operation is used to add an item to the back of the queue?",
     "options": ["isFull", "Peek", "Dequeue", "Enqueue"],
@@ -374,40 +185,14 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #36"
   },
   {
-    "id": "cs-fcc-037",
-    "prompt": "Which of the following is correct about a tree?",
-    "options": ["trees can be cyclic.", "trees must have at least two nodes", "a tree must be an undirected graph", "trees are minimally connected."],
-    "answer": 3,
-    "explanation": "If we remove any edge from a tree, it creates a two disconnected graph",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #37"
-  },
-  {
-    "id": "cs-fcc-038",
-    "prompt": "Which of the following is a constraint for Dijkstra's Single Source Shortest Path Algorithm?",
-    "options": ["The graph must be a balanced binary tree", "The graph must be acyclic", "The graph must only contain non-negative edge weights.", "The graph must have unique edge weights"],
-    "answer": 2,
-    "explanation": "Dijkstra's SSSP algorithm may not work for a graph with negative edge weights. This constraint is to ensure that once a vertex is visited, the optimal distance from source cannot be updated further.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #38"
-  },
-  {
     "id": "cs-fcc-039",
     "prompt": "Which of the following is the most correct statement?",
     "options": ["All undirected graphs have topological ordering", "A cyclic graph also has topological ordering.", "Topological sort is just an another name for BFS", "Topological sort is possible only for a Directed Acyclic Graph"],
     "answer": 3,
-    "explanation": "The only graph that has valid topological ordering is a Directed Acyclic Graph.",
+    "explanation": "A topological ordering lists a directed graph's nodes so every edge points forward: if A -> B, A comes before B. Build steps and course prerequisites are the classic uses.\n\nshirt -> tie -> jacket, shirt -> belt   # one valid order: shirt, belt, tie, jacket\nA -> B -> C -> A                       # a cycle: whichever comes first, some edge points backwards\n\nSo an ordering exists exactly when the graph is directed and has no cycles (a DAG). Undirected edges have no direction to respect. It's computed with DFS or Kahn's algorithm, not BFS order alone.",
     "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #39"
-  },
-  {
-    "id": "cs-fcc-040",
-    "prompt": "What is ASCII?",
-    "options": ["Algorithm to convert decimal to number in base 65.", "A unit of throughput for a processor.", "It is a character encoding standard to represent text in a computer.", "A protocol in Layer 3 of TCP/IP Suite"],
-    "answer": 2,
-    "explanation": "American Standard Code for Information Interchange (ASCII) is a character encoding standard to represent text in computers.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #40"
+    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #39",
+    "comment": "improve the topological ordering in explanation."
   },
   {
     "id": "cs-fcc-041",
@@ -446,24 +231,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #44"
   },
   {
-    "id": "cs-fcc-045",
-    "prompt": "Which of these sorting algorithms follows an average case time complexity of order O(nlogn)?",
-    "options": ["Selection Sort", "Insertion Sort", "Merge Sort", "Bubble Sort"],
-    "answer": 2,
-    "explanation": "The average case time complexity for the merge sort algorithm is O(n log n).",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #45"
-  },
-  {
-    "id": "cs-fcc-046",
-    "prompt": "Which one of the following terms mean adding an element to the top of the stack?",
-    "options": ["Display", "Peek", "Push", "Pop"],
-    "answer": 2,
-    "explanation": "The push method is used to add an element to the top of the stack.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #46"
-  },
-  {
     "id": "cs-fcc-047",
     "prompt": "Which one of these data structures follows the FIFO(First In First Out) method?",
     "options": ["Queues", "Arrays", "Stacks", "Trees"],
@@ -471,24 +238,6 @@
     "explanation": "A queue is defined as a linear data structure that is open at both ends and the operations are performed in First In First Out (FIFO) order.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #47"
-  },
-  {
-    "id": "cs-fcc-048",
-    "prompt": "What is the basic language of a computer?",
-    "options": ["Binary", "Cascading Style Sheets", "JavaScript", "HyperText Markup Language"],
-    "answer": 0,
-    "explanation": "Computers are simplistic and understand binary. Programming languages such as Python and Java were created to help humans write instructions for computers and interpret it.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #48"
-  },
-  {
-    "id": "cs-fcc-049",
-    "prompt": "Which one of these is NOT a common time complexity equation for Big O notation?",
-    "options": ["O(1)", "O(log n)", "O(n^14)", "O(n)"],
-    "answer": 2,
-    "explanation": "O(1), O(log n), O(n) are just some of the common time complexity equations for Big O notation.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #49"
   },
   {
     "id": "cs-fcc-050",
@@ -509,42 +258,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #51"
   },
   {
-    "id": "cs-fcc-052",
-    "prompt": "What is the Design Thinking Process?",
-    "options": ["A process to troubleshoot Windows applications.", "A process to come up with creative, user centric solutions to complex problems.", "A process to design mockups.", "A process to fix computers."],
-    "answer": 1,
-    "explanation": "The Design Thinking Process is a way to come up with creative, user centric solutions to complex problems.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #52"
-  },
-  {
-    "id": "cs-fcc-053",
-    "prompt": "Which of the following data structures is used to convert an infix expression to a postfix expression?",
-    "options": ["Stacks", "LinkedList", "Priority Queues", "Queues"],
-    "answer": 0,
-    "explanation": "A stack is the most suitable data structure for converting an infix expression to a postfix expression",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #53"
-  },
-  {
-    "id": "cs-fcc-054",
-    "prompt": "Which of the following techniques is implemented to improve CPU performance?",
-    "options": ["Pipelining", "Encoding", "Ratelimiting", "None of these"],
-    "answer": 0,
-    "explanation": "A substantial improvement in performance can be achieved by overlapping the execution of successive instructions,using a technique called pipelining",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #54"
-  },
-  {
-    "id": "cs-fcc-055",
-    "prompt": "Which one of these data structures follows the LIFO(Last In First Out) method?",
-    "options": ["Stacks", "Priority Queues", "Queues", "Trees"],
-    "answer": 0,
-    "explanation": "A stack is a linear data structure that uses the LIFO(Last In First Out) method.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #55"
-  },
-  {
     "id": "cs-fcc-056",
     "prompt": "Which of the following is a Divide and Conquer algorithm?",
     "options": ["Heap Sort", "Selection Sort", "Bubble Sort", "Merge Sort"],
@@ -558,99 +271,9 @@
     "prompt": "Which is true of a fixed-size array, like a plain array in C or Java?",
     "options": ["It can only be one-dimensional", "Insertion and deletion of elements has a time complexity of O(1)", "Size of an array can not be changed once initialized", "A single array can contain data of different data types"],
     "answer": 2,
-    "explanation": "When you create an array, you are allocated a block of contiguous memory and in order to change it's size, you will have to create a new array.",
+    "explanation": "A fixed-size array is one contiguous block of memory sized when it is created. To grow it you allocate a bigger array and copy everything across (which is what dynamic arrays like ArrayList or Python lists do for you).\n\nWhy not O(1) insert and delete? Reading arr[i] is O(1), but inserting or deleting in the middle means shifting every later element one slot:\n\n[a, b, c, d, _]  insert x at index 1\n[a, x, b, c, d]  b, c and d each moved right: O(n)\n\nOnly changing the last element is O(1). Fast insert and delete in the middle (given the node) is what a linked list offers.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #57"
-  },
-  {
-    "id": "cs-fcc-058",
-    "prompt": "What is a first class function?",
-    "options": ["Functions declared in classes", "Functions that only return numbers", "Functions with higher priority than others.", "The ability to send and receive functions like values."],
-    "answer": 3,
-    "explanation": "If functions can be sent and received just like values, than that language is said to have first class functions. They are also called first class citizens.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #58"
-  },
-  {
-    "id": "cs-fcc-059",
-    "prompt": "What are parallel arrays?",
-    "options": ["two or more arrays that contain the same number of elements and have corresponding values in the same position", "arrays that only hold numbers", "arrays that only hold strings", "a special type of nested arrays"],
-    "answer": 0,
-    "explanation": "Parallel arrays contain the same number of elements and have corresponding values in the same position.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #59"
-  },
-  {
-    "id": "cs-fcc-060",
-    "prompt": "What is a bug?",
-    "options": ["A programming paradigm.", "A programming structure that repeats a block of code a given number of times", "An error in a computer program that causes it to generate an incorrect or unexpected result or output.", "This concept is not related to programming at all."],
-    "answer": 2,
-    "explanation": "A bug is an error in a computer program that causes it to generate an incorrect or unexpected result or output. The process of finding and fixing bugs is known as debugging.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #60"
-  },
-  {
-    "id": "cs-fcc-061",
-    "prompt": "What is a Floating point number?",
-    "options": ["A number greater than 100", "A number less than 0", "A number that is divisible by 3", "A number with a decimal point"],
-    "answer": 3,
-    "explanation": "A floating point number is a number with a decimal point.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #61"
-  },
-  {
-    "id": "cs-fcc-062",
-    "prompt": "How many bytes make up a Zettabyte?",
-    "options": ["1 million bytes", "1 thousand bytes", "1 hundred bytes", "1 sextillion bytes"],
-    "answer": 3,
-    "explanation": "A Zettabyte is composed of 1 sextillion bytes",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #62"
-  },
-  {
-    "id": "cs-fcc-063",
-    "prompt": "The process of finding and fixing bugs in a computer program is known as...",
-    "options": ["Looping", "Encapsulation", "Abstraction", "Debugging"],
-    "answer": 3,
-    "explanation": "Debugging is the process of finding and fixing bugs in a computer program.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #63"
-  },
-  {
-    "id": "cs-fcc-064",
-    "prompt": "How many bytes make up a Terabyte?",
-    "options": ["1 million bytes", "1 billion bytes", "1 trillion bytes", "1 thousand bytes"],
-    "answer": 2,
-    "explanation": "A Terabyte is composed of 1 trillion bytes",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #64"
-  },
-  {
-    "id": "cs-fcc-065",
-    "prompt": "What is a server?",
-    "options": ["An IDE", "A type of compiler", "A Python library", "A software or hardware device that sends data over a network"],
-    "answer": 3,
-    "explanation": "A server is a software or hardware device that sends data over a network",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #65"
-  },
-  {
-    "id": "cs-fcc-066",
-    "prompt": "The values that an operator operates on are known as...",
-    "options": ["Operands", "Operation", "Operators", "Operative"],
-    "answer": 0,
-    "explanation": "The values that an operator operates on are known as operands.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #66"
-  },
-  {
-    "id": "cs-fcc-067",
-    "prompt": "What is an algorithm?",
-    "options": ["A web development framework.", "A programming paradigm.", "A sequence of detailed step-by-step instructions to complete a task.", "A Python module."],
-    "answer": 2,
-    "explanation": "An algorithm is a sequence of detailed step-by-step instructions to complete a task.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #67"
   },
   {
     "id": "cs-fcc-068",
@@ -662,42 +285,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #68"
   },
   {
-    "id": "cs-fcc-069",
-    "prompt": "What is an operating system?",
-    "options": ["A base 2 numerical system made up of 0's and 1's", "A system that converts data into machine code", "A program that translates code from one languages to another", "Manages the hardware and software components of a computer"],
-    "answer": 3,
-    "explanation": "An operating system manages the hardware and software components of a computer.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #69"
-  },
-  {
-    "id": "cs-fcc-070",
-    "prompt": "How many bytes make up a Exabyte?",
-    "options": ["1 thousand bytes", "1 quintillion bytes", "1 trillion bytes", "1 billion bytes"],
-    "answer": 1,
-    "explanation": "A Exabyte is composed of 1 quintillion bytes",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #70"
-  },
-  {
-    "id": "cs-fcc-071",
-    "prompt": "What does API stand for?",
-    "options": ["Application Programming Interface", "Apple Pie Inside", "Another Program Interface", "Application Program Interface"],
-    "answer": 0,
-    "explanation": "API stands for Application Programming Interface.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #71"
-  },
-  {
-    "id": "cs-fcc-072",
-    "prompt": "How many bytes make up a Gigabyte?",
-    "options": ["1 hundred bytes", "1 quintillion bytes", "1 billion bytes", "1 trillion bytes"],
-    "answer": 2,
-    "explanation": "A Gigabyte is composed of 1 billion bytes",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #72"
-  },
-  {
     "id": "cs-fcc-073",
     "prompt": "Select the type of loop that repeats a sequence of instructions an unknown number of times while a condition is True.",
     "options": ["While loop", "Infinite loop", "For loop", "Circular loop"],
@@ -707,193 +294,13 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #73"
   },
   {
-    "id": "cs-fcc-074",
-    "prompt": "How many bytes make up a Yottabyte?",
-    "options": ["1 billion bytes", "1 thousand bytes", "1 million bytes", "1 septillion bytes"],
-    "answer": 3,
-    "explanation": "A Yottabyte is made up of 1 septillion bytes",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #74"
-  },
-  {
-    "id": "cs-fcc-075",
-    "prompt": "How many bytes make up a Kilobyte?",
-    "options": ["1,000 bytes", "1 byte", "100 bytes", "10 bytes"],
-    "answer": 0,
-    "explanation": "A Kilobyte is composed of 1,000 bytes",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #75"
-  },
-  {
-    "id": "cs-fcc-076",
-    "prompt": "What is a bit?",
-    "options": ["Smallest form of data on a computer", "Structured assembly language", "A special type of file system", "A special type of object"],
-    "answer": 0,
-    "explanation": "A binary digit or \"bit\" is the smallest form of data on a computer",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #76"
-  },
-  {
-    "id": "cs-fcc-077",
-    "prompt": "What is RAM?",
-    "options": ["A type of short term memory that stores data that computer processors need access to", "A type of memory that computers use to connect with other devices", "A type of memory that computers use to delete data", "A type of memory that computers use to call servers"],
-    "answer": 0,
-    "explanation": "Random Access Memory is a type of short term memory that stores data that computer processors can access frequently.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #77"
-  },
-  {
-    "id": "cs-fcc-078",
-    "prompt": "What unit is used to measure the speed of a CPU?",
-    "options": ["GHz (gigahertz)", "MHz (megahertz)", "THz (terahertz)", "kHz (kilohertz)"],
-    "answer": 0,
-    "explanation": "The speed of a computer is determined by its clock cycle. The clock speed measures the number of cycles the CPU executes per second. Hertz is a unit of frequency. The CPU clock cycle is measured in GHz (gigahertz). 1GHz is equal to 10 ⁹ Hz (hertz).So 1Gigahertz means 10 ⁹ cycles per second.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #78"
-  },
-  {
-    "id": "cs-fcc-079",
-    "prompt": "Each one of the alternative sequence of statements in a conditional statement is known as...",
-    "options": ["Loop", "Decision", "Path", "Branch"],
-    "answer": 3,
-    "explanation": "Each one of the alternative sequence of statements in a conditional statement is known as a branch.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #79"
-  },
-  {
-    "id": "cs-fcc-080",
-    "prompt": "What is an infinite loop?",
-    "options": ["A loop that only completes two iterations.", "A loop that will continue endlessly unless an external intervention stops its execution.", "A loop that never runs.", "A loop that cannot be stopped, even with external intervention."],
-    "answer": 1,
-    "explanation": "An infinite loop is a loop whose condition is always true, so it will continue running endlessly unless there is some external intervention to stop it.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #80"
-  },
-  {
-    "id": "cs-fcc-081",
-    "prompt": "What is pair programming?",
-    "options": ["Programming where you use each data structure twice", "Two people coding together on one computer", "Programming on a non-Apple computer (also known as pear programming)", "One person coding on two computers at the same time"],
-    "answer": 1,
-    "explanation": "When Pair Programming, one developer is the \"driver\" with their hands on the keyboard. The other is the \"navigator\" helping talk through the problem and decide what to do. They periodically switch roles. This is an efficient and commonly used Agile Software Development methodology.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #81"
-  },
-  {
-    "id": "cs-fcc-082",
-    "prompt": "What does CPU stand for?",
-    "options": ["Central Processing Unit", "Central Protocol Unit", "Control Processing Unit", "Central Programming Unit"],
-    "answer": 0,
-    "explanation": "CPU stands for Central Processing Unit which performs logic computations for the program.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #82"
-  },
-  {
-    "id": "cs-fcc-083",
-    "prompt": "How many bytes make up a Petabyte?",
-    "options": ["1 quintillion bytes", "1 million bytes", "1 quadrillion bytes", "1 hundred bytes"],
-    "answer": 2,
-    "explanation": "A Petabyte is composed of 1 quadrillion bytes",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #83"
-  },
-  {
-    "id": "cs-fcc-084",
-    "prompt": "What is a Boolean?",
-    "options": ["A programming language.", "A Python library.", "A data type representing a number.", "A data type representing a true or false value."],
-    "answer": 3,
-    "explanation": "In computer science, a Boolean is a data type which only has two possible values of true or false.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #84"
-  },
-  {
-    "id": "cs-fcc-085",
-    "prompt": "What is a virtual machine?",
-    "options": ["a popular JavaScript library", "another name for a compiler", "a Linux distribution", "A computer inside another computer"],
-    "answer": 3,
-    "explanation": "A virtual machine is a program you run on a computer that acts like it is a separate computer. It is basically a way to create a computer within a computer.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #85"
-  },
-  {
-    "id": "cs-fcc-086",
-    "prompt": "What is a password?",
-    "options": ["A secret set of characters", "A type of array", "A way to request data from a server", "A special type of computer memory"],
-    "answer": 0,
-    "explanation": "A password is a secret set of characters used to login in to applications",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #86"
-  },
-  {
-    "id": "cs-fcc-087",
-    "prompt": "A special symbol used to perform arithmetic or logical computations is known as...",
-    "options": ["Operand", "Operator", "Operation", "Operative"],
-    "answer": 1,
-    "explanation": "A special symbol used to perform arithmetic or logical computations is known as operator.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #87"
-  },
-  {
-    "id": "cs-fcc-088",
-    "prompt": "Which one is NOT a popular operating system for computers?",
-    "options": ["Microsoft Windows", "Linux", "PASSIM", "macOS"],
-    "answer": 2,
-    "explanation": "Linux, Microsoft Windows and macOS are three popular operating systems used by developers.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #88"
-  },
-  {
-    "id": "cs-fcc-089",
-    "prompt": "What is RGB?",
-    "options": ["A color model", "HTML syntax", "An Internet Protocol", "A secret password"],
-    "answer": 0,
-    "explanation": "RGB is an acronym that stands for Red Green Blue. It expresses colors in terms of the amount of red, green, and blue they are made up of and uses a human counting system with integers ranging from 0-255 or a percentage ranging from (0% - 100%).",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #89"
-  },
-  {
-    "id": "cs-fcc-090",
-    "prompt": "Fonts that are generally available across most browsers and operating systems are known as...",
-    "options": ["General fonts", "Universal fonts", "Web Fonts", "Web safe fonts"],
-    "answer": 3,
-    "explanation": "Web safe fonts are the fonts that are generally available across most browsers and operating systems.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #90"
-  },
-  {
-    "id": "cs-fcc-091",
-    "prompt": "What does GIF stand for?",
-    "options": ["General Interchange Format", "Graphics Interchange Format", "Graphical Interconnected Functions", "Graphical International Format"],
-    "answer": 1,
-    "explanation": "GIF stands for Graphics Interchange Format.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #91"
-  },
-  {
-    "id": "cs-fcc-092",
-    "prompt": "When was the World Wide Web invented?",
-    "options": ["1995", "1990", "2005", "1989"],
-    "answer": 3,
-    "explanation": "Tim Berners-Lee invented the World Wide Web in 1989.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #92"
-  },
-  {
     "id": "cs-fcc-093",
     "prompt": "What does DOM stand for?",
     "options": ["Documentary Object Mobile", "Direct Object Model", "Document Objective Model", "Document Object Model"],
     "answer": 3,
-    "explanation": "DOM stands for Document Object Model.",
+    "explanation": "DOM stands for Document Object Model: the browser's live tree of objects built from a page's HTML, one node per element, attribute and piece of text.\n\nIt matters because it is the API between JavaScript and the page. Everything that changes a page after it loads goes through it:\n\ndocument.querySelector('#total').textContent = '$42'   # change text\nbutton.addEventListener('click', save)                # react to the user\n\nFrameworks like React update the DOM for you, and its cost is why they batch and minimise DOM changes.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #93"
-  },
-  {
-    "id": "cs-fcc-094",
-    "prompt": "What does PNG stand for?",
-    "options": ["Premium Network Graphics", "Portable New Graphics", "Portable Network Graphics", "Portable Network Green"],
-    "answer": 2,
-    "explanation": "PNG stands for Portable Network Graphics.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #94"
   },
   {
     "id": "cs-fcc-095",
@@ -905,42 +312,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #95"
   },
   {
-    "id": "cs-fcc-096",
-    "prompt": "The rules that determine the correct structure of the code in a computer program are known as...",
-    "options": ["Interpreter", "Semantics", "Syntax", "Compiler"],
-    "answer": 2,
-    "explanation": "The rules that determine the correct structure of the code in a computer program are known as syntax.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #96"
-  },
-  {
-    "id": "cs-fcc-097",
-    "prompt": "What do R, G, and B in RGB stand for?",
-    "options": ["Red, gray, and blue", "Red, green, and blue", "Red, green, and black", "Red, gray, and black"],
-    "answer": 1,
-    "explanation": "RGB is an acronym that stands for Red Green Blue",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #97"
-  },
-  {
-    "id": "cs-fcc-098",
-    "prompt": "What does a CPU do?",
-    "options": ["Displays images and text on screen", "A CPU executes commands from a computer program", "Points to objects on the screen", "Writes code for developers"],
-    "answer": 1,
-    "explanation": "The CPU is the brains of a computer that processes operations and executes instructions for computer programs.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #98"
-  },
-  {
-    "id": "cs-fcc-099",
-    "prompt": "What is Binary?",
-    "options": ["A numeral system where the values are 0-7.", "A numeral system where the values are 0's and 1's.", "A numeral system where the values are 1's and 2's.", "A numeral system where the values are 0-9."],
-    "answer": 1,
-    "explanation": "Binary is a base 2 numeral system whose values are 0 and 1.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #99"
-  },
-  {
     "id": "cs-fcc-100",
     "prompt": "The process by which a function calls itself directly or indirectly is known as...",
     "options": ["Decomposition", "Recursion", "Looping", "Encapsulation"],
@@ -948,114 +319,6 @@
     "explanation": "Recursion is the process by which a function calls itself directly or indirectly during its execution. This works for problems that can be solved by solving smaller instances of the same problem.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #100"
-  },
-  {
-    "id": "cs-fcc-101",
-    "prompt": "Which of the following is considered an example of an input device?",
-    "options": ["Monitor", "A computer mouse", "Projector", "Speakers"],
-    "answer": 1,
-    "explanation": "Examples of Input devices are a keyboard (used for typing text and characters – essentially for entering any written information), a mouse (for clicking, pointing, and selecting appropriate data) and a microphone.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #101"
-  },
-  {
-    "id": "cs-fcc-102",
-    "prompt": "What does IDE stand for?",
-    "options": ["International Development Experimentation", "Internal Development Environment", "Integrated Development Environment", "Integrated Design Environment"],
-    "answer": 2,
-    "explanation": "IDE stands for Integrated Development Environment.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #102"
-  },
-  {
-    "id": "cs-fcc-103",
-    "prompt": "The set of instructions that specifies a computation in known as...",
-    "options": ["Program", "Syntax", "Recursion", "API"],
-    "answer": 0,
-    "explanation": "The set of instructions that specifies a computation is known as a program.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #103"
-  },
-  {
-    "id": "cs-fcc-104",
-    "prompt": "What do HDD and SSD stand for in computer hardware?",
-    "options": ["Hard Disk Drive & Segment State Drive", "Hard Disk Drive & Solid State Drive", "Harvest Disk Drive & Solid State Drive", "Hard Disk Drive & Scratch State Drive"],
-    "answer": 1,
-    "explanation": "HDD stands for Hard Disk Drive while SSD stands for Solid State Drive.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #104"
-  },
-  {
-    "id": "cs-fcc-105",
-    "prompt": "Who invented the World Wide Web?",
-    "options": ["Tim Berners-Lee", "Alan Turing", "Ada Lovelace", "Quincy Larson"],
-    "answer": 0,
-    "explanation": "Tim Berners-Lee invented the World Wide Web in 1989.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #105"
-  },
-  {
-    "id": "cs-fcc-106",
-    "prompt": "What is another term used when referring to the CPU?",
-    "options": ["System Unit", "Processor", "Operating System", "Computer Software"],
-    "answer": 1,
-    "explanation": "CPU is short for Central Processing Unit. It is also known as a processor or microprocessor.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #106"
-  },
-  {
-    "id": "cs-fcc-107",
-    "prompt": "What does ISP stand for?",
-    "options": ["International Service Provider", "Internet System Provider", "Intermediate Systems Provider", "Internet Service Provider"],
-    "answer": 3,
-    "explanation": "ISP stands for Internet Service Provider.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #107"
-  },
-  {
-    "id": "cs-fcc-108",
-    "prompt": "What does JPEG stand for?",
-    "options": ["Join Photographic External Graphics", "Joint Photographic Experts Group", "Join Photogenic Experimental Group", "Join Photos Enchanted Graphics"],
-    "answer": 1,
-    "explanation": "JPEG stands for Joint Photographic Experts Group.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #108"
-  },
-  {
-    "id": "cs-fcc-109",
-    "prompt": "What does HTTP stand for?",
-    "options": ["HyperText Transfer Protocol", "HyperText Transmission Protocol", "HyperTest Transfer Product", "HyperText Transfer Password"],
-    "answer": 0,
-    "explanation": "HTTP stands for HyperText Transfer Protocol.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #109"
-  },
-  {
-    "id": "cs-fcc-110",
-    "prompt": "How many bytes make up a Megabyte?",
-    "options": ["1 billion bytes", "1 thousand bytes", "1 million bytes", "1 trillion bytes"],
-    "answer": 2,
-    "explanation": "A Megabyte is composed of 1 million bytes",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #110"
-  },
-  {
-    "id": "cs-fcc-111",
-    "prompt": "What is the Internet?",
-    "options": ["A bunch of wires and undersea cables connected and buried deep in the ground and oceans, all around the world.", "A cloud", "An executable program file", "Another term for the World Wide Web"],
-    "answer": 0,
-    "explanation": "The Internet is actually a wire. Well, it's many wires that connect computers all around the world. The Internet is also infrastructure. It's a global network of interconnected computers that communicate in a standardized way with set protocols.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #111"
-  },
-  {
-    "id": "cs-fcc-112",
-    "prompt": "Which phase is NOT part of the Design Thinking Process?",
-    "options": ["Prototype", "Ideate", "Empathize", "Rationalize"],
-    "answer": 3,
-    "explanation": "The five phases of the Design Thinking Process are Empathize, Define, Ideate, Prototype, and Test.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #112"
   },
   {
     "id": "cs-fcc-113",
@@ -1076,33 +339,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #114"
   },
   {
-    "id": "cs-fcc-115",
-    "prompt": "What is WebP?",
-    "options": ["Is a domain name", "Is a web page", "Is an image format", "Is a video format"],
-    "answer": 2,
-    "explanation": "Is an image format that provides lossless and lossy compression for images on the Internet using predictive coding to encode an image.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #115"
-  },
-  {
-    "id": "cs-fcc-116",
-    "prompt": "What is Lossy compression?",
-    "options": ["A sorting algorithm", "An algorithm to reduce file names", "Compression that discards some data, so only an approximation can be restored", "A reverse algorithm"],
-    "answer": 2,
-    "explanation": "Lossy compression permits reconstruction only of an approximation of the original data.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #116"
-  },
-  {
-    "id": "cs-fcc-117",
-    "prompt": "What is a domain name?",
-    "options": ["The name of a website", "The name of a network", "The IP address of a user", "The address of a website"],
-    "answer": 3,
-    "explanation": "A domain name is the address of a website. It's the name you type into a web browser to access that specific website.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #117"
-  },
-  {
     "id": "cs-fcc-118",
     "prompt": "A value passed to a function (or method) when calling the function is known as...",
     "options": ["Return value", "Parameter", "Argument", "Class"],
@@ -1110,15 +346,6 @@
     "explanation": "An argument is a value passed to a function (or method) when the function or method is called.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #118"
-  },
-  {
-    "id": "cs-fcc-119",
-    "prompt": "What does SVG stand for?",
-    "options": ["Stretchable Vector Graphics", "Scalable Vectorial Graphics", "Scalable Vector Graphics", "Screen Vector Graphics"],
-    "answer": 2,
-    "explanation": "SVG stands for Scalable Vector Graphics.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #119"
   },
   {
     "id": "cs-fcc-120",
@@ -1130,15 +357,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #120"
   },
   {
-    "id": "cs-fcc-121",
-    "prompt": "What is a Nibble?",
-    "options": ["Nibble is a octet", "Nibble is a four-bit aggregation", "Nibble is an algorithm", "Nibble is a device"],
-    "answer": 1,
-    "explanation": "A Nibble is a group of four bits (half of a byte)",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #121"
-  },
-  {
     "id": "cs-fcc-122",
     "prompt": "Which data structure is used for the implementation of a recursive algorithm?",
     "options": ["Linked list", "Stack", "Queue", "Tree"],
@@ -1146,15 +364,6 @@
     "explanation": "In recursion, the nested function that is called later returns the value first, which is in the same nature as that of a stack (Last In First Out).",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #122"
-  },
-  {
-    "id": "cs-fcc-123",
-    "prompt": "Which one is NOT a programming paradigm?",
-    "options": ["Boolean Programming", "Functional Programming", "Object-Oriented Programming", "Procedural Programming"],
-    "answer": 0,
-    "explanation": "Object-oriented programming, functional programming and procedural programming are all well known paradigms.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #123"
   },
   {
     "id": "cs-fcc-124",
@@ -1166,24 +375,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #124"
   },
   {
-    "id": "cs-fcc-125",
-    "prompt": "Which type of computer network generally has the smallest size?",
-    "options": ["MAN", "PAN", "WAN", "LAN"],
-    "answer": 1,
-    "explanation": "Some examples of a Personal Area Network (PAN) include tablets, video game consoles and smartphones.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #125"
-  },
-  {
-    "id": "cs-fcc-126",
-    "prompt": "Which color model is used for printing?",
-    "options": ["HSV", "CMYK", "RGB", "RYB"],
-    "answer": 1,
-    "explanation": "The CMYK color model uses subtractive colors, thus producing better results on a white background like a paper.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #126"
-  },
-  {
     "id": "cs-fcc-127",
     "prompt": "What are the four pillars of Object-oriented programming?",
     "options": ["Objects, Methods, Properties and Fields.", "Abstraction, Encapsulation, Inheritance, and Polymorphism.", "Declaration, Modeling, Evaluation and Implementation.", "Immutability, Purity, Transparency and State."],
@@ -1191,42 +382,6 @@
     "explanation": "Abstraction, encapsulation, inheritance, and polymorphism are software design principles to help you write clean object-oriented code.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #127"
-  },
-  {
-    "id": "cs-fcc-128",
-    "prompt": "What is pseudocode?",
-    "options": ["Pseudocode is fake code that is used to write programs that are easily understood.", "A specific programming language that all computers use", "An old programming language that they used back in the day.", "A diagrammatic representation of a set of instructions"],
-    "answer": 0,
-    "explanation": "Pseudocode is fake code that is used to write programs in which you represent the sequence of actions and instructions (aka algorithms) in a form that humans can easily understand.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #128"
-  },
-  {
-    "id": "cs-fcc-129",
-    "prompt": "What is a function?",
-    "options": ["container for storing data", "Is a block of code that is self-contained behavior for the computer to run.", "Text that does not get executed by the computer", "an extensible program-code-template"],
-    "answer": 1,
-    "explanation": "The code inside a function runs only when it is needed, meaning only when it is called.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #129"
-  },
-  {
-    "id": "cs-fcc-130",
-    "prompt": "What are loops?",
-    "options": ["Code that ends the program", "Code to encapsulate statements", "Code used to run certain instructions repeatedly.", "Code that is ran only one time"],
-    "answer": 2,
-    "explanation": "A statement which can repeat a set of statements up to a fixed number of times or until a certain criterion is satisfied.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #130"
-  },
-  {
-    "id": "cs-fcc-131",
-    "prompt": "What is an array?",
-    "options": ["Is a list of data", "A variable that is assigned a single value", "A programming language used for Macintosh computer", "A function that loops through data"],
-    "answer": 0,
-    "explanation": "An array is a special variable, which can hold more than one value.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #131"
   },
   {
     "id": "cs-fcc-132",
@@ -1256,15 +411,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #134"
   },
   {
-    "id": "cs-fcc-135",
-    "prompt": "In which generation of computers were compilers introduced?",
-    "options": ["Second generation", "Fourth generation", "Third generation", "First generation"],
-    "answer": 2,
-    "explanation": "Translators called compilers were introduced in third generation to translate the code programmers wrote to machine executable binary code.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #135"
-  },
-  {
     "id": "cs-fcc-136",
     "prompt": "Which algorithm finds the shortest path between nodes in a graph?",
     "options": ["Rabin-Karp Algorithm", "Binary Search Algorithm", "Dijkstra's Algorithm", "Quicksort Algorithm"],
@@ -1292,12 +438,13 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #138"
   },
   {
-    "id": "cs-fcc-139",
-    "prompt": "Which of the following runtimes can be used for recursive functions that make multiple calls?",
-    "options": ["depth ^ (branches)", "branches ^ (depth) i.e. 'b' raised to the power of 'd'", "2 ^ (branches * depth)", "2 ^ (branches)"],
-    "answer": 1,
-    "explanation": "An O(branches ^ depth) runtime is often reported (although not always) for recursive functions that make multiple calls.",
-    "practicality": 5,
+    "id": "cs-recursion-two-calls",
+    "prompt": "How many calls does f(n) make in total, in Big-O?",
+    "code": "def f(n):\n    if n <= 1:\n        return 1\n    return f(n - 1) + f(n - 1)",
+    "options": ["O(n)", "O(n²)", "O(2^n)", "O(n log n)"],
+    "answer": 2,
+    "explanation": "Each call makes two more calls until n reaches 1, so the calls form a binary tree n levels deep: 1 + 2 + 4 + ... + 2^(n-1) = 2^n - 1 calls.\n\nf(3)                      # 1 call\n├── f(2)                  # 2 calls\n│   ├── f(1)  f(1)        # 4 calls\n└── f(2) ...\n\nIn general a recursion that branches b times and goes d deep makes about b^d calls. Computing f(n - 1) once and doubling it (return 2 * f(n - 1)) makes it O(n); naive Fibonacci has the same blow-up.",
+    "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #139"
   },
   {
@@ -1308,24 +455,6 @@
     "explanation": "The worst case time complexity for linear search O(n) because we have to iterate through n elements. The worst case time complexity for binary search is O(logn) because it is a divide and conquer algorithm.",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #140"
-  },
-  {
-    "id": "cs-fcc-141",
-    "prompt": "What is Proprietary Software?",
-    "options": ["Software where the code can be used by everyone for free", "Software that has only been developed by Oracle", "Software which is owned by an organization or an individual.", "Software where the code is publicly available for people to modify, and share."],
-    "answer": 2,
-    "explanation": "The original authors of proprietary software can modify its code. Users of this type of software have to agree not to alter it in any way unless they have permission from the owners to do so.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #141"
-  },
-  {
-    "id": "cs-fcc-142",
-    "prompt": "What is Open Source Software?",
-    "options": ["Software developed by Facebook", "Software where the code is only available to a select few people", "A type of software where the code is publicly available for people to view, modify, and share.", "Software owned by Big Tech Companies"],
-    "answer": 2,
-    "explanation": "Open Source Software is code that is publicly available for people to view, modify, and share. One example of open source would be freeCodeCamp.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #142"
   },
   {
     "id": "cs-fcc-143",
@@ -1346,15 +475,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #144"
   },
   {
-    "id": "cs-fcc-145",
-    "prompt": "What is a String?",
-    "options": ["A Data Structure for data arrangement", "An Array indicator for programming languages", "A data type that comprises of a sequence of characters", "a programming language for complex tasks"],
-    "answer": 2,
-    "explanation": "A string is a data type that can contain many different characters. A string is written as a series of characters between single or double quotes.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #145"
-  },
-  {
     "id": "cs-fcc-146",
     "prompt": "What is the worst case time complexity for Bubble sort?",
     "options": ["O(n^2)", "O(nlogn)", "O(n)", "O(logn)"],
@@ -1362,15 +482,6 @@
     "explanation": "Bubble sort has a worst case time complexity of O(n^2), which is slow compared to other sorting algorithms.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #146"
-  },
-  {
-    "id": "cs-fcc-147",
-    "prompt": "Which HTTP status code returns 'I'm a teapot'?",
-    "options": ["007", "128", "418", "000"],
-    "answer": 2,
-    "explanation": "HTTP status code 418 returns 'I'm a teapot' and it is a reference to a 1998 April Fools' joke.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #147"
   },
   {
     "id": "cs-fcc-148",
@@ -1400,12 +511,13 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #150"
   },
   {
-    "id": "cs-fcc-151",
-    "prompt": "If you were to solve the classic FizzBuzz challenge, what would be the output for the 15th iteration?",
-    "options": ["Buzz", "BuzzFizz", "FizzBuzz", "Fizz"],
-    "answer": 2,
-    "explanation": "FizzBuzz is a common coding challenge where you will need to write a loop that iterates from 1 to N while outputting 'Fizz' at multiples of 3, 'Buzz' at multiples of 5 and 'FizzBuzz' at multiples of 3 and 5. Position 15 has the word FizzBuzz because it is a multiple of both 3 and 5.",
-    "practicality": 5,
+    "id": "cs-fizzbuzz-order",
+    "prompt": "What does this print on the 15th iteration (i = 15)?\n",
+    "code": "for i in range(1, 16):\n    if i % 3 == 0:\n        print(\"Fizz\")\n    elif i % 5 == 0:\n        print(\"Buzz\")\n    elif i % 15 == 0:\n        print(\"FizzBuzz\")\n    else:\n        print(i)",
+    "options": ["FizzBuzz", "Fizz", "Buzz", "15"],
+    "answer": 1,
+    "explanation": "An if/elif chain stops at the first branch that matches. 15 % 3 == 0 is checked first, so it prints Fizz and the FizzBuzz branch is never reached, for 15 or for any multiple of 15.\n\nif i % 3 == 0:       # 15 matches here: prints Fizz, chain ends\nelif i % 15 == 0:    # unreachable for every multiple of 15\n\nPut the most specific condition first: check i % 15 (or i % 3 == 0 and i % 5 == 0) before i % 3 and i % 5.",
+    "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #151"
   },
   {
@@ -1418,20 +530,11 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #152"
   },
   {
-    "id": "cs-fcc-153",
-    "prompt": "Why are sorting algorithms important in programming?",
-    "options": ["Sorting algorithms are not important because there are faster ways to solve problems", "Sorting algorithms are important because they are frequently asked in interviews.", "Sorting algorithms are important because they are only used to arrange data in alphabetical order", "Sorting algorithms are important because they can reduce the complexity of a problem."],
-    "answer": 3,
-    "explanation": "Sorting algorithms are important because they can reduce the complexity of a problem by arranging data in a specific order, which can make it easier to solve and streamline various tasks and processes.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #153"
-  },
-  {
     "id": "cs-fcc-154",
     "prompt": "Which of the following examples shows the correct syntax for kebab case?",
     "options": ["number*of*donuts", "number_of_donuts", "number-of-donuts", "numberOfDonuts"],
     "answer": 2,
-    "explanation": "Kebab case separates each lowercase word by dashes.",
+    "explanation": "Kebab case writes words in lowercase, joined by hyphens: number-of-donuts.\n\nIt's used where names live in text rather than in code, because a hyphen is a minus sign in most languages: URLs and slugs (/blog/my-first-post), CSS classes (.nav-bar), HTML data attributes (data-user-id), command-line flags (--dry-run), npm package names and file names.\n\nnumber_of_donuts is snake case (Python, Ruby, SQL); numberOfDonuts is camel case (JavaScript, Java).",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #154"
   },
@@ -1440,7 +543,7 @@
     "prompt": "Which of the following type of trees is also known as a 'large key' tree?",
     "options": ["Ternary Tree", "Adelson-Velsky and Landis Tree (AVL Tree/Height balanced tree)", "Binary Search Tree", "B-Tree"],
     "answer": 3,
-    "explanation": "B-Trees are identified by their capacity to hold a significant quantity of keys within a single node, leading to their alternative name, large key trees.",
+    "explanation": "A B-tree is a self-balancing search tree whose nodes each hold many sorted keys (often hundreds) and have many children, rather than one key and two children.\n\nSearching reads one node, finds where the key falls among its sorted keys, and follows that child down. Because each node branches so widely, the tree stays only a few levels deep, even for millions of keys.\n\nThat fits disks and SSDs, which read in blocks: one node is one block, so a lookup costs a handful of reads. That's why databases (indexes in PostgreSQL and MySQL) and file systems use B-trees.",
     "practicality": 2,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #155"
   },
@@ -1463,15 +566,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #157"
   },
   {
-    "id": "cs-fcc-158",
-    "prompt": "Which of the following search algorithms is best for finding the minimum or maximum of an unimodal function?",
-    "options": ["Linear Search", "Sentinel Linear Search", "Binary Search", "Ternary Search"],
-    "answer": 3,
-    "explanation": "Ternary Search is similar to binary search but distinguishes itself through a trisection approach giving us three possibilities for the two points m1 and m2 f(m1) < f(m2), f(m1) > f(m2), f(m1) = f(m2)",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #158"
-  },
-  {
     "id": "cs-fcc-159",
     "prompt": "In the RotateLeft or RotateRight function in an AVL tree, when do we update the root of the tree?",
     "options": ["when the node becomes a leaf of the tree", "when the node becomes nullptr", "when the Parent of the node becomes nullptr", "when the height balance is restored"],
@@ -1479,15 +573,6 @@
     "explanation": "When the parent of the node becomes nullptr, this means the  node is the root of the tree.  So when we make a right or left rotation, we need to update the root of the tree with the appropriate child of the node.",
     "practicality": 1,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #159"
-  },
-  {
-    "id": "cs-fcc-160",
-    "prompt": "In a Red-Black Tree, every leaf (NIL) node is...",
-    "options": ["Red", "Black", "White", "Red or Black"],
-    "answer": 1,
-    "explanation": "A Red-Black Tree is a self-balancing Binary Search Tree (BST) and every tree leaf node is always black.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #160"
   },
   {
     "id": "cs-fcc-161",
@@ -1503,7 +588,7 @@
     "prompt": "What is the basis for a Red-Black tree?",
     "options": ["AVL Tree", "Linked List", "Red-Black Graphs", "2-3-4 tree"],
     "answer": 3,
-    "explanation": "A Red-Black Tree is based upon a 2-3-4 tree where the red nodes collapse into the black node above them to form a 2-3-4 node.",
+    "explanation": "A red-black tree is a self-balancing binary search tree. Each node is coloured red or black, and two rules keep it balanced: a red node never has a red child, and every path from the root down to a leaf passes the same number of black nodes. So the longest path is at most twice the shortest, and the height stays O(log n).\n\nAfter an insert or delete breaks a rule, the tree recolours nodes and rotates a few of them to restore it.\n\nIt is a binary encoding of a 2-3-4 tree: a black node together with its red children forms one 2-3-4 node holding up to 3 keys. Java's TreeMap and C++'s std::map are red-black trees.",
     "practicality": 1,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #162"
   },
@@ -1512,7 +597,7 @@
     "prompt": "What are the space and time complexities for Red-Black Trees where n are the number of entries?",
     "options": ["O(nlogn), O(1)", "O(n), O(logn)", "O(logn), O(logn)", "O(n), O(n^2)"],
     "answer": 1,
-    "explanation": "As we have n Nodes we get a Space Complexity of O(n).  The (re-)balancing is not perfect, but guarantees searching in O(log n). The insert and delete operations, along with the tree rearrangement and recoloring, are also performed in O(log n) time",
+    "explanation": "A red-black tree is a self-balancing binary search tree: every node is red or black, a red node has no red child, and every root-to-leaf path has the same number of black nodes. Those rules keep its height within about 2·log n.\n\nSpace: one node per entry, so O(n).\nTime: search walks one root-to-leaf path, O(log n). Insert and delete also walk one path and then fix the colours with at most a few rotations, so they're O(log n) too.\n\nAn unbalanced binary search tree can degrade to a linked list and O(n) per operation; the colour rules are what prevent that.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #163"
   },
@@ -1526,31 +611,13 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #164"
   },
   {
-    "id": "cs-fcc-165",
-    "prompt": "What is the time complexity of the Floyd-Warshall algorithm for finding all shortest paths in a weighted graph?",
-    "options": ["O(V log V)", "O(E log V)", "O(V^3)", "O(V^2 log V)"],
-    "answer": 2,
-    "explanation": "The Floyd-Warshall algorithm has a time complexity of O(V^3), where V is the number of vertices in the graph.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #165"
-  },
-  {
     "id": "cs-fcc-166",
     "prompt": "In the context of machine learning, what is the bias-variance trade-off?",
     "options": ["The trade-off between precision and recall in classification.", "A technique to reduce overfitting in neural networks.", "The balance between underfitting (high bias) and overfitting (high variance) in a model.", "The relationship between accuracy and complexity in algorithms."],
     "answer": 2,
-    "explanation": "The bias-variance trade-off refers to finding the right balance in a machine learning model to avoid underfitting (high bias) and overfitting (high variance).",
+    "explanation": "A model underfits when it's too simple to capture the pattern: it does badly even on its training data (high bias). It overfits when it memorises the training data, noise included: it scores well there but badly on new data (high variance).\n\nAnalogy: studying for an exam. Underfitting is skimming the chapter titles; you fail the practice test and the real one. Overfitting is memorising the practice test's answers; you ace it, then fail the real exam with different questions.\n\nMaking a model more complex lowers bias but raises variance, so you look for the point where error on held-out data (a validation set) is lowest. It's why you never judge a model by its training score alone.",
     "practicality": 2,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #166"
-  },
-  {
-    "id": "cs-fcc-167",
-    "prompt": "What is the purpose of a Bloom filter in computer science?",
-    "options": ["To test whether an element is a member of a set with a small probability of false positives.", "To encrypt data for secure transmission.", "To hash passwords for authentication.", "To compress data for efficient storage."],
-    "answer": 0,
-    "explanation": "A Bloom filter is a data structure used to test membership in a set with a small probability of false positives, making it suitable for tasks like spell checking and network routing.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #167"
   },
   {
     "id": "cs-fcc-168",
@@ -1562,15 +629,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #168"
   },
   {
-    "id": "cs-fcc-169",
-    "prompt": "What is the significance of P vs. NP problem in computer science and mathematics?",
-    "options": ["It studies the relationship between parallel and distributed computing.", "It addresses the question of whether every problem whose solution can be verified quickly can also be solved quickly.", "It characterizes the complexity of sorting algorithms.", "It defines the class of polynomial-time algorithms."],
-    "answer": 1,
-    "explanation": "The P vs. NP problem is a fundamental question in computer science and mathematics, addressing the efficiency of solving problems and the class of problems that can be solved efficiently.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #169"
-  },
-  {
     "id": "cs-fcc-170",
     "prompt": "What is the use of a priority queue?",
     "options": ["A priority queue manages elements based on priority, ensuring higher priority items are processed first.", "It's a fixed-size queue.", "It's a queue that organizes elements by their value.", "It only accepts elements of the same type."],
@@ -1578,15 +636,6 @@
     "explanation": "A priority queue is essential in scenarios where certain tasks need to be handled in order of importance or urgency.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #170"
-  },
-  {
-    "id": "cs-fcc-171",
-    "prompt": "What is a binary search algorithm?",
-    "options": ["Binary search is used for searching unsorted arrays.", "Binary search efficiently finds values in sorted arrays by dividing the search space in half until the target is found or determined to be absent.", "Binary search only works with non-integer values.", "Binary search has a time complexity of O(n)."],
-    "answer": 1,
-    "explanation": "Binary search is a fundamental and highly efficient algorithm for searching in sorted data structures like arrays and is based on the principle of divide and conquer.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #171"
   },
   {
     "id": "cs-fcc-172",
@@ -1598,24 +647,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #172"
   },
   {
-    "id": "cs-fcc-173",
-    "prompt": "What is the difference between a stack and a queue in data structures?",
-    "options": ["A stack and a queue have the same behavior and are interchangeable in data structures.", "A stack and a queue are not used in computer programming.", "A stack (LIFO) removes the last element added first, while a queue (FIFO) removes the first element added first.", "A stack and a queue are both unordered collections of elements."],
-    "answer": 2,
-    "explanation": "A stack is a linear data structure that uses the Last in First Out principle while a queue uses the First In First Out principle.  Understanding the differences between stacks and queues is essential for choosing the right data structure for specific algorithms and applications.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #173"
-  },
-  {
-    "id": "cs-fcc-174",
-    "prompt": "What is the time complexity of Kruskal's algorithm in terms of the number of edges (E) and vertices (V) in the graph?",
-    "options": ["O(E log V)", "O(V log E)", "O(V^2)", "O(E)"],
-    "answer": 0,
-    "explanation": "Kruskal's algorithm sorts the edges (O(E log E)) and uses union-find to join components. Since E is at most V^2, log E is at most 2 log V, so this is usually written O(E log V).",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #174"
-  },
-  {
     "id": "cs-fcc-175",
     "prompt": "What is a key characteristic of a complete binary tree?",
     "options": ["All nodes have exactly two children", "Every level is full except possibly the last, which fills from the left", "The last level may have gaps between nodes", "It has the maximum number of nodes for its height"],
@@ -1623,15 +654,6 @@
     "explanation": "A complete binary tree fills level by level, left to right, which is why a heap can be stored in a plain array. A tree with the maximum number of nodes for its height is a perfect binary tree.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #175"
-  },
-  {
-    "id": "cs-fcc-176",
-    "prompt": "What is the postfix notation for the infix expression: 3 * (5 + 2)?",
-    "options": ["* 3 + 5 2", "3 5 + 2 *", "3 5 2 + *", "3 5 2 * +"],
-    "answer": 2,
-    "explanation": "In postfix, each operator follows its operands. 5 + 2 becomes 5 2 +, then 3 * (that) becomes 3 5 2 + *. Evaluated with a stack: push 3, 5, 2; + gives 7; * gives 21.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #176"
   },
   {
     "id": "cs-fcc-177",
@@ -1643,15 +665,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #177"
   },
   {
-    "id": "cs-fcc-178",
-    "prompt": "What is the Halting problem in computability theory?",
-    "options": ["The Halting Problem is an unsolvable problem in computer science", "The Halting Problem is a type of computer virus.", "The Halting Problem is used for code debugging.", "The Halting Problem is a cryptographic challenge."],
-    "answer": 0,
-    "explanation": "The Halting Problem is significant in theoretical computer science as it demonstrates the existence of problems that cannot be solved algorithmically.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #178"
-  },
-  {
     "id": "cs-fcc-179",
     "prompt": "What is load balancing?",
     "options": ["Removing excess load from a server", "An Internet Protocol", "Distributing network traffic across multiple servers", "Allocating more resources to a single server"],
@@ -1659,15 +672,6 @@
     "explanation": "Load balancing is a technique used in computing and networking to distribute incoming network traffic or workload across multiple servers, devices, or resources. The primary goal of load balancing is to optimize resource utilization, maximize throughput, minimize response time, and ensure high availability of services.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #179"
-  },
-  {
-    "id": "cs-fcc-180",
-    "prompt": "What does NTFS stand for in the context of Windows file systems?",
-    "options": ["New Transfer File System", "New Technology File System", "Network Time File System", "Network Transfer File System"],
-    "answer": 1,
-    "explanation": "NTFS, which stands for NT file system and the New Technology File System, is the file system that the Windows NT operating system (OS) uses for storing and retrieving files on hard disk drives (HDDs) and solid-state drives (SSDs). It is the default file system for the Windows NT family and it is developed by Microsoft.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #180"
   },
   {
     "id": "cs-fcc-181",
@@ -1704,5 +708,45 @@
     "explanation": "A compiler is a utility program that transforms your code into executable machine code files.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #184"
+  },
+  {
+    "id": "cs-http-401-vs-403",
+    "title": "401 vs 403",
+    "prompt": "A request carries a valid, unexpired token for user 42. User 42 is not an admin. What should the API return?",
+    "code": "DELETE /admin/users/7\nAuthorization: Bearer <valid token for user 42>",
+    "options": ["401 Unauthorized", "403 Forbidden", "400 Bad Request", "405 Method Not Allowed"],
+    "answer": 1,
+    "explanation": "401 means \"I don't know who you are\": credentials are missing, invalid or expired, so logging in (again) could fix it. 403 means \"I know who you are, and you can't do this\": retrying with the same identity won't help.\n\nNo Authorization header       # 401 (send a WWW-Authenticate header with it)\nExpired or tampered token     # 401: the client should refresh or log in again\nValid token, not an admin     # 403: authenticated, but not allowed\n\nClients act on the difference: a 401 often triggers a token refresh or a redirect to login, which loops forever if you send it for a permission problem. Some APIs return 404 instead of 403 to hide that a resource exists at all.",
+    "practicality": 9
+  },
+  {
+    "id": "cs-cors-preflight",
+    "title": "CORS preflight",
+    "prompt": "A page on https://app.example.com runs this. The console says the request was blocked by CORS policy because the preflight response has no Access-Control-Allow-Origin header. The same POST works from curl. What happened?",
+    "code": "fetch(\"https://api.example.com/orders\", {\n  method: \"POST\",\n  headers: { \"Content-Type\": \"application/json\" },\n  body: JSON.stringify(order),\n})",
+    "options": ["The API rejected the JSON body; curl skips that validation", "The browser sent the POST, the API created the order, and the browser then hid the response", "The browser first sent an OPTIONS preflight; the API's reply didn't allow app.example.com, so the browser never sent the POST", "app.example.com must add Access-Control-Allow-Origin to its own pages' responses"],
+    "answer": 2,
+    "explanation": "CORS is enforced by the browser, not the server, which is why curl works. A cross-origin request that isn't \"simple\" (here, Content-Type: application/json) gets a preflight: the browser asks the API with OPTIONS first, and only sends the real request if the answer allows it.\n\nOPTIONS /orders                                  # sent by the browser automatically\nOrigin: https://app.example.com\nAccess-Control-Request-Headers: content-type\n\n# the API must answer with:\nAccess-Control-Allow-Origin: https://app.example.com\nAccess-Control-Allow-Methods: POST\nAccess-Control-Allow-Headers: Content-Type\n\nThe fix belongs on the API (api.example.com). The \"sent, then hidden\" option does happen, but only for simple requests that skip the preflight, such as a form-encoded POST: the server acts on it and the page just can't read the reply.",
+    "practicality": 8
+  },
+  {
+    "id": "cs-cache-no-cache",
+    "title": "Cache-Control: no-cache",
+    "prompt": "An API returns account balances with this header. What may a browser or CDN do with the response?",
+    "code": "Cache-Control: no-cache",
+    "options": ["Store it, but check with the server that it's still current before every reuse", "Never store it anywhere", "Store it in the browser only, never in a shared cache like a CDN", "Reuse it without asking until the browser is restarted"],
+    "answer": 0,
+    "explanation": "no-cache doesn't mean \"don't cache\". It means a cache may keep the response but must revalidate it with the server (for example with If-None-Match and the ETag) before using it again. If nothing changed, the server answers 304 Not Modified and the stored copy is used.\n\nCache-Control: no-cache      # store, but revalidate every time\nCache-Control: no-store      # don't store at all: use this for sensitive data\nCache-Control: private       # browser may store it; shared caches (CDNs, proxies) may not\nCache-Control: max-age=60    # reuse for 60 seconds without asking\n\nFor balances you'd usually want private, no-store, or no-cache plus private, depending on whether a stale copy on disk is acceptable.",
+    "practicality": 7
+  },
+  {
+    "id": "cs-http-502-vs-504",
+    "title": "502 vs 504",
+    "prompt": "nginx proxies to your app. The report endpoint takes about 75 seconds to respond, and nginx gives up waiting on the app after 60 seconds. What status do users get?",
+    "code": "location /reports/ {\n    proxy_pass http://app:8000;\n    proxy_read_timeout 60s;\n}",
+    "options": ["500 Internal Server Error", "502 Bad Gateway", "503 Service Unavailable", "504 Gateway Timeout"],
+    "answer": 3,
+    "explanation": "A 5xx from a proxy or load balancer says which side failed. 504 means the gateway (nginx) reached the app but the app didn't answer in time; the app may well finish the report afterwards, and nobody receives it.\n\n504 Gateway Timeout    # upstream too slow: raise the timeout, or make the work async (return 202 and poll)\n502 Bad Gateway        # upstream down, refused the connection, or sent a broken response (crashed, wrong port)\n503 Service Unavailable # overloaded or in maintenance, often sent on purpose with Retry-After\n500 Internal Server Error # the app itself threw an error\n\nWhen debugging, 502 and 504 point at the connection between proxy and app; 500 points into the app's own logs.",
+    "practicality": 7
   }
 ]
