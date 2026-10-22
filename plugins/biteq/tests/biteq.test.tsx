@@ -17,8 +17,8 @@ const BANKS: Record<string, unknown[]> = {
     { id: 'ruby-b', title: 'S', prompt: 'Pick s', options: ['s1', 's2'], answer: 0, explanation: 'because', practicality: 5 },
   ],
   cs: [
-    { id: 'cs-a', title: 'C', prompt: 'Pick c', options: ['c1', 'c2'], answer: 0, explanation: 'because' },
-    { id: 'cs-b', title: 'K', prompt: 'Pick k', options: ['k1', 'k2'], answer: 0, explanation: 'because' },
+    { id: 'cs-a', title: 'C', prompt: 'Pick c', options: ['c1', 'c2'], answer: 0, explanation: 'because', practicality: 5 },
+    { id: 'cs-b', title: 'K', prompt: 'Pick k', options: ['k1', 'k2'], answer: 0, explanation: 'because', practicality: 5 },
   ],
   go: [],
 }

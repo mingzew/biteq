@@ -146,14 +146,10 @@ export function drawQuiz(
           <Text dimColor> - {TAGLINE}</Text>
         </Box>
       )}
-      <Box justifyContent="space-between">
-        <Text color={banner.color} bold dimColor={dim}>{banner.text}</Text>
-        <Box>
-          <Text dimColor>  </Text>
-          <Text {...mark(s.streak, s.best_streak)}>streak {s.streak}</Text>
-          <Text dimColor> · </Text>
-          <Text {...mark(s.best_streak, s.streak)}>best {s.best_streak}</Text>
-        </Box>
+      <Box justifyContent="flex-start">
+        <Text {...mark(s.streak, s.best_streak)}>streak {s.streak}</Text>
+        <Text dimColor> · </Text>
+        <Text {...mark(s.best_streak, s.streak)}>best {s.best_streak}</Text>
       </Box>
 
       {v.picking ? (
