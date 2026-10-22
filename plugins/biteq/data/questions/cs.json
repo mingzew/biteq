@@ -748,5 +748,23 @@
     "answer": 3,
     "explanation": "A 5xx from a proxy or load balancer says which side failed. 504 means the gateway (nginx) reached the app but the app didn't answer in time; the app may well finish the report afterwards, and nobody receives it.\n\n504 Gateway Timeout    # upstream too slow: raise the timeout, or make the work async (return 202 and poll)\n502 Bad Gateway        # upstream down, refused the connection, or sent a broken response (crashed, wrong port)\n503 Service Unavailable # overloaded or in maintenance, often sent on purpose with Retry-After\n500 Internal Server Error # the app itself threw an error\n\nWhen debugging, 502 and 504 point at the connection between proxy and app; 500 points into the app's own logs.",
     "practicality": 7
+  },
+  {
+    "id": "cs-http2-tcp-head-of-line",
+    "title": "HTTP/2 under packet loss",
+    "prompt": "A reverse proxy swaps its pool of HTTP/1.1 upstream connections for HTTP/2 multiplexing. On a congested network with heavy packet loss, what is the most likely result?",
+    "options": ["Faster: independent streams keep a lost packet from affecting the other streams", "Unchanged: both versions use the same flow control, which ignores congestion", "Slower: all streams share one TCP connection, so one lost packet stalls them all", "Slower: multiplexing adds payload overhead to every request and exhausts the CPU on retries"],
+    "answer": 2,
+    "explanation": "Multiplexing means sending many requests at once over one connection, each as its own numbered stream, with their frames interleaved. It fixes HTTP/1.1's problem of one request at a time per connection, but all those streams share one TCP connection, and TCP delivers bytes in order. One lost packet holds back every stream until it is retransmitted.\n\nHTTP/1.1 pool of 6 connections, 1 request each:\n  packet lost on conn 3\n    # only the request on conn 3 waits\n  conns 1, 2, 4, 5, 6\n    # keep flowing\n\nHTTP/2, 1 connection multiplexing 6 streams:\n  frames: s1 s2 s3 s1 s4 s5\n    # streams interleaved on one connection\n  packet lost\n    # TCP holds back every later byte\n  streams 1-6\n    # all stall until the retransmit arrives\n\nHPACK header compression makes HTTP/2 lighter per request, not heavier.",
+    "practicality": 5
+  },
+  {
+    "id": "cs-cache-stampede-hot-key",
+    "title": "Hot key expires",
+    "prompt": "During a flash sale, millions of requests hit one product page cached in Redis. The product's cache entry hits its TTL and is evicted, and database CPU spikes until the platform times out. What happened, and what fixes it?",
+    "options": ["Cache penetration: add a Bloom filter in front of Redis to reject IDs that do not exist", "Cache stampede: lock per product ID so one request rebuilds the cache, the rest wait", "Cache avalanche: add random jitter to the TTL so keys do not all expire together", "Replication lag: add PostgreSQL read replicas to spread the read load"],
+    "answer": 1,
+    "explanation": "A cache stampede is when a heavily requested key's TTL (time to live) runs out and many requests miss at once. Every one of them queries the database to rebuild the same entry, and that pile-up is the CPU spike. A lock scoped to that key lets one request rebuild it while the rest wait and read from the cache again.\n\nWithout a lock:\n  GET product:99 -> nil\n    # TTL ran out, the key is gone\n  10,000 requests miss\n    # each one queries PostgreSQL for product 99\n\nWith a lock on product 99:\n  request 1: takes lock:product:99\n    # queries PostgreSQL, then SETs product:99\n  requests 2..n: lock is taken\n    # sleep ~50ms, then GET product:99 again (now a hit)\n  requests for other products\n    # use other lock keys, so they are not held up\n\nSimilar names, different problems:\n  avalanche\n    # many keys expire together; jittered TTLs fix that,\n    # but one hot key still stampedes\n  penetration\n    # keys that exist nowhere, cache or database; a Bloom filter\n    # fixes that, but product 99 does exist\n\nRead replicas spread the load but do not stop thousands of identical queries; the lock does.",
+    "practicality": 6
   }
 ]
