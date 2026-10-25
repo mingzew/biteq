@@ -76,7 +76,7 @@
     "code": "[\"1\", \"2\", \"3\"].map(parseInt)",
     "options": ["[1, 2, 3]", "[1, NaN, NaN]", "[NaN, NaN, NaN]", "[1, 2, NaN]"],
     "answer": 1,
-    "explanation": "map passes (value, index), so this calls parseInt(\"2\", 1) and parseInt(\"3\", 2). Radix 1 is invalid, and 3 isn't a binary digit, so both give NaN.",
+    "explanation": "parseInt(text, radix) turns text into a number, where radix is the base of the number system the text is written in (10 is everyday decimal, 2 is binary with only the digits 0 and 1). map passes the index as that second argument, so the calls are parseInt(\"1\", 0), parseInt(\"2\", 1) and parseInt(\"3\", 2): radix 0 means the default (decimal), radix 1 is not a valid base, and 3 is not a binary digit.\n\nparseInt(\"10\", 10)  // => 10   read as decimal\nparseInt(\"10\", 2)   // => 2    read as binary\n\n[\"1\", \"2\", \"3\"].map(parseInt)\nparseInt(\"1\", 0)  // => 1    radix 0 = default, decimal\nparseInt(\"2\", 1)  // => NaN  radix 1 is not a valid base\nparseInt(\"3\", 2)  // => NaN  binary only has the digits 0 and 1\n\n[\"1\", \"2\", \"3\"].map((s) => parseInt(s))  // => [1, 2, 3]  pass only the text",
     "practicality": 5
   },
   {
