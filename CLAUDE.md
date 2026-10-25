@@ -114,6 +114,9 @@ claude -p "/biteq check" --plugin-dir ./plugins/biteq < /dev/null   # real engin
 - **Verify every answer by running the code** (e.g. `ruby -e`) and make the correct option exactly what it
   prints. Prefer behaviour that is the same across current language versions.
 - Run `/biteq check` after editing.
+- **Importing from another source:** follow "Importing questions" in `formatting-rules.md`, and add every question
+  you changed to `docs/import-review.md` with `- [ ] Checked by us` unticked. Only people tick those boxes.
+- **Every question has a `practicality` score (1-10);** how to score it is under "Practicality" in `formatting-rules.md`.
 
 ## Working agreements
 

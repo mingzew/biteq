@@ -8,17 +8,17 @@ import type { Engine, Mounted } from 'claude-code/testing'
 
 const BANKS: Record<string, unknown[]> = {
   python: [
-    { id: 'python-a', title: 'A', prompt: 'Pick a', options: ['a1', 'a2'], answer: 0, explanation: 'because' },
-    { id: 'python-b', title: 'B', prompt: 'Pick b', options: ['b1', 'b2'], answer: 0, explanation: 'because' },
+    { id: 'python-a', title: 'A', prompt: 'Pick a', options: ['a1', 'a2'], answer: 0, explanation: 'because', practicality: 5 },
+    { id: 'python-b', title: 'B', prompt: 'Pick b', options: ['b1', 'b2'], answer: 0, explanation: 'because', practicality: 5 },
   ],
-  js: [{ id: 'js-a', title: 'J', prompt: 'Pick j', options: ['j1', 'j2'], answer: 0, explanation: 'because' }],
+  js: [{ id: 'js-a', title: 'J', prompt: 'Pick j', options: ['j1', 'j2'], answer: 0, explanation: 'because', practicality: 5 }],
   ruby: [
-    { id: 'ruby-a', title: 'R', prompt: 'Pick r', options: ['r1', 'r2'], answer: 0, explanation: 'because' },
-    { id: 'ruby-b', title: 'S', prompt: 'Pick s', options: ['s1', 's2'], answer: 0, explanation: 'because' },
+    { id: 'ruby-a', title: 'R', prompt: 'Pick r', options: ['r1', 'r2'], answer: 0, explanation: 'because', practicality: 5 },
+    { id: 'ruby-b', title: 'S', prompt: 'Pick s', options: ['s1', 's2'], answer: 0, explanation: 'because', practicality: 5 },
   ],
   cs: [
-    { id: 'cs-a', title: 'C', prompt: 'Pick c', options: ['c1', 'c2'], answer: 0, explanation: 'because' },
-    { id: 'cs-b', title: 'K', prompt: 'Pick k', options: ['k1', 'k2'], answer: 0, explanation: 'because' },
+    { id: 'cs-a', title: 'C', prompt: 'Pick c', options: ['c1', 'c2'], answer: 0, explanation: 'because', practicality: 5 },
+    { id: 'cs-b', title: 'K', prompt: 'Pick k', options: ['k1', 'k2'], answer: 0, explanation: 'because', practicality: 5 },
   ],
   go: [],
 }
@@ -418,6 +418,18 @@ describe('presses', () => {
     expect((await title())?.props.dimColor).toBeUndefined()
   })
 
+  for (const surface of ['terminal', 'desktop'] as const) {
+    test(`${surface}: backtick names in a prompt draw as highlighted inline code`, async ($, on) => {
+      const q = { title: 'T', options: ['a1', 'a2'], answer: 0, explanation: 'e', practicality: 5 }
+      world(on, { cs: [{ id: 'cs-code', prompt: 'Is `blocked` a list?', ...q }] }, surface)
+      await $.session.start({ cwd: '.', surface, isInteractive: true })
+      const ui = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
+      await $.turn.start({ text: 'go', turnId: 't1' })
+      expect((await find(ui, { type: 'Text', text: /^ blocked $/ }))?.props.backgroundColor).toBe('subtle')
+      expect(await find(ui, { type: 'Text', text: /`/ })).toBeUndefined()
+    })
+  }
+
   test('desktop: losing focus leaves the quiz as it was', async ($, on) => {
     world(on, BANKS, 'desktop')
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
@@ -764,6 +776,22 @@ describe('/biteq commands', () => {
     expect(out).toContain("ERROR wrong-id: id must start with 'python-'")
     expect(out).toContain('ERROR wrong-id: needs 2-4 options')
     expect(out).toContain('ERROR wrong-id: answer out of range')
+  })
+
+  test('check requires a practicality from 1 to 10', async ($, on) => {
+    const q = { prompt: 'p', options: ['x', 'y'], answer: 0, explanation: 'e' }
+    world(on, { python: [
+      { id: 'python-ok', practicality: 10, ...q },
+      { id: 'python-none', ...q },
+      { id: 'python-zero', practicality: 0, ...q },
+      { id: 'python-half', practicality: 2.5, ...q },
+    ] })
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const out = await run($, 'check')
+    expect(out).not.toContain('python-ok')
+    expect(out).toContain('ERROR python-none: missing practicality')
+    expect(out).toContain('ERROR python-zero: practicality must be a whole number from 1 to 10')
+    expect(out).toContain('ERROR python-half: practicality must be a whole number from 1 to 10')
   })
 })
 
