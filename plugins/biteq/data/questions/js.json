@@ -171,11 +171,11 @@
   },
   {
     "id": "js-lydia-009",
-    "prompt": "What's the output?",
+    "prompt": "What's the output in a non-strict script?",
     "code": "let greeting;\ngreetign = {}; // Typo!\nconsole.log(greetign);",
     "options": ["{}", "ReferenceError: greetign is not defined", "undefined", "SyntaxError"],
     "answer": 0,
-    "explanation": "It logs the object, because we just created an empty object on the global object! When we mistyped greeting as greetign, the JS interpreter actually saw this as:\n\n1. global.greetign = {} in Node.js\n2. window.greetign = {}, frames.greetign = {} and self.greetign in browsers.\n3. self.greetign in web workers.\n4. globalThis.greetign in all environments.\n\nIn order to avoid this, we can use \"use strict\". This makes sure that you have declared a variable before setting it equal to anything.",
+    "explanation": "Assigning to a name that was never declared, in non-strict code, creates a property on the global object instead of failing. The typo greetign isn't the declared greeting, so it becomes a new global holding {}.\n\nlet greeting;      // declared, stays undefined\ngreetign = {};     // typo: creates globalThis.greetign\nconsole.log(greetign);  // => {}\n\nIn strict mode the same line throws ReferenceError: greetign is not defined. ES modules and class bodies are strict by default, so in an .mjs file or a bundled app this throws.",
     "practicality": 3,
     "source": "lydiahallie/javascript-questions #9"
   },
@@ -195,7 +195,7 @@
     "code": "function Person(firstName, lastName) {\n  this.firstName = firstName;\n  this.lastName = lastName;\n}\n\nconst member = new Person('Lydia', 'Hallie');\nPerson.getFullName = function() {\n  return `${this.firstName} ${this.lastName}`;\n};\n\nconsole.log(member.getFullName());",
     "options": ["TypeError", "SyntaxError", "Lydia Hallie", "undefined undefined"],
     "answer": 0,
-    "explanation": "In JavaScript, functions are objects, and therefore, the method getFullName gets added to the constructor function object itself. For that reason, we can call Person.getFullName(), but member.getFullName throws a TypeError.\n\nIf you want a method to be available to all object instances, you have to add it to the prototype property:\n\n    Person.prototype.getFullName = function() {\n      return `${this.firstName} ${this.lastName}`;\n    };",
+    "explanation": "An object looks for a method on itself, then on its prototype, which for member is Person.prototype, not Person. getFullName was added to the Person function itself, so Person.getFullName exists but member.getFullName is undefined, and calling it throws a TypeError.\n\nPerson.getFullName = function () { /* ... */ };  // stored on the Person function itself\n\nPerson.getFullName     // => a function  Person has it\nmember.getFullName     // => undefined   not on member or Person.prototype\nmember.getFullName()   // => TypeError\n\nPerson.prototype.getFullName = function () { /* ... */ };  // the fix\nmember.getFullName()   // => 'Lydia Hallie'  found through member's prototype",
     "practicality": 4,
     "source": "lydiahallie/javascript-questions #11"
   },
@@ -205,7 +205,7 @@
     "code": "function Person(firstName, lastName) {\n  this.firstName = firstName;\n  this.lastName = lastName;\n}\n\nconst lydia = new Person('Lydia', 'Hallie');\nconst sarah = Person('Sarah', 'Smith');\n\nconsole.log(lydia);\nconsole.log(sarah);",
     "options": ["Person {firstName: \"Lydia\", lastName: \"Hallie\"} and undefined", "Person {firstName: \"Lydia\", lastName: \"Hallie\"} and Person {firstName: \"Sarah\", lastName: \"Smith\"}", "Person {firstName: \"Lydia\", lastName: \"Hallie\"} and {}", "Person {firstName: \"Lydia\", lastName: \"Hallie\"} and ReferenceError"],
     "answer": 0,
-    "explanation": "For sarah, we didn't use the new keyword. When using new, this refers to the new empty object we create. However, if you don't add new, this refers to the global object!\n\nWe said that this.firstName equals \"Sarah\" and this.lastName equals \"Smith\". What we actually did, is defining global.firstName = 'Sarah' and global.lastName = 'Smith'. sarah itself is left undefined, since we don't return a value from the Person function.",
+    "explanation": "Without new, Person('Sarah', 'Smith') is an ordinary function call, so this is the global object (in non-strict mode) and the assignments create global.firstName and global.lastName. The function has no return statement, so the call evaluates to undefined, and that is what sarah holds: the value stored is the return value, not this.\n\nconst lydia = new Person('Lydia', 'Hallie');  // new makes an object, runs Person with this = it, returns it\nconst sarah = Person('Sarah', 'Smith');       // plain call: this = global, so global.firstName = 'Sarah'\n                                              // no return, so sarah = undefined\n\nconsole.log(lydia);  // => Person { firstName: 'Lydia', lastName: 'Hallie' }\nconsole.log(sarah);  // => undefined",
     "practicality": 4,
     "source": "lydiahallie/javascript-questions #12"
   },
@@ -253,7 +253,7 @@
     "code": "function getPersonInfo(one, two, three) {\n  console.log(one);\n  console.log(two);\n  console.log(three);\n}\n\nconst person = 'Lydia';\nconst age = 21;\n\ngetPersonInfo`${person} is ${age} years old`;",
     "options": ["\"Lydia\" 21 [\"\", \" is \", \" years old\"]", "[\"\", \" is \", \" years old\"] \"Lydia\" 21", "\"Lydia\" [\"\", \" is \", \" years old\"] 21", "\"Lydia is 21 years old\" undefined undefined"],
     "answer": 1,
-    "explanation": "If you use tagged template literals, the value of the first argument is always an array of the string values. The remaining arguments get the values of the passed expressions!",
+    "explanation": "A tagged template calls a function by putting a template literal right after its name, with no parentheses. The function receives the text pieces as an array first (one), then each ${} value as its own argument (two is person, three is age); the array starts with an empty string because the template begins with ${person}.\n\ngetPersonInfo`${person} is ${age} years old`;\n\n// one   => ['', ' is ', ' years old']  the text around the ${} values\n// two   => 'Lydia'                      the first ${} value (person)\n// three => 21                           the second ${} value (age)",
     "practicality": 2,
     "source": "lydiahallie/javascript-questions #17"
   },
@@ -299,11 +299,11 @@
   },
   {
     "id": "js-lydia-022",
-    "prompt": "How long is cool_secret accessible?",
+    "prompt": "How long does sessionStorage keep cool_secret?",
     "code": "sessionStorage.setItem('cool_secret', 123);",
-    "options": ["Forever, the data doesn't get lost.", "When the user closes the tab.", "When the user closes the entire browser, not only the tab.", "When the user shuts off their computer."],
+    "options": ["Forever, until code removes it", "Until its tab is closed", "Until the whole browser is closed", "Until the computer shuts down"],
     "answer": 1,
-    "explanation": "The data stored in sessionStorage is removed after closing the tab.\n\nIf you used localStorage, the data would've been there forever, unless for example localStorage.clear() is invoked.",
+    "explanation": "sessionStorage belongs to one tab: it survives reloads and navigation within that tab, and is cleared when the tab is closed. Closing the browser or shutting down also clear it, but only because they close the tab first, so \"until its tab is closed\" is the answer.\n\nsessionStorage.setItem('cool_secret', 123);  // this tab only; gone when the tab closes\nlocalStorage.setItem('cool_secret', 123);    // kept across tabs and restarts until removed\n\nA second tab on the same site gets its own, empty sessionStorage.",
     "practicality": 5,
     "source": "lydiahallie/javascript-questions #22"
   },
@@ -382,7 +382,7 @@
     "code": "const foo = () => console.log('First');\nconst bar = () => setTimeout(() => console.log('Second'));\nconst baz = () => console.log('Third');\n\nbar();\nfoo();\nbaz();",
     "options": ["First Second Third", "First Third Second", "Second First Third", "Second Third First"],
     "answer": 1,
-    "explanation": "We have a setTimeout function and invoked it first. Yet, it was logged last.\n\nThis is because in browsers, we don't just have the runtime engine, we also have something called a WebAPI. The WebAPI gives us the setTimeout function to start with, and for example the DOM.\n\nAfter the callback is pushed to the WebAPI, the setTimeout function itself (but not the callback!) is popped off the stack.\n\nNow, foo gets invoked, and \"First\" is being logged.\n\nfoo is popped off the stack, and baz gets invoked. \"Third\" gets logged.\n\nThe WebAPI can't just add stuff to the stack whenever it's ready. Instead, it pushes the callback function to something called the queue.\n\nThis is where an event loop starts to work. An event loop looks at the stack and task queue. If the stack is empty, it takes the first thing on the queue and pushes it onto the stack.\n\nbar gets invoked, \"Second\" gets logged, and it's popped off the stack.",
+    "explanation": "setTimeout hands its callback to the browser (a Web API), which puts it in the task queue (the macrotask queue) once the timer fires. The event loop only moves it onto the call stack when the stack is empty, so all the synchronous code runs first, even with no delay.\n\nbar();  // calls setTimeout: callback handed to the browser, nothing logged yet\nfoo();  // logs First\nbaz();  // logs Third\n        // stack empty: the event loop runs the queued callback => Second",
     "practicality": 7,
     "source": "lydiahallie/javascript-questions #30"
   },
@@ -541,7 +541,7 @@
     "code": "let person = { name: 'Lydia' };\nconst members = [person];\nperson = null;\n\nconsole.log(members);",
     "options": ["null", "[null]", "[{}]", "[{ name: \"Lydia\" }]"],
     "answer": 3,
-    "explanation": "First, we declare a variable person with the value of an object that has a name property.\n\nThen, we declare a variable called members. We set the first element of that array equal to the value of the person variable. Objects interact by reference when setting them equal to each other. When you assign a reference from one variable to another, you make a copy of that reference. (note that they don't have the same reference!)\n\nThen, we set the variable person equal to null.\n\nWe are only modifying the value of the person variable, and not the first element in the array, since that element has a different (copied) reference to the object. The first element in members still holds its reference to the original object. When we log the members array, the first element still holds the value of the object, which gets logged.",
+    "explanation": "The array stores a copy of the reference to the object, not the variable person. Setting person to null only changes what person points to, so the object still exists and members[0] still points to it.\n\nlet person = { name: 'Lydia' };  // person points to the object\nconst members = [person];       // members[0] points to the same object\nperson = null;                  // only person is cleared; members[0] still points to the object\n\nconsole.log(members);           // => [{ name: 'Lydia' }]",
     "practicality": 5,
     "source": "lydiahallie/javascript-questions #46"
   },
@@ -654,16 +654,6 @@
     "explanation": "An imported module is read-only: you cannot modify the imported module. Only the module that exports them can change its value.\n\nWhen we try to increment the value of myCounter, it throws an error: myCounter is read-only and cannot be modified.",
     "practicality": 4,
     "source": "lydiahallie/javascript-questions #57"
-  },
-  {
-    "id": "js-lydia-058",
-    "prompt": "What's the output?",
-    "code": "const name = 'Lydia';\nage = 21;\n\nconsole.log(delete name);\nconsole.log(delete age);",
-    "options": ["false, true", "\"Lydia\", 21", "true, true", "undefined, undefined"],
-    "answer": 0,
-    "explanation": "The delete operator returns a boolean value: true on a successful deletion, else it'll return false. However, variables declared with the var, const, or let keywords cannot be deleted using the delete operator.\n\nThe name variable was declared with a const keyword, so its deletion is not successful: false is returned. When we set age equal to 21, we actually added a property called age to the global object. You can successfully delete properties from objects this way, also the global object, so delete age returns true.",
-    "practicality": 2,
-    "source": "lydiahallie/javascript-questions #58"
   },
   {
     "id": "js-lydia-059",
@@ -816,26 +806,6 @@
     "source": "lydiahallie/javascript-questions #73"
   },
   {
-    "id": "js-lydia-074",
-    "prompt": "What's the output?",
-    "code": "function addToList(item, list) {\n  return list.push(item);\n}\n\nconst result = addToList('apple', ['banana']);\nconsole.log(result);",
-    "options": ["['apple', 'banana']", "2", "true", "undefined"],
-    "answer": 1,
-    "explanation": "The .push() method returns the length of the new array! Previously, the array contained one element (the string \"banana\") and had a length of 1. After adding the string \"apple\" to the array, the array contains two elements, and has a length of 2. This gets returned from the addToList function.\n\nThe push method modifies the original array. If you wanted to return the array from the function rather than the length of the array, you should have returned list after pushing item to it.",
-    "practicality": 7,
-    "source": "lydiahallie/javascript-questions #74"
-  },
-  {
-    "id": "js-lydia-075",
-    "prompt": "What's the output?",
-    "code": "const box = { x: 10, y: 20 };\n\nObject.freeze(box);\n\nconst shape = box;\nshape.x = 100;\n\nconsole.log(shape);",
-    "options": ["{ x: 100, y: 20 }", "{ x: 10, y: 20 }", "{ x: 100 }", "ReferenceError"],
-    "answer": 1,
-    "explanation": "Object.freeze makes it impossible to add, remove, or modify properties of an object (unless the property's value is another object).\n\nWhen we create the variable shape and set it equal to the frozen object box, shape also refers to a frozen object. You can check whether an object is frozen by using Object.isFrozen. In this case, Object.isFrozen(shape) would return true, since the variable shape has a reference to a frozen object.\n\nSince shape is frozen, and since the value of x is not an object, we cannot modify the property x. x is still equal to 10, and { x: 10, y: 20 } gets logged.",
-    "practicality": 6,
-    "source": "lydiahallie/javascript-questions #75"
-  },
-  {
     "id": "js-lydia-076",
     "prompt": "What's the output?",
     "code": "const { firstName: myName } = { firstName: 'Lydia' };\n\nconsole.log(firstName);",
@@ -966,16 +936,6 @@
     "source": "lydiahallie/javascript-questions #88"
   },
   {
-    "id": "js-lydia-089",
-    "prompt": "What's the output?",
-    "code": "// module.js\nexport default () => 'Hello world';\nexport const name = 'Lydia';\n\n// index.js\nimport * as data from './module';\n\nconsole.log(data);",
-    "options": ["{ default: function default(), name: \"Lydia\" }", "{ default: function default() }", "{ default: \"Hello world\", name: \"Lydia\" }", "Global object of module.js"],
-    "answer": 0,
-    "explanation": "With the import * as name syntax, we import all exports from the module.js file into the index.js file as a new object called data is created. In the module.js file, there are two exports: the default export, and a named export. The default export is a function that returns the string \"Hello World\", and the named export is a variable called name which has the value of the string \"Lydia\".\n\nThe data object has a default property for the default export, other properties have the names of the named exports and their corresponding values.",
-    "practicality": 4,
-    "source": "lydiahallie/javascript-questions #89"
-  },
-  {
     "id": "js-lydia-090",
     "prompt": "What's the output?",
     "code": "class Person {\n  constructor(name) {\n    this.name = name;\n  }\n}\n\nconst member = new Person('John');\nconsole.log(typeof member);",
@@ -1076,16 +1036,6 @@
     "source": "lydiahallie/javascript-questions #99"
   },
   {
-    "id": "js-lydia-100",
-    "prompt": "What's the value of output?",
-    "code": "// 🎉✨ This is my 100th question! ✨🎉\n\nconst output = `${[] && 'Im'}possible!\nYou should${'' && `n't`} see a therapist after so much JavaScript lol`;",
-    "options": ["possible! You should see a therapist after so much JavaScript lol", "Impossible! You should see a therapist after so much JavaScript lol", "possible! You shouldn't see a therapist after so much JavaScript lol", "Impossible! You shouldn't see a therapist after so much JavaScript lol"],
-    "answer": 1,
-    "explanation": "[] is a truthy value. With the && operator, the right-hand value will be returned if the left-hand value is a truthy value. In this case, the left-hand value [] is a truthy value, so \"Im' gets returned.\n\n\"\" is a falsy value. If the left-hand value is falsy, nothing gets returned. n't doesn't get returned.",
-    "practicality": 2,
-    "source": "lydiahallie/javascript-questions #100"
-  },
-  {
     "id": "js-lydia-101",
     "prompt": "What's the value of output?",
     "code": "const one = false || {} || null;\nconst two = null || false || '';\nconst three = [] || 0 || true;\n\nconsole.log(one, two, three);",
@@ -1146,16 +1096,6 @@
     "source": "lydiahallie/javascript-questions #106"
   },
   {
-    "id": "js-lydia-107",
-    "prompt": "What's its value?",
-    "code": "console.log('❤️' === '❤️');",
-    "options": ["true", "false", "It depends on the file encoding", "TypeError"],
-    "answer": 0,
-    "explanation": "Under the hood, emojis are unicodes. The unicodes for the heart emoji is \"U+2764 U+FE0F\". These are always the same for the same emojis, so we're comparing two equal strings to each other, which returns true.",
-    "practicality": 1,
-    "source": "lydiahallie/javascript-questions #107"
-  },
-  {
     "id": "js-lydia-108",
     "prompt": "Which of these methods modifies the original array?",
     "code": "const emojis = ['✨', '🥑', '😍'];\n\nemojis.map(x => x + '✨');\nemojis.filter(x => x !== '🥑');\nemojis.find(x => x !== '🥑');\nemojis.reduce((acc, cur) => acc + '✨');\nemojis.slice(1, 2, '✨');\nemojis.splice(1, 2, '✨');",
@@ -1174,16 +1114,6 @@
     "explanation": "We set the value of the favoriteFood property on the info object equal to the string with the pizza emoji, '🍕'. A string is a primitive data type. In JavaScript, primitive data types don't interact by reference.\n\nIn JavaScript, primitive data types (everything that's not an object) interact by value. In this case, we set the value of the favoriteFood property on the info object equal to the value of the first element in the food array, the string with the pizza emoji in this case ('🍕'). A string is a primitive data type, and interact by value (see my blogpost (https://www.theavocoder.com/complete-javascript/2018/12/21/by-value-vs-by-reference) if you're interested in learning more)\n\nThen, we change the value of the favoriteFood property on the info object. The food array hasn't changed, since the value of favoriteFood was merely a copy of the value of the first element in the array, and doesn't have a reference to the same spot in memory as the element on food[0]. When we log food, it's still the original array, ['🍕', '🍫', '🥑', '🍔'].",
     "practicality": 6,
     "source": "lydiahallie/javascript-questions #109"
-  },
-  {
-    "id": "js-lydia-110",
-    "prompt": "What does this method do?",
-    "code": "JSON.parse();",
-    "options": ["Parses JSON to a JavaScript value", "Parses a JavaScript object to JSON", "Parses any JavaScript value to JSON", "Parses JSON to a JavaScript object only"],
-    "answer": 0,
-    "explanation": "With the JSON.parse() method, we can parse JSON string to a JavaScript value.\n\n    // Stringifying a number into valid JSON, then parsing the JSON string to a JavaScript value:\n    const jsonNumber = JSON.stringify(4); // '4'\n    JSON.parse(jsonNumber); // 4\n\n    // Stringifying an array value into valid JSON, then parsing the JSON string to a JavaScript value:\n    const jsonArray = JSON.stringify([1, 2, 3]); // '[1, 2, 3]'\n    JSON.parse(jsonArray); // [1, 2, 3]\n\n    // Stringifying an object  into valid JSON, then parsing the JSON string to a JavaScript value:\n    const jsonArray = JSON.stringify({ name: 'Lydia' }); // '{\"name\":\"Lydia\"}'\n    JSON.parse(jsonArray); // { name: 'Lydia' }",
-    "practicality": 5,
-    "source": "lydiahallie/javascript-questions #110"
   },
   {
     "id": "js-lydia-111",
@@ -1206,16 +1136,6 @@
     "source": "lydiahallie/javascript-questions #112"
   },
   {
-    "id": "js-lydia-113",
-    "prompt": "What's the output?",
-    "code": "console.log(`${(x => x)('I love')} to program`);",
-    "options": ["I love to program", "undefined to program", "${(x => x)('I love') to program", "TypeError"],
-    "answer": 0,
-    "explanation": "Expressions within template literals are evaluated first. This means that the string will contain the returned value of the expression, the immediately invoked function (x => x)('I love') in this case. We pass the value 'I love' as an argument to the x => x arrow function. x is equal to 'I love', which gets returned. This results in I love to program.",
-    "practicality": 2,
-    "source": "lydiahallie/javascript-questions #113"
-  },
-  {
     "id": "js-lydia-114",
     "prompt": "What will happen?",
     "code": "let config = {\n  alert: setInterval(() => {\n    console.log('Alert!');\n  }, 1000),\n};\n\nconfig = null;",
@@ -1234,16 +1154,6 @@
     "explanation": "When adding a key/value pair using the set method, the key will be the value of the first argument passed to the set function, and the value will be the second argument passed to the set function. The key is the function () => 'greeting' in this case, and the value 'Hello world'. myMap is now { () => 'greeting' => 'Hello world!' }.\n\n1 is wrong, since the key is not 'greeting' but () => 'greeting'.\n3 is wrong, since we're creating a new function by passing it as a parameter to the get method. Object interacts by reference. Functions are objects, which is why two functions are never strictly equal, even if they are identical: they have a reference to a different spot in memory.",
     "practicality": 5,
     "source": "lydiahallie/javascript-questions #115"
-  },
-  {
-    "id": "js-lydia-116",
-    "prompt": "What's the output?",
-    "code": "const person = {\n  name: 'Lydia',\n  age: 21,\n};\n\nconst changeAge = (x = { ...person }) => (x.age += 1);\nconst changeAgeAndName = (x = { ...person }) => {\n  x.age += 1;\n  x.name = 'Sarah';\n};\n\nchangeAge(person);\nchangeAgeAndName();\n\nconsole.log(person);",
-    "options": ["{name: \"Sarah\", age: 22}", "{name: \"Sarah\", age: 23}", "{name: \"Lydia\", age: 22}", "{name: \"Lydia\", age: 23}"],
-    "answer": 2,
-    "explanation": "Both the changeAge and changeAgeAndName functions have a default parameter, namely a newly created object { ...person }. This object has copies of all the key/values in the person object.\n\nFirst, we invoke the changeAge function and pass the person object as its argument. This function increases the value of the age property by 1. person is now { name: \"Lydia\", age: 22 }.\n\nThen, we invoke the changeAgeAndName function, however we don't pass a parameter. Instead, the value of x is equal to a new object: { ...person }. Since it's a new object, it doesn't affect the values of the properties on the person object. person is still equal to { name: \"Lydia\", age: 22 }.",
-    "practicality": 5,
-    "source": "lydiahallie/javascript-questions #116"
   },
   {
     "id": "js-lydia-117",
@@ -1284,16 +1194,6 @@
     "explanation": "We passed the condition groceries.indexOf(\"banana\") to the if-statement. groceries.indexOf(\"banana\") returns 0, which is a falsy value. Since the condition in the if-statement is falsy, the code in the else block runs, and We don't have to buy bananas! gets logged.",
     "practicality": 7,
     "source": "lydiahallie/javascript-questions #120"
-  },
-  {
-    "id": "js-lydia-121",
-    "prompt": "What's the output?",
-    "code": "const config = {\n  languages: [],\n  set language(lang) {\n    return this.languages.push(lang);\n  },\n};\n\nconsole.log(config.language);",
-    "options": ["function language(lang) { this.languages.push(lang }", "0", "[]", "undefined"],
-    "answer": 3,
-    "explanation": "The language method is a setter. Setters don't hold an actual value, their purpose is to modify properties. When calling a setter method, undefined gets returned.",
-    "practicality": 3,
-    "source": "lydiahallie/javascript-questions #121"
   },
   {
     "id": "js-lydia-122",
@@ -1346,16 +1246,6 @@
     "source": "lydiahallie/javascript-questions #126"
   },
   {
-    "id": "js-lydia-127",
-    "prompt": "What's the output?",
-    "code": "const spookyItems = ['👻', '🎃', '🕸'];\n({ item: spookyItems[3] } = { item: '💀' });\n\nconsole.log(spookyItems);",
-    "options": ["[\"👻\", \"🎃\", \"🕸\"]", "[\"👻\", \"🎃\", \"🕸\", \"💀\"]", "[\"👻\", \"🎃\", \"🕸\", { item: \"💀\" }]", "[\"👻\", \"🎃\", \"🕸\", \"[object Object]\"]"],
-    "answer": 1,
-    "explanation": "By destructuring objects, we can unpack values from the right-hand object, and assign the unpacked value to the value of the same property name on the left-hand object. In this case, we're assigning the value \"💀\" to spookyItems[3]. This means that we're modifying the spookyItems array, we're adding the \"💀\" to it. When logging spookyItems, [\"👻\", \"🎃\", \"🕸\", \"💀\"] gets logged.",
-    "practicality": 2,
-    "source": "lydiahallie/javascript-questions #127"
-  },
-  {
     "id": "js-lydia-128",
     "prompt": "What's the output?",
     "code": "const name = 'Lydia Hallie';\nconst age = 21;\n\nconsole.log(Number.isNaN(name));\nconsole.log(Number.isNaN(age));\n\nconsole.log(isNaN(name));\nconsole.log(isNaN(age));",
@@ -1364,16 +1254,6 @@
     "explanation": "With the Number.isNaN method, you can check if the value you pass is a numeric value and equal to NaN. name is not a numeric value, so Number.isNaN(name) returns false. age is a numeric value, but is not equal to NaN, so Number.isNaN(age) returns false.\n\nWith the isNaN method, you can check if the value you pass is not a number. name is not a number, so isNaN(name) returns true. age is a number, so isNaN(age) returns false.",
     "practicality": 5,
     "source": "lydiahallie/javascript-questions #128"
-  },
-  {
-    "id": "js-lydia-129",
-    "prompt": "What's the output?",
-    "code": "const randomValue = 21;\n\nfunction getInfo() {\n  console.log(typeof randomValue);\n  const randomValue = 'Lydia Hallie';\n}\n\ngetInfo();",
-    "options": ["\"number\"", "\"string\"", "undefined", "ReferenceError"],
-    "answer": 3,
-    "explanation": "Variables declared with the const keyword are not referenceable before their initialization: this is called the temporal dead zone. In the getInfo function, the variable randomValue is scoped in the functional scope of getInfo. On the line where we want to log the value of typeof randomValue, the variable randomValue isn't initialized yet: a ReferenceError gets thrown! The engine didn't go down the scope chain since we declared the variable randomValue in the getInfo function.",
-    "practicality": 5,
-    "source": "lydiahallie/javascript-questions #129"
   },
   {
     "id": "js-lydia-130",
@@ -1394,16 +1274,6 @@
     "explanation": "With the flat method, we can create a new, flattened array. The depth of the flattened array depends on the value that we pass. In this case, we passed the value 1 (which we didn't have to, that's the default value), meaning that only the arrays on the first depth will be concatenated. ['🥑'] and ['✨', '✨', ['🍕', '🍕']] in this case. Concatenating these two arrays results in ['🥑', '✨', '✨', ['🍕', '🍕']].",
     "practicality": 5,
     "source": "lydiahallie/javascript-questions #131"
-  },
-  {
-    "id": "js-lydia-132",
-    "prompt": "What's the output?",
-    "code": "class Counter {\n  constructor() {\n    this.count = 0;\n  }\n\n  increment() {\n    this.count++;\n  }\n}\n\nconst counterOne = new Counter();\ncounterOne.increment();\ncounterOne.increment();\n\nconst counterTwo = counterOne;\ncounterTwo.increment();\n\nconsole.log(counterOne.count);",
-    "options": ["0", "1", "2", "3"],
-    "answer": 3,
-    "explanation": "counterOne is an instance of the Counter class. The counter class contains a count property on its constructor, and an increment method. First, we invoked the increment method twice by calling counterOne.increment(). Currently, counterOne.count is 2.\n\nThen, we create a new variable counterTwo, and set it equal to counterOne. Since objects interact by reference, we're just creating a new reference to the same spot in memory that counterOne points to. Since it has the same spot in memory, any changes made to the object that counterTwo has a reference to, also apply to counterOne. Currently, counterTwo.count is 2.\n\nWe invoke counterTwo.increment(), which sets count to 3. Then, we log the count on counterOne, which logs 3.",
-    "practicality": 6,
-    "source": "lydiahallie/javascript-questions #132"
   },
   {
     "id": "js-lydia-133",
@@ -1444,16 +1314,6 @@
     "explanation": "With Object.seal we can prevent new properties from being added, or existing properties to be removed.\n\nHowever, you can still modify the value of existing properties.",
     "practicality": 4,
     "source": "lydiahallie/javascript-questions #136"
-  },
-  {
-    "id": "js-lydia-137",
-    "prompt": "Which of the following will modify the person object?",
-    "code": "const person = {\n  name: 'Lydia Hallie',\n  address: {\n    street: '100 Main St',\n  },\n};\n\nObject.freeze(person);",
-    "options": ["person.name = \"Evan Bacon\"", "delete person.address", "person.address.street = \"101 Main St\"", "person.pet = { name: \"Mara\" }"],
-    "answer": 2,
-    "explanation": "The Object.freeze method freezes an object. No properties can be added, modified, or removed.\n\nHowever, it only shallowly freezes the object, meaning that only direct properties on the object are frozen. If the property is another object, like address in this case, the properties on that object aren't frozen, and can be modified.",
-    "practicality": 5,
-    "source": "lydiahallie/javascript-questions #137"
   },
   {
     "id": "js-lydia-138",
@@ -1566,36 +1426,6 @@
     "source": "lydiahallie/javascript-questions #148"
   },
   {
-    "id": "js-lydia-149",
-    "prompt": "What's the output?",
-    "code": "const fruit = ['🍌', '🍊', '🍎']\n\nfruit.slice(0, 1)\nfruit.splice(0, 1)\nfruit.unshift('🍇')\n\nconsole.log(fruit)",
-    "options": ["['🍌', '🍊', '🍎']", "['🍊', '🍎']", "['🍇', '🍊', '🍎']", "['🍇', '🍌', '🍊', '🍎']"],
-    "answer": 2,
-    "explanation": "First, we invoke the slice method on the fruit array. The slice method does not modify the original array, but returns the value that it sliced off the array: the banana emoji.\nThen, we invoke the splice method on the fruit array. The splice method does modify the original array, which means that the fruit array now consists of ['🍊', '🍎'].\nAt last, we invoke the unshift method on the fruit array, which modifies the original array by adding the provided value, ‘🍇’ in this case,  as the first element in the array.  The fruit array now consists of ['🍇', '🍊', '🍎'].",
-    "practicality": 7,
-    "source": "lydiahallie/javascript-questions #149"
-  },
-  {
-    "id": "js-lydia-150",
-    "prompt": "What's the output?",
-    "code": "const animals = {};\nlet dog = { emoji: '🐶' }\nlet cat = { emoji: '🐈' }\n\nanimals[dog] = { ...dog, name: \"Mara\" }\nanimals[cat] = { ...cat, name: \"Sara\" }\n\nconsole.log(animals[dog])",
-    "options": ["{ emoji: \"🐶\", name: \"Mara\" }", "{ emoji: \"🐈\", name: \"Sara\" }", "undefined", "ReferenceError"],
-    "answer": 1,
-    "explanation": "Object keys are converted to strings.\n\nSince the value of  dog is an object,  animals[dog] actually means that we’re creating a new property called \"[object Object]\" equal to the new object. animals[\"[object Object]\"] is now equal to { emoji: \"🐶\", name: \"Mara\"}.\n\ncat is also an object, which means that animals[cat] actually means that we’re overwriting the value of  animals[\"[object Object]\"] with the new cat properties.\n\nLogging animals[dog], or actually animals[\"[object Object]\"] since converting the dog object to a string results \"[object Object]\", returns the { emoji: \"🐈\", name: \"Sara\" }.",
-    "practicality": 4,
-    "source": "lydiahallie/javascript-questions #150"
-  },
-  {
-    "id": "js-lydia-151",
-    "prompt": "What's the output?",
-    "code": "const user = {\n\temail: \"my@email.com\",\n\tupdateEmail: email => {\n\t\tthis.email = email\n\t}\n}\n\nuser.updateEmail(\"new@email.com\")\nconsole.log(user.email)",
-    "options": ["my@email.com", "new@email.com", "undefined", "ReferenceError"],
-    "answer": 0,
-    "explanation": "The updateEmail function is an arrow function, and is not bound to the user object. This means that the this keyword is not referring to the user object, but refers to  the global scope in this case. The value of email within the user object does not get updated. When logging the value of user.email, the original value of my@email.com gets returned.",
-    "practicality": 6,
-    "source": "lydiahallie/javascript-questions #151"
-  },
-  {
     "id": "js-lydia-152",
     "prompt": "What's the output?",
     "code": "const promise1 = Promise.resolve('First')\nconst promise2 = Promise.resolve('Second')\nconst promise3 = Promise.reject('Third')\nconst promise4 = Promise.resolve('Fourth')\n\nconst runPromises = async () => {\n\tconst res1 = await Promise.all([promise1, promise2])\n\tconst res2  = await Promise.all([promise3, promise4])\n\treturn [res1, res2]\n}\n\nrunPromises()\n\t.then(res => console.log(res))\n\t.catch(err => console.log(err))",
@@ -1626,16 +1456,6 @@
     "source": "lydiahallie/javascript-questions #154"
   },
   {
-    "id": "js-lydia-155",
-    "prompt": "What's the output?",
-    "code": "let randomValue = { name: \"Lydia\" }\nrandomValue = 23\n\nif (!typeof randomValue === \"string\") {\n\tconsole.log(\"It's not a string!\")\n} else {\n\tconsole.log(\"Yay it's a string!\")\n}",
-    "options": ["It's not a string!", "Yay it's a string!", "TypeError", "undefined"],
-    "answer": 1,
-    "explanation": "The condition within the if statement checks whether the value of !typeof randomValue is equal to \"string\". The ! operator converts the value to a boolean value. If the value is truthy, the returned value will be false, if the value is falsy, the returned value will be true. In this case, the returned value of typeof randomValue is the truthy value \"number\", meaning that the value of !typeof randomValue is the boolean value false.\n\n!typeof randomValue === \"string\" always returns false, since we're actually checking false === \"string\". Since the condition returned false, the code block of the else statement gets run, and Yay it's a string! gets logged.",
-    "practicality": 2,
-    "source": "lydiahallie/javascript-questions #155"
-  },
-  {
     "id": "js-fcc-001",
     "prompt": "What does this log?",
     "code": "let x = 'Prakhar';\nconsole.log(x.substring(2, 5));",
@@ -1655,24 +1475,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #2"
   },
   {
-    "id": "js-fcc-003",
-    "prompt": "What is the difference between the indexOf() and search() methods?",
-    "options": ["Both methods are the same", "indexOf() can take a second parameter while search() cannot", "indexOf() only takes regular expressions", "The search() method runs 4x faster than the indexOf() method"],
-    "answer": 1,
-    "explanation": "One key difference between the indexOf() and search() methods is that indexOf() can take a second parameter while search() cannot.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #3"
-  },
-  {
-    "id": "js-fcc-004",
-    "prompt": "What does the 'debugger' statement do?",
-    "options": ["It will debug all the errors in the program at runtime", "It will debug errors in the current statement", "It acts as a breakpoint in a program", "All of the above"],
-    "answer": 2,
-    "explanation": "The 'debugger' statement is used to setup the breakup points at probable points of errors in the code snippet, using the debugger window.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #4"
-  },
-  {
     "id": "js-fcc-005",
     "prompt": "What kind of programming can JavaScript be used for?",
     "options": ["Both Client and Server side programming", "Client side only", "Server side only", "None of these options"],
@@ -1680,16 +1482,6 @@
     "explanation": "JavaScript is a programming language which can be used on the client and server side.",
     "practicality": 2,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #5"
-  },
-  {
-    "id": "js-fcc-006",
-    "prompt": "What does this log?",
-    "code": "let x = '5';\nconsole.log(x == 5, x === 5);",
-    "options": ["true true", "true false", "false false", "false true"],
-    "answer": 1,
-    "explanation": "== compares only the value while === compares the value as well as the type.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #6"
   },
   {
     "id": "js-fcc-007",
@@ -1775,15 +1567,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #15"
   },
   {
-    "id": "js-fcc-016",
-    "prompt": "Which Web API is used to insert a child node anywhere under the parent node?",
-    "options": ["prepend()", "append()", "lookupPrefix()", "insertBefore()"],
-    "answer": 3,
-    "explanation": "The insertBefore() method inserts a new child node anywhere under the parent node. This method has two parameters: newNode and referenceNode",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #16"
-  },
-  {
     "id": "js-fcc-017",
     "prompt": "Which property of an element allows you to get or set the HTML markup contained within the element?",
     "options": ["innerHTML", "insertAdjacentHTML", "insertElement", "setHTML"],
@@ -1800,15 +1583,6 @@
     "explanation": "Closures are special types of functions where the inner function will have access to variables in the outer function's scope.",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #18"
-  },
-  {
-    "id": "js-fcc-019",
-    "prompt": "What does a unary plus operator attempt to convert its operand to?",
-    "options": ["a string", "a number", "a sum", "an array"],
-    "answer": 1,
-    "explanation": "The unary plus operator (+) attempts to convert its operand to a number.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #19"
   },
   {
     "id": "js-fcc-020",
@@ -1829,24 +1603,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #21"
   },
   {
-    "id": "js-fcc-022",
-    "prompt": "Which built-in method/object will return the unique values of an array?",
-    "options": ["Set", "filter()", "reduce()", "map()"],
-    "answer": 0,
-    "explanation": "The Set object lets you store unique values of any type, whether primitive values or object references. Set removes duplicate entries.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #22"
-  },
-  {
-    "id": "js-fcc-023",
-    "prompt": "All objects inherit a built-in property from a  ___________________.",
-    "options": ["node", "instance variable", "accessor", "prototype"],
-    "answer": 3,
-    "explanation": "Prototypes provide the means for JavaScript objects to inherit features from other objects.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #23"
-  },
-  {
     "id": "js-fcc-024",
     "prompt": "Every class has a special ____________ method that is used to create a new object instance of the class.",
     "options": ["apply", "assign", "constructor", "starter"],
@@ -1854,15 +1610,6 @@
     "explanation": "constructor is the special method a class runs when you create an instance with new. It sets up the new object's fields.\n\nclass Point {\n  constructor(x, y) { this.x = x; this.y = y; }\n}\nnew Point(1, 2)   // Point { x: 1, y: 2 }",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #24"
-  },
-  {
-    "id": "js-fcc-025",
-    "prompt": "In class-based OOP, are objects and classes the same constructs?",
-    "options": ["No, objects and classes are completely unrelated in JavaScript.", "Yes, objects and classes are only used in functional programming, not in JavaScript class-based OOP", "Yes, objects and classes are interchangeable and can be used interchangeably in JavaScript class-based OOP.", "No, objects and classes are two separate constructs."],
-    "answer": 3,
-    "explanation": "A class is a template; an object is an instance created from it with new. (In JavaScript, objects can also be created without classes, from literals or Object.create.)",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #25"
   },
   {
     "id": "js-fcc-026",
@@ -1974,15 +1721,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #37"
   },
   {
-    "id": "js-fcc-038",
-    "prompt": "Which of the following is a commonly used web API?",
-    "options": ["console", "Array", "let, var, const", "Object"],
-    "answer": 0,
-    "explanation": "console is part of a web API which is provided by browsers and Node.js.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #38"
-  },
-  {
     "id": "js-fcc-039",
     "prompt": "Which of the following methods returns a function?",
     "options": ["call", "bind", "apply", "None of given"],
@@ -2089,24 +1827,6 @@
     "explanation": "The addition operator (+) produces the sum of numeric operands or string concatenation.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #50"
-  },
-  {
-    "id": "js-fcc-051",
-    "prompt": "What are the two basic groups of data types?",
-    "options": ["Enumerated and Object types", "Primitive and Floating types", "Character and Number types", "Primitive and Reference types"],
-    "answer": 3,
-    "explanation": "Primitive and Reference types are the two basic groups of data types in JavaScript.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #51"
-  },
-  {
-    "id": "js-fcc-052",
-    "prompt": "What method is used to arrange array values into alphabetical and/or ascending order?",
-    "options": ["shift()", "sort()", "unshift()", "from()"],
-    "answer": 1,
-    "explanation": "The sort() method sorts the elements of an array in place and returns the sorted array. The default sort order is ascending.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #52"
   },
   {
     "id": "js-fcc-053",
@@ -2218,15 +1938,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #64"
   },
   {
-    "id": "js-fcc-065",
-    "prompt": "What is the correct syntax to check if two variables are strictly equal?",
-    "options": ["if(A == B)", "if(A === B)", "if(A = B)", "if(A.equals(B))"],
-    "answer": 1,
-    "explanation": "The triple equals operator (===) will check for strict equality because it checks for the same data type and value.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #65"
-  },
-  {
     "id": "js-fcc-066",
     "prompt": "What method adds an element to the end of an array?",
     "options": [".push()", ".shift()", ".unshift()", ".pop()"],
@@ -2252,15 +1963,6 @@
     "explanation": "Object destructuring is used to extract an object's values into new variables.",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #68"
-  },
-  {
-    "id": "js-fcc-069",
-    "prompt": "Which one of these methods modifies an array in place?",
-    "options": [".splice()", ".join()", ".slice()", ".filter()"],
-    "answer": 0,
-    "explanation": "The .splice() method modifies an array in place and it can be used to remove or add elements to an array.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #69"
   },
   {
     "id": "js-fcc-070",
@@ -2405,15 +2107,6 @@
     "explanation": "The script tag is used for client side JavaScript code.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #85"
-  },
-  {
-    "id": "js-fcc-086",
-    "prompt": "Which one of these operators is the equality operator?",
-    "options": ["==", "!=", "?", "!=="],
-    "answer": 0,
-    "explanation": "The == operator returns true if two values are equal and false if they are not equal. It converts the values to a common type before doing the comparison.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #86"
   },
   {
     "id": "js-fcc-087",
@@ -2713,15 +2406,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #119"
   },
   {
-    "id": "js-fcc-120",
-    "prompt": "What does typeof null return?",
-    "options": ["\"object\"", "\"null\"", "\"undefined\"", "\"number\""],
-    "answer": 0,
-    "explanation": "typeof null is \"object\", a bug kept since the first version of JavaScript for compatibility. To check for null, compare directly: value === null.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #120"
-  },
-  {
     "id": "js-fcc-121",
     "prompt": "What does typeof [] return?",
     "options": ["\"array\"", "\"object\"", "\"null\"", "\"undefined\""],
@@ -2756,15 +2440,6 @@
     "explanation": "typeof is a JavaScript keyword that will return the type of a variable when you call it. You can use this to validate function parameters or check if variables are defined.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #124"
-  },
-  {
-    "id": "js-fcc-125",
-    "prompt": "What is the return value of the .push() method?",
-    "options": ["new length of the array, after the element has been pushed", "undefined", "Length of the old array, before the element is pushed", "null"],
-    "answer": 0,
-    "explanation": ".push() returns the new length of the array, after the element has been pushed",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #125"
   },
   {
     "id": "js-fcc-126",
@@ -2810,15 +2485,6 @@
     "explanation": "Variables declared with let, const and var are hoisted. But, const and let are in temporal dead zone.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #130"
-  },
-  {
-    "id": "js-fcc-131",
-    "prompt": "What is the difference between == and ===?",
-    "options": ["== allows for type coercion of the values, while === does not", "== and === both allow for type coercion of the values, but === is more strict", "== does not allow for type coercion of the values, while === does", "There is no difference between == and ==="],
-    "answer": 0,
-    "explanation": "The == operator allows for type coercion of the values, while === does not.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #131"
   },
   {
     "id": "js-fcc-132",
@@ -2923,43 +2589,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #142"
   },
   {
-    "id": "js-fcc-143",
-    "prompt": "What is the runtime model based on?",
-    "options": ["Non Blocking Model", "Queue Memory Allotment Model", "Event Loop", "Stack Memory Allotment Model"],
-    "answer": 2,
-    "explanation": "The event loop is responsible for executing the code, processing events, and monitoring the callback queue and stack.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #143"
-  },
-  {
-    "id": "js-fcc-144",
-    "prompt": "Which one is a type of data structure that stores unique values?",
-    "options": ["Maps", "Object", "Set", "Array"],
-    "answer": 2,
-    "explanation": "A JavaScript Set is a type of data structure that stores unique values.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #144"
-  },
-  {
-    "id": "js-fcc-145",
-    "prompt": "What is the optional chaining operator?",
-    "options": ["&&", "?.", "??", "**"],
-    "answer": 1,
-    "explanation": "?. is the optional chaining operator in JavaScript.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #145"
-  },
-  {
-    "id": "js-fcc-146",
-    "prompt": "What does this return?",
-    "code": "('b' + 'a' + + 'cteri' + 'a').toLowerCase()",
-    "options": ["Undefined", "b+a+cteri+a", "banana", "bacteria"],
-    "answer": 2,
-    "explanation": "JavaScript will concatenate all the strings together and attempt to convert 'cteri' to a number using the unary plus operator, and since 'cteri' is not a number, the result will be NaN(Not a Number) which altogether is banana",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #146"
-  },
-  {
     "id": "js-fcc-147",
     "prompt": "Which of the following is not an array method?",
     "options": [".forEach()", ".search()", ".join()", ".includes()"],
@@ -2985,15 +2614,6 @@
     "explanation": "The console.table() method displays an array or object of rows and columns.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #149"
-  },
-  {
-    "id": "js-fcc-150",
-    "prompt": "What type of value is an Array?",
-    "options": ["Map", "Set", "Array", "Object"],
-    "answer": 3,
-    "explanation": "In JavaScript besides primitives types, we have the Object value type. Arrays are a special type of object that represents a collection of similar types of values.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #150"
   },
   {
     "id": "js-fcc-151",
@@ -3051,15 +2671,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #157"
   },
   {
-    "id": "js-fcc-158",
-    "prompt": "What does the .seal() method do?",
-    "options": ["Permits its prototype from being reassigned", "Prevents new properties from being added to it.", "Prevents its existing value from being modified", "Allows its existing properties to be removed"],
-    "answer": 1,
-    "explanation": "JavaScript's Object.seal() method prevents the addition of new properties, removal of existing properties or the reassignment of its prototype.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #158"
-  },
-  {
     "id": "js-fcc-159",
     "prompt": "Which of the following Math objects rounds a number down to the nearest whole integer?",
     "options": ["Math.round()", "Math.ceil()", "Math.abs()", "Math.floor()"],
@@ -3076,24 +2687,6 @@
     "explanation": "Event bubbling is an event propagation method that starts with the element that triggered the event and then bubbles up to its parent elements in their respective hierarchy.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #160"
-  },
-  {
-    "id": "js-fcc-161",
-    "prompt": "What is the nullish coalescing operator?",
-    "options": ["??", "?.", "**", "&&"],
-    "answer": 0,
-    "explanation": "?? is the optional nullish coalescing in JavaScript. It returns the first operand if it is not null or undefined. Otherwise, it returns the second operand.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #161"
-  },
-  {
-    "id": "js-fcc-162",
-    "prompt": "Which one gets higher precedence among 'setTimeout' and 'Promise' (considering zero delay)?",
-    "options": ["setTimeout", "Promise", "Depends on the order of calling", "Unpredictable"],
-    "answer": 1,
-    "explanation": "Promises will always have a higher precedence than setTimeout. The Promise will be executed before the setTimeout, regardless of the order in which they are called.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #162"
   },
   {
     "id": "js-fcc-164",
@@ -3123,16 +2716,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #167"
   },
   {
-    "id": "js-fcc-168",
-    "prompt": "What does this log?",
-    "code": "console.log(new String('Hello, world!') === 'Hello, world!');",
-    "options": ["equal", "true", "false", "not equal"],
-    "answer": 2,
-    "explanation": "The answer is false. Triple equal ('===') compares the value and the type as well.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #168"
-  },
-  {
     "id": "js-fcc-169",
     "prompt": "Which keyword is used to make portions of code accessible to other modules?",
     "options": ["import", "as", "from", "export"],
@@ -3149,16 +2732,6 @@
     "explanation": "The setTimeout() function is an asynchronous function that will not pause execution of other functions in the stack.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #170"
-  },
-  {
-    "id": "js-fcc-171",
-    "prompt": "What does this log?",
-    "code": "console.log(7 + '5');",
-    "options": ["57", "undefined", "11", "75"],
-    "answer": 3,
-    "explanation": "The result for console.log(7 + '5') is 75 because the + operator is used to concatenate strings.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #171"
   },
   {
     "id": "js-fcc-172",
@@ -3180,15 +2753,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #173"
   },
   {
-    "id": "js-fcc-174",
-    "prompt": "Which of the following is not a primitive data type?",
-    "options": ["Object", "Number", "String", "Undefined"],
-    "answer": 0,
-    "explanation": "JavaScript has 7 primitive data types. Boolean, null, undefined, Number, BigInt, String and Symbol",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #174"
-  },
-  {
     "id": "js-fcc-175",
     "prompt": "How many ways can you access an object's properties?",
     "options": ["1", "2", "13", "8"],
@@ -3196,34 +2760,6 @@
     "explanation": "To access data from an object in JavaScript, you can use either dot notation or bracket notation.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #175"
-  },
-  {
-    "id": "js-fcc-176",
-    "prompt": "What is the classification for a 'function' and 'class'?",
-    "options": ["Keywords", "Variables", "Declaration statements", "Data types"],
-    "answer": 2,
-    "explanation": "Both 'function' and 'class' are used in the beginning to declare a function and class respectively.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #176"
-  },
-  {
-    "id": "js-fcc-177",
-    "prompt": "Which of the following is NOT a composite data type?",
-    "options": ["Array", "String", "Object", "Class"],
-    "answer": 1,
-    "explanation": "A string is a primitive value. Arrays, objects and class instances are composite: they hold other values.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #177"
-  },
-  {
-    "id": "js-fcc-178",
-    "prompt": "What does this log?",
-    "code": "console.log(true + 34);",
-    "options": ["35", "true34", "34", "true"],
-    "answer": 0,
-    "explanation": "Since true is converted to the number 1, then true + 34 would result in 35.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #178"
   },
   {
     "id": "js-fcc-179",
@@ -3341,16 +2877,6 @@
     "explanation": "There are 7 primitive data types in JavaScript: strings, numbers, booleans, null, undefined, Symbol, and BigInt. Everything else is a JavaScript object including arrays, sets, functions, dates, etc.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #191"
-  },
-  {
-    "id": "js-fcc-192",
-    "prompt": "What does this log?",
-    "code": "console.log(12 + 'A');",
-    "options": ["'12A'", "Error", "13", "NaN"],
-    "answer": 0,
-    "explanation": "12 + 'A' would result in '12A' since the entire expression will be considered as string concatenation rather than addition.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #192"
   },
   {
     "id": "js-fcc-193",
