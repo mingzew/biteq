@@ -155,7 +155,7 @@
     "code": "let a = 3;\nlet b = new Number(3);\nlet c = 3;\n\nconsole.log(a == b);\nconsole.log(a === b);\nconsole.log(b === c);",
     "options": ["true false true", "false false true", "true false false", "false true true"],
     "answer": 2,
-    "explanation": "new Number() is a built-in function constructor. Although it looks like a number, it's not really a number: it has a bunch of extra features and is an object.\n\nWhen we use the == operator (Equality operator), it only checks whether it has the same value. They both have the value of 3, so it returns true.\n\nHowever, when we use the === operator (Strict equality operator), both value and type should be the same. It's not: new Number() is not a number, it's an object. Both return false.",
+    "explanation": "new Number(3) creates a Number object, not the primitive number 3. == converts the object to its primitive value (3) before comparing, so that is true, while === also compares types and an object is never strictly equal to a primitive, so both === checks are false.\n\nlet a = 3;\nlet b = new Number(3);\nlet c = 3;\n\na == b   // => true   b is converted to 3 first\na === b  // => false  number vs object\nb === c  // => false  object vs number",
     "practicality": 3,
     "source": "lydiahallie/javascript-questions #7"
   },
