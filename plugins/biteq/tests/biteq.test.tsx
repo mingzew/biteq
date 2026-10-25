@@ -20,10 +20,6 @@ const BANKS: Record<string, unknown[]> = {
     { id: 'cs-a', title: 'C', prompt: 'Pick c', options: ['c1', 'c2'], answer: 0, explanation: 'because', practicality: 5 },
     { id: 'cs-b', title: 'K', prompt: 'Pick k', options: ['k1', 'k2'], answer: 0, explanation: 'because', practicality: 5 },
   ],
-  cs: [
-    { id: 'cs-a', title: 'C', prompt: 'Pick c', options: ['c1', 'c2'], answer: 0, explanation: 'because' },
-    { id: 'cs-b', title: 'K', prompt: 'Pick k', options: ['k1', 'k2'], answer: 0, explanation: 'because' },
-  ],
   go: [],
 }
 
@@ -421,6 +417,18 @@ describe('presses', () => {
     await ui.redraw({ ...PANE.props, isFocused: true })
     expect((await title())?.props.dimColor).toBeUndefined()
   })
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    test(`${surface}: backtick names in a prompt draw as highlighted inline code`, async ($, on) => {
+      const q = { title: 'T', options: ['a1', 'a2'], answer: 0, explanation: 'e', practicality: 5 }
+      world(on, { cs: [{ id: 'cs-code', prompt: 'Is `blocked` a list?', ...q }] }, surface)
+      await $.session.start({ cwd: '.', surface, isInteractive: true })
+      const ui = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
+      await $.turn.start({ text: 'go', turnId: 't1' })
+      expect((await find(ui, { type: 'Text', text: /^ blocked $/ }))?.props.backgroundColor).toBe('subtle')
+      expect(await find(ui, { type: 'Text', text: /`/ })).toBeUndefined()
+    })
+  }
 
   test('desktop: losing focus leaves the quiz as it was', async ($, on) => {
     world(on, BANKS, 'desktop')

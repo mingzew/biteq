@@ -40,7 +40,7 @@ Each file is a JSON **array** of question objects.
 | `practicality` | yes | Whole number 1–10. See [Practicality](#practicality). |
 | `source` | imports | Where an imported question came from, e.g. `"lydiahallie/javascript-questions #12"`. Not shown. See [Importing questions](#importing-questions). |
 
-The pane renders `title`, `prompt`, `code`, options, and `explanation` as plain `Text`. `**bold**` and other Markdown do nothing. Do not use Markdown in any of those fields.
+The pane renders `title`, `prompt`, `code`, options, and `explanation` as plain `Text`. `**bold**` and other Markdown do nothing. Do not use Markdown in any of those fields, with one exception: in `prompt`, wrap a name that appears in `code` in backticks (`` `blocked` ``) and the pane draws it as inline code on a highlighted background. Use it for variable, function and column names the reader should match to the snippet, not for emphasis.
 
 ## Practicality
 
@@ -74,7 +74,7 @@ Every question brought in from another source must be converted to this format b
 4. **Shuffle the answer.** Sources often put the correct answer first. Spread `answer` across 0–3; keep "All of the above" / "None of the above" last.
 5. **No language prefix.** The pane already shows `[python]`, so drop "In Python," / "In JavaScript," and similar. Keep the name where the language is the subject ("Who created Python?").
 6. **Code goes in `code`.** Move code that the source put in the prompt into `code`, one statement per line, and reword the prompt ("What does this print?").
-7. **Plain text.** Strip Markdown, HTML, backticks and escapes (`\$`, `&nbsp;`). Drop image references and pointers to other questions or articles; rewrite the sentence so it stands alone.
+7. **Plain text.** Strip Markdown, HTML, backticks (except names from the code in `prompt`, see above) and escapes (`\$`, `&nbsp;`). Drop image references and pointers to other questions or articles; rewrite the sentence so it stands alone.
 8. **Verify, then fix.** Run every snippet (`python3`, `node`, `ruby -e`) and make the correct option exactly what it prints. Fix wrong answers and explanations, and replace a wrong option that is also correct. For browser-only behaviour, say so in the prompt ("in a browser").
 9. **Drop** duplicates (of the source or of the bank) and questions with no coherent answer, and note them in `ATTRIBUTION.md`.
 10. **Score `practicality`** for every question (see [Practicality](#practicality)).

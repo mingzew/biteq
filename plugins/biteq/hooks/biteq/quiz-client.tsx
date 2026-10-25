@@ -208,7 +208,7 @@ export function drawQuiz(
         <Box flexDirection="column" gap={1}>
           <Box flexWrap="wrap">
             <Text color="blue" dimColor={dim}>[{q.lang}] </Text>
-            <Text dimColor={dim}>{q.prompt}</Text>
+            <Text dimColor={dim}>{inlineCode(q.prompt, Text, dim)}</Text>
           </Box>
           {q.code ? <Text color="cyan" dimColor={dim}>{q.code}</Text> : null}
           <Box flexDirection="column" alignItems={align}>
@@ -253,6 +253,15 @@ export function drawQuiz(
       )}
     </Box>
   )
+}
+
+/**
+ * A prompt's `name` spans, drawn as inline code on a highlighted background, so a name in the question reads
+ * as the same name in the snippet below it. Only the prompt does this; every other field is plain text.
+ */
+function inlineCode(text: string, Text: QuizElements['Text'], dim: true | undefined) {
+  return text.split(/`([^`]+)`/).map((part, i) =>
+    i % 2 === 0 ? part : <Text key={`code-${i}`} backgroundColor="subtle" color="text" dimColor={dim}> {part} </Text>)
 }
 
 const Quiz: ClientModule<QuizProps> = (v, surface) =>
