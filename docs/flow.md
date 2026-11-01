@@ -20,7 +20,9 @@ engine and calls its hooks directly, so there's no separate hook process, state 
 
 > **Resting when done.** When Claude finishes, the pane doesn't change: the question on screen stays, and the
 > keys still work. But Next doesn't serve another: the pane says "Claude is done, go review. The next time
-> Claude cooks, we will serve the question." until Claude works again (unless you chose **Always serve**).
+> Claude cooks, we will serve the question." until Claude works again (unless you chose **Always serve**). A new
+> session opens the pane resting too, since Claude hasn't run yet ("Claude hasn't started yet. The next time
+> Claude cooks, we will serve the question."); the first prompt serves the first question.
 
 ## Diagram
 

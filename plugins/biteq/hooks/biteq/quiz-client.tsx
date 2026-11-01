@@ -4,7 +4,7 @@
 // value (client.ts), from pane.render or, here, in the module's props.
 //
 // drawQuiz also draws the CLI pane (through pane.render, not this module): there Next/Skip
-// and Close are a hint bar at the bottom, pressed by hotkey (n, q) and kept out of the arrow
+// and Banks are a hint bar at the bottom, pressed by hotkey (n, z) and kept out of the arrow
 // keys' focus ring (register.ts's ui.focus hook). A terminal Client would take raw keys such as
 // space, but only after a mouse click; ctrl+x tab doesn't give it the keyboard.
 // No setState/post during the draw call: three setStates with nothing between
@@ -20,6 +20,8 @@ const TITLE_COLOR = '#F58700'
 const TAGLINE = 'Bite Size Coding Questions'
 const LETTERS = 'abcd'
 const RESTING = `${AGENT} is done, go review. The next time ${AGENT} cooks, we will serve the question.`
+// a new session, before Claude has run: nothing to review yet
+const IDLE = `${AGENT} hasn't started yet. The next time ${AGENT} cooks, we will serve the question.`
 const BANKS = 'Choose the banks to practise. They are served mixed, and saved as you go.'
 const CONGRATS = 'Congratulations!'
 const FINISHED = "You've cleared every question in your banks:"
@@ -50,13 +52,15 @@ export const keys = {
  * "n: skip", with " · " between them. After an answer it shows "⏎ next" (Enter on the answered
  * option); n still moves on through a button clipped out of sight.
  */
-function hintBar(v: PaneView, el: QuizElements, onPress: (key: string) => void) {
+function hintBar(v: PaneView, el: QuizElements, traits: ClientTraits, onPress: (key: string) => void) {
   const { Box, Text, Button } = el
   const q = v.question
   const hint = (k: string, label: string, hotkey: string) =>
     <Button key={k} label={label} hotkey={hotkey} plain dimColor onPress={() => onPress(k)} />
+  // no q: close where the pane has its own X
+  const close = traits.closeButton ? [hint(keys.close, 'close', 'q')] : []
   if (v.picking) {
-    const row = [<Text key="toggle" dimColor>⏎ toggle</Text>, hint(keys.banks, 'done', 'z'), hint(keys.close, 'close', 'q')]
+    const row = [<Text key="toggle" dimColor>⏎ toggle</Text>, hint(keys.banks, 'done', 'z'), ...close]
     return row.flatMap((item, i) => (i === 0 ? [item] : [<Text key={`sep-${i}`} dimColor> · </Text>, item]))
   }
   const items =
@@ -70,7 +74,7 @@ function hintBar(v: PaneView, el: QuizElements, onPress: (key: string) => void) 
       {hint(keys.next(q), 'next', 'n')}
     </Box>
   )
-  const row = [...items, hint(keys.banks, 'banks', 'z'), hint(keys.close, 'close', 'q')]
+  const row = [...items, hint(keys.banks, 'banks', 'z'), ...close]
   return [
     ...row.flatMap((item, i) => (i === 0 ? [item] : [<Text key={`sep-${i}`} dimColor> · </Text>, item])),
     ...(hidden ? [hidden] : []),
@@ -83,7 +87,8 @@ export function isHintKey(key: string): boolean {
 }
 
 export type PaneView = {
-  resting: boolean   // Claude is done and Next rested: no question until Claude works again
+  // Claude isn't working and the pane rests, no question until it does: 'done' once it has run, 'idle' before
+  resting: false | 'done' | 'idle'
   finished: boolean   // every question in the selected banks is answered: offer to start over
   // the selected banks that have questions; oneShot: how many were right the first time
   banks: { lang: string; count: number; oneShot: number }[]
@@ -116,20 +121,22 @@ export function drawQuiz(
   const ring = traits.autoFocus ? true as const : undefined
   const align = traits.alignStart ? 'flex-start' as const : undefined
   const dim = traits.dimsWhenUnfocused && v.focused === false ? true as const : undefined
-  // An action button (Next, Skip, Close, Serve next question, ...). Where a bare Button draws as
-  // plain text it gets a rounded frame that lights in the accent colour on hover; the main
-  // action's frame is accent-coloured already. The CLI keeps its own look.
+  // An action button (Next, Skip, Serve next question, ...). Where a bare Button draws as plain text it is
+  // bracketed in the BiteQ colour, "[ Skip ]", so it reads as a button. The desktop app draws only a Button's
+  // `label` (no children, colours, backgrounds or hover), so the coloured brackets are Text beside it; a click
+  // on a bracket itself isn't a press, the label is. The CLI keeps its own look.
   const action = (k: string, label: string, opts: { primary?: boolean; hotkey?: string; dismiss?: boolean; focus?: true } = {}) => {
     const button = (
       <Button key={k} label={label} hotkey={key(opts.hotkey ?? '')} dimColor={opts.dismiss ? true : dim}
         variant={opts.primary ? 'primary' : undefined} role={opts.dismiss ? 'dismiss' : undefined}
         autoFocus={opts.focus} onPress={() => onPress(k)} />
     )
-    if (!traits.framedActions) return button
+    if (!traits.bracketActions) return button
     return (
-      <Box key={`frame:${k}`} borderStyle="round" borderColor={opts.primary ? 'claude' : 'subtle'} paddingX={1}
-        hover={{ borderColor: 'claude' }}>
+      <Box key={`action:${k}`}>
+        <Text color={TITLE_COLOR} dimColor={dim}>[ </Text>
         {button}
+        <Text color={TITLE_COLOR} dimColor={dim}> ]</Text>
       </Box>
     )
   }
@@ -158,7 +165,7 @@ export function drawQuiz(
           <Box flexDirection="column" alignItems={align}>
             {v.picking.map((b, i) => (
               // keyed by the state a press sets, so the key changes with each toggle
-              <Button key={keys.bank(b.lang, !b.on)} label={`${b.on ? '[x]' : '[ ]'} ${b.lang.padEnd(8)} ${String(b.count).padStart(3)}`}
+              <Button key={keys.bank(b.lang, !b.on)} label={`${b.on ? '[x]' : '[ ]'} ${b.lang} - ${b.count} ${b.count === 1 ? 'question' : 'questions'}`}
                 hotkey={key(i < 9 ? String(i + 1) : '')} plain dimColor={dim} autoFocus={i === 0 ? ring : undefined}
                 onPress={() => onPress(keys.bank(b.lang, !b.on))} />
             ))}
@@ -187,7 +194,7 @@ export function drawQuiz(
         </Box>
       ) : q === null && v.resting ? (
         <Box flexDirection="column" gap={1} alignItems={align}>
-          <Text>{RESTING}</Text>
+          <Text>{v.resting === 'idle' ? IDLE : RESTING}</Text>
           {!hints && (
             <Box gap={2}>
               {action(keys.serve, 'Serve next question', { primary: true, focus: ring })}
@@ -239,7 +246,7 @@ export function drawQuiz(
         // A unix-style hint bar: `plain` hotkey buttons draw as "n: next", dim like the rest
         // a growing column pushes the bar's one row to the pane's bottom edge
         <Box flexDirection="column" flexGrow={1} justifyContent="flex-end">
-          <Box flexWrap="nowrap">{hintBar(v, el, onPress)}</Box>
+          <Box flexWrap="nowrap">{hintBar(v, el, traits, onPress)}</Box>
         </Box>
       ) : (
         <Box gap={2}>
@@ -248,7 +255,7 @@ export function drawQuiz(
             ? action(keys.next(q), 'Next', { primary: true, hotkey: 'n', focus: ring })
             : action(keys.skip(q), 'Skip', { hotkey: 's' }))}
           {!v.picking && action(keys.banks, 'Switch Q banks', { hotkey: 'z' })}
-          {action(keys.close, 'Close', { hotkey: 'q', dismiss: true })}
+          {traits.closeButton && action(keys.close, 'Close', { hotkey: 'q', dismiss: true })}
         </Box>
       )}
     </Box>

@@ -87,6 +87,9 @@ export async function next(io: Io, qid: string): Promise<void> {
   if (c.question !== null && (await resting(io))) {
     // Claude is done: no next question until it works again (onStatus serves it then)
     await io.set('current', now => (now.question?.id === qid ? { question: null, picked: null } : now))
+    // The option that held the ring is gone, and the engine would move it to a neighbour, sometimes
+    // "always serve": an Enter there would switch pausing off. Put it on "serve next question" instead.
+    await io.focus(keys.serve)
     return
   }
   await advance(io, c.question, await freshStats(io))
@@ -94,9 +97,13 @@ export async function next(io: Io, qid: string): Promise<void> {
   if (now) await io.focus(keys.answer(now, 0))
 }
 
-/** Whether Next should rest instead of serving: Claude is done and the person hasn't opted out. */
+/**
+ * Whether to rest instead of serving: Claude isn't working, because it's done or hasn't been prompted yet
+ * this session (a new session opens the pane resting, not serving), and the person hasn't opted out.
+ */
 async function resting(io: Io): Promise<boolean> {
-  return (await io.get('status')) === 'done' && (await getPauseWhenDone(io))
+  const status = await io.get('status')
+  return (status === 'done' || status === 'idle') && (await getPauseWhenDone(io))
 }
 
 /** "Serve next question" while resting: one question now, the setting unchanged. */
@@ -134,12 +141,16 @@ export async function restart(io: Io): Promise<void> {
 // toggle Button whose key names the state it sets (`bank:on:cs`), so a click from an old drawing
 // can't undo the one before it. Every toggle is saved at once; the last bank can't be unchecked.
 
+// Banks too small to be worth choosing yet: kept in data/questions, not offered on the bank screen.
+// Take one off the list once it has enough questions.
+const HIDDEN_BANKS = ['bash', 'git', 'sql', 'ts']
+
 /** z: show the bank screen, or leave it. */
 export async function banks(io: Io): Promise<void> {
   if ((await io.get('picker')).open) return leaveBanks(io)
   const counts = await languageCounts(io)
   const langs = await getLangs(io)
-  const order = languageOrder(langs, Object.keys(counts)).filter(l => counts[l])
+  const order = languageOrder(langs, Object.keys(counts)).filter(l => counts[l] && !HIDDEN_BANKS.includes(l))
   shown = order.map(lang => ({ lang, count: counts[lang] ?? 0 }))
   const selected = langs.filter(l => counts[l])
   await io.set('picker', () => ({ open: true, selected }))
@@ -298,8 +309,10 @@ export async function view(io: Io): Promise<PaneView> {
   const done = question === null && finished(stats)
   const p = await io.get('picker')
   return {
-    // Claude is done and Next rested: say so instead of showing a question
-    resting: status === 'done' && question === null && questions.length > 0 && !done,
+    // Claude isn't working and the pane rests: say so instead of showing a question. Session state only:
+    // the pause setting lives in the store, a round trip on every redraw, and it was already consulted when
+    // the question went (resting() in next/open/restart); with pausing off a question is served instead.
+    resting: question === null && questions.length > 0 && !done && (status === 'done' || status === 'idle') ? status : false,
     finished: done,
     banks: [...new Set(questions.map(q => q.lang))].map(lang => {
       const inBank = questions.filter(q => q.lang === lang)

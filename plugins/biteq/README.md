@@ -15,18 +15,19 @@ claude --plugin-dir ./plugins/biteq
 The pane opens with the session and again on each prompt (unless you close it). In the desktop app,
 click an answer, then **Next**. In the terminal it docks beside the conversation at 144+ columns,
 otherwise inline; `ctrl+x tab` gives it the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter)
-answer, and a hint bar on the pane's bottom row names the rest: `n: skip · z: banks · q: close` before
-answering, `⏎ next · z: banks · q: close` after (Enter on the answered question moves on; `n` still does,
+answer, and a hint bar on the pane's bottom row names the rest: `n: skip · z: banks` before
+answering, `⏎ next · z: banks` after (Enter on the answered question moves on; `n` still does,
 unshown). Esc goes back to the prompt. Resting after Claude is done, the bar reads `n: serve next · s: always
-serve · z: banks · q: close`. Missed questions come back (30% of the time, and only those once nothing is
+serve · z: banks`. Missed questions come back (30% of the time, and only those once nothing is
 unseen). Once every selected question is answered, and every missed one answered right since, the pane says
 "Congratulations! 38 of 47 in one shot." (the total only with several banks), lists each bank with how many of
 its questions you got right the first time you ever saw them (`✓ ruby  one-shot 35/44`, a perfect bank in
 the BiteQ colour) and says how to go on: "Press n to start over, or z to choose other banks." in the terminal,
 "Click Start over to go again, or Switch Q banks to choose other banks." in the desktop app; the bar reads
-`n: start over · z: banks · q: close`.
+`n: start over · z: banks`. To close the pane, use its own X.
 
-`z` (desktop: **Switch Q banks**) opens the bank screen at any time: one toggle per bank with its question count,
+`z` (desktop: **Switch Q banks**) opens the bank screen at any time: one toggle per bank, `[x] js - 307 questions` (the small `bash`, `git`, `sql`
+and `ts` banks aren't offered yet),
 `1`–`9` in the terminal (or the arrow keys and Enter). Each change is saved at once, and the last checked
 bank can't be unchecked. `z` (or **Done**) goes back: an unanswered question from a bank you unchecked is
 replaced; an answered one stays so you can read its explanation.
@@ -90,7 +91,7 @@ file, lock or polling. Engine events set the session's status:
 | Event | Status |
 |---|---|
 | `turn.start` | thinking: count the wait, serve a question, open the pane |
-| `turn.complete` | done (also on interrupt; a subagent's turn is ignored). The question on screen can still be answered, but Next rests ("Claude is done, go review") instead of serving, until the next `turn.start`; unless `/biteq pause off` or **Always serve** (`config.pauseWhenDone`) |
+| `turn.complete` | done (also on interrupt; a subagent's turn is ignored). The question on screen can still be answered, but Next rests ("Claude is done, go review") instead of serving, until the next `turn.start`; a new session starts out resting too, with "Claude hasn't started yet"; unless `/biteq pause off` or **Always serve** (`config.pauseWhenDone`) |
 | `tool.call` for AskUserQuestion / ExitPlanMode | waiting while the tool blocks, thinking once it returns |
 | `classic.Notification` | waiting on `permission_prompt`, done on `idle_prompt` |
 

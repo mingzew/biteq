@@ -29,7 +29,8 @@ app's Code tab, and the VS Code / Cursor extension.
 - The pane opens with the session; each prompt serves a question while Claude works.
 - Once Claude is done you can finish the question on screen, but Next doesn't serve another: the pane says
   "Claude is done, go review" until Claude works again. **Serve next question** serves one anyway; **Always serve**
-  turns this off for good (remembered; `/biteq pause on` turns it back on).
+  turns this off for good (remembered; `/biteq pause on` turns it back on). A new session opens the pane resting
+  too ("Claude hasn't started yet…") until you prompt Claude.
 - Questions are a mix of the banks you select (default `cs`, general CS questions, so anyone can start right
   away). Only those banks are served. Missed questions come back later (light spaced repetition), and once
   nothing is unseen they come back until you get them right. Then the pane congratulates you, says how many
@@ -62,8 +63,8 @@ Code tab, or the Claude Code extension in VS Code or Cursor.
 2. The pane opens with the session (in a terminal narrower than 144 columns, type `/biteq`).
 3. Prompt Claude. A question appears. In the desktop app, click an answer, then **Next**. In the terminal,
    `ctrl+x tab` gives the pane the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter) answer, and the
-   hint bar at the bottom names the rest: `n: skip · z: banks · q: close` before you answer, `⏎ next · z: banks ·
-   q: close` after (Enter moves on; `n` still does too, though the bar no longer shows it).
+   hint bar at the bottom names the rest: `n: skip · z: banks` before you answer, `⏎ next · z: banks` after (Enter moves on;
+   `n` still does too, though the bar no longer shows it). The pane's own X closes it.
 4. To change what you practise, press `z` (desktop: **Switch Q banks**) at any time. Check or uncheck banks with `1`–`9`
    or the arrow keys and Enter; each change is saved at once. `z` (or **Done**) goes back to the quiz.
 

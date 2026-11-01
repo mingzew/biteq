@@ -6,6 +6,10 @@ import type { On } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
 import type { Engine, Mounted } from 'claude-code/testing'
 
+import { keys } from '../hooks/biteq/draw'
+import type { Io } from '../hooks/biteq/io'
+import { next } from '../hooks/biteq/pane'
+
 const BANKS: Record<string, unknown[]> = {
   python: [
     { id: 'python-a', title: 'A', prompt: 'Pick a', options: ['a1', 'a2'], answer: 0, explanation: 'because', practicality: 5 },
@@ -33,6 +37,7 @@ const PANE = {
 } as const
 
 const RESTING = /^Claude is done, go review\. The next time Claude cooks, we will serve the question\.$/
+const IDLE = /^Claude hasn't started yet\. The next time Claude cooks, we will serve the question\.$/
 
 const DONE = { reason: 'answer', answer: 'done', durationMs: 1, isAborted: false, turnId: 't1' } as const
 
@@ -60,7 +65,11 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
   on('fs.list', () => ({
     value: Object.keys(banks).map(lang => ({ name: `${lang}.json`, kind: 'file', size: 1, mtimeMs: 0, isLink: false })),
   }) as never)
-  on('fs.read', ($, e) => ({ value: JSON.stringify(banks[String(e.path).split('/').pop()!.replace('.json', '')] ?? []) }))
+  on('fs.read', ($, e) => {
+    const path = String(e.path)
+    if (path.endsWith('/.claude-plugin/plugin.json')) return { value: JSON.stringify({ name: 'biteq', version: '9.9.9' }) }
+    return { value: JSON.stringify(banks[path.split('/').pop()!.replace('.json', '')] ?? []) }
+  })
   on('fs.write', ($, e) => {
     writes?.push(JSON.stringify(e))
     return { value: undefined }
@@ -201,6 +210,77 @@ describe('when Claude is done', () => {
     })
   }
 
+  for (const surface of ['terminal', 'desktop'] as const) {
+    test(`${surface}: a new session rests until Claude works; "serve next question" serves one now`, async ($, on) => {
+      world(on, BANKS, surface)
+      await $.session.start({ cwd: '.', surface, isInteractive: true })
+      const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface, ...PANE })
+      expect(await find(ui, { text: IDLE })).toBeDefined()   // Claude hasn't run yet: no question
+      expect(await find(ui, { text: RESTING_RE })).toBeUndefined()   // and nothing to review
+      expect(await title(ui)).toBeUndefined()
+      await click(ui, surface === 'terminal' ? /^serve next$/ : /^Serve next question$/)
+      expect(await title(ui)).toBeDefined()
+      await click(ui, OPEN(ui, 'a'))
+      await click(ui, NEXT(ui))
+      expect(await find(ui, { text: IDLE })).toBeDefined()   // still not working: rests again
+      await $.turn.start({ text: 'go', turnId: 't1' })
+      expect(await title(ui)).toBeDefined()   // Claude works: a question
+    })
+  }
+
+  test('drawing the resting pane reads no setting from the store: a redraw costs no store round trip', async ($, on) => {
+    let configReads = 0
+    const shared = new Proxy<Record<string, unknown>>({}, {
+      get: (t, k) => { if (k === 'config') configReads++; return t[k as string] },
+    })
+    const ui = await done($, on, 'terminal', shared)
+    await click(ui, SKIP(ui))
+    expect(await find(ui, { text: RESTING_RE })).toBeDefined()
+    configReads = 0
+    await ui.redraw({ ...PANE.props, isFocused: false })
+    await ui.redraw({ ...PANE.props, isFocused: true })
+    expect(await find(ui, { text: RESTING_RE })).toBeDefined()
+    expect(configReads).toBe(0)
+  })
+
+  test('with "always serve" (pause off), a new session serves a question at once', async ($, on) => {
+    world(on, BANKS, 'desktop', { config: { pauseWhenDone: false } })
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    expect(await title(ui)).toBeDefined()
+    expect(await find(ui, { text: RESTING_RE })).toBeUndefined()
+  })
+
+  // The engine's test kit doesn't pass the plugin's own focus requests to the test's hooks, so where
+  // next() sends the ring is checked against pane.next directly, with an io that records it.
+  test('resting puts the ring on "serve next", so Enter can\'t switch on "always serve"', async () => {
+    const q = { id: 'cs-a', lang: 'cs', prompt: 'Pick c', options: ['c1', 'c2'], answer: 0, explanation: 'because', practicality: 5 }
+    const state: Record<string, unknown> = { status: 'done', current: { question: q, picked: 0 } }
+    const focused: string[] = []
+    const io = {
+      storeGet: async () => undefined,   // no config: pausing is on by default
+      get: async (k: string) => state[k],
+      set: async (k: string, change: (v: unknown) => unknown) => (state[k] = change(state[k])),
+      focus: async (key: string) => { focused.push(key) },
+    } as unknown as Io
+    await next(io, 'cs-a')
+    expect(state.current).toEqual({ question: null, picked: null })   // resting
+    expect(focused).toEqual([keys.serve])
+  })
+
+  // Only the plugin's own request (pane.next, through io.focus) may put the ring on "serve next"; any other
+  // move onto the hint bar is refused. (The kit doesn't show the plugin's own request reaching the ring:
+  // pane.next asking for it is checked above, and the CLI was checked by hand.)
+  test('the hint bar refuses every move onto it that the plugin didn\'t ask for, "serve next" included', async ($, on) => {
+    world(on, BANKS, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    for (const key of ['serve', 'always']) {
+      expect(await $.ui.focus({ requestId: 'biteq', key } as never)).toMatchObject({ deny: expect.stringContaining('hint bar') } as never)
+    }
+    expect(await $.ui.focus({ requestId: 'biteq', element: 'serve', origin: { kind: 'person' } } as never)).toMatchObject({ deny: expect.stringContaining('hint bar') } as never)
+  })
+
   test('"always serve" is remembered, and /biteq pause on turns pausing back on', async ($, on) => {
     const shared: Record<string, unknown> = {}
     const ui = await done($, on, 'desktop', shared)
@@ -220,17 +300,20 @@ describe('when Claude is done', () => {
     expect(await run($, 'pause maybe')).toBe('usage: /biteq pause on|off')
   })
 
-  test('desktop: the actions are framed so they read as buttons', async ($, on) => {
+  test('desktop: the actions are bracketed in the BiteQ colour, "[ Skip ]", so they read as buttons', async ($, on) => {
     const ui = await done($, on, 'desktop')
+    // the desktop app draws only a Button's label, so the coloured brackets are Text beside it
+    const action = (key: string, label: string) => new RegExp(
+      `"key":"action:${key}"\\},"children":\\[\\{"type":"Text","props":\\{"color":"#F58700"\\},"children":\\["\\[ "\\]\\},`
+      + `\\{"type":"Button","props":\\{"key":"${key}","label":"${label}"[^]*?\\{"type":"Text","props":\\{"color":"#F58700"\\},"children":\\[" \\]"\\]`)
     const drawn = JSON.stringify(await ui.drawn({ in: 'quiz' } as never))
-    // Skip and Close under a question, then Serve / Always serve while resting: each in a rounded frame
-    const framed = (key: string) => new RegExp(`"key":"frame:${key}","borderStyle":"round"`)
-    expect(drawn).toMatch(framed('skip:[^"]+'))
-    expect(drawn).toMatch(framed('close'))
+    expect(drawn).toMatch(action('skip:[^"]+', 'Skip'))
+    expect(drawn).toMatch(action('banks', 'Switch Q banks'))
+    expect(drawn).not.toMatch(/"borderStyle"/)   // no frame drawn around a Button: its gap took no clicks
     await click(ui, SKIP(ui))
     const resting = JSON.stringify(await ui.drawn({ in: 'quiz' } as never))
-    expect(resting).toMatch(new RegExp(`"key":"frame:serve","borderStyle":"round","borderColor":"claude"`))
-    expect(resting).toMatch(new RegExp(`"key":"frame:always","borderStyle":"round","borderColor":"subtle"`))
+    expect(resting).toMatch(action('serve', 'Serve next question'))
+    expect(resting).toMatch(action('always', 'Always serve, even when Claude is done'))
   })
 
   test('reopening the pane with /biteq keeps resting', async ($, on) => {
@@ -253,23 +336,24 @@ describe('terminal hint bar', () => {
   const title = async (ui: Drawing) => (await find(ui, { text: /^Pick / }))?.text
   const hint = async (ui: Drawing, label: string) => find(ui, { type: 'Button', text: new RegExp(`^${label}$`) })
 
-  test('next/skip and close are dim hotkey buttons (n, q) at the bottom', async ($, on) => {
+  test('next/skip and banks are dim hotkey buttons (n, z) at the bottom; no close: the pane has its own X', async ($, on) => {
     const { ui } = await terminal($, on)
     const skip = await hint(ui, 'skip')
-    const close = await hint(ui, 'close')
+    const banks = await hint(ui, 'banks')
     expect(skip?.props).toMatchObject({ hotkey: 'n', plain: true, dimColor: true })
-    expect(close?.props).toMatchObject({ hotkey: 'q', plain: true, dimColor: true })
+    expect(banks?.props).toMatchObject({ hotkey: 'z', plain: true, dimColor: true })
     expect(await hint(ui, 'Next')).toBeUndefined()
+    expect(await hint(ui, 'close')).toBeUndefined()
     expect(await hint(ui, 'Close')).toBeUndefined()
     // the bar is the pane's last row
     const drawn = JSON.stringify(await ui.drawn())
-    expect(drawn.lastIndexOf('"close"')).toBeGreaterThan(drawn.lastIndexOf('Pick '))
+    expect(drawn.lastIndexOf('"banks"')).toBeGreaterThan(drawn.lastIndexOf('Pick '))
   })
 
   test('the arrow keys and Tab never land on the hint bar', async ($, on) => {
     const { ui } = await terminal($, on)
     const answerKey = await keyOf(ui, OPEN(ui, 'a'))
-    for (const label of ['skip', 'close']) {
+    for (const label of ['skip', 'banks']) {
       const key = (await hint(ui, label))?.key ?? ''
       const res = await $.ui.focus({ requestId: 'biteq', key } as never)
       expect(res).toMatchObject({ deny: expect.stringContaining('hint bar') } as never)
@@ -278,18 +362,13 @@ describe('terminal hint bar', () => {
     expect((ok as { deny?: string }).deny ?? '').not.toContain('hint bar')
   })
 
-  test('n skips, then after an answer reads "next"; q closes and the pane stays closed', async ($, on) => {
-    const { ui, opened } = await terminal($, on)
+  test('n skips, then after an answer reads "next"', async ($, on) => {
+    const { ui } = await terminal($, on)
     const before = await title(ui)
     await click(ui, /^skip$/)
     expect(await title(ui)).not.toBe(before)
     await click(ui, OPEN(ui, 'a'))
     expect(await hint(ui, 'next')).toBeDefined()
-    await click(ui, /^close$/)
-    const count = opened.length
-    await $.turn.complete(DONE)
-    await $.turn.start({ text: 'again', turnId: 't2' })
-    expect(opened.length).toBe(count)   // dismissed: no reopen
   })
 
   test('after an answer the bar shows "⏎ next"; n still moves on but is not shown', async ($, on) => {
@@ -339,12 +418,20 @@ describe('terminal hint bar', () => {
     expect(JSON.stringify(await ui.drawn())).not.toContain('"minHeight"')
   })
 
-  test('desktop keeps its Next/Skip/Close buttons', async ($, on) => {
+  test('desktop keeps its Next/Skip buttons, but no Close: the pane has its own X', async ($, on) => {
     world(on, BANKS, 'desktop')
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
     await $.turn.start({ text: 'go', turnId: 't1' })
     expect(await find(ui, { type: 'Button', text: /^Skip$/ })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /^Close$/ })).toBeUndefined()
+  })
+
+  test('an unsupported client (VS Code) keeps its Close button', async ($, on) => {
+    world(on, BANKS, 'vscode')
+    await $.session.start({ cwd: '.', surface: 'vscode', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'vscode', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
     expect(await find(ui, { type: 'Button', text: /^Close$/ })).toBeDefined()
   })
 })
@@ -482,10 +569,10 @@ describe('serving order', () => {
     world(on, BANKS, 'desktop')
     await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
     const ui = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
-    expect(await find(ui, { text: /^\[cs\] $/ })).toBeDefined()   // served at boot, from the default bank
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    expect(await find(ui, { text: /^\[cs\] $/ })).toBeDefined()   // served once Claude works, from the default bank
     await $.prompt.submit({ text: '/biteq --lang ruby,js', wait: false } as never)
     expect(await find(ui, { text: /^\[cs\] $/ })).toBeUndefined()   // unanswered, and no longer selected: replaced
-    await $.turn.start({ text: 'go', turnId: 't1' })
     const served = await answerAll(ui, 3)
     // every selected question once; cs and python (not selected) never
     expect([...served].sort()).toEqual(['Pick j', 'Pick r', 'Pick s'])
@@ -632,6 +719,18 @@ describe('bank screen', () => {
     })
   }
 
+  test('each bank reads "js - 1 question"; the small banks (bash, git, sql, ts) are not offered', async ($, on) => {
+    const one = { prompt: 'Pick x', options: ['x1', 'x2'], answer: 0, explanation: 'because', practicality: 5 }
+    world(on, { ...BANKS, sql: [{ id: 'sql-a', ...one }], ts: [{ id: 'ts-a', ...one }] }, 'terminal')
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, /^banks$/)
+    expect(await find(ui, { type: 'Button', text: /^\[x\] cs - 2 questions$/ })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /^\[ \] js - 1 question$/ })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /\b(sql|ts)\b/ })).toBeUndefined()
+  })
+
   test('toggles are saved at once, and the last bank cannot be unchecked', async ($, on) => {
     const shared: Record<string, unknown> = {}
     const ui = await pane($, on, 'terminal', shared)
@@ -734,6 +833,14 @@ describe('/biteq commands', () => {
       expect(plain).toEqual({ text: 'fix /biteq-related bug' } as never)
     })
   }
+
+  test('the pane title carries the plugin version the session loaded', async ($, on) => {
+    const { opened } = world(on)
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    await $.prompt.submit({ text: '/biteq', wait: false } as never)
+    expect(opened.length).toBeGreaterThan(0)
+    expect(opened.every(o => (o as { title?: string }).title === 'biteq v9.9.9')).toBe(true)
+  })
 
   test('--lang is validated and remembered; langs marks the selection', async ($, on) => {
     world(on)

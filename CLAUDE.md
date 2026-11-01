@@ -18,15 +18,20 @@ between Claude Code releases; the engine's own declarations are the authority (s
   the status line, toasts or a separate window.
 - **Supported clients: the Claude CLI and the Claude desktop app's Code tab.** Anything else (VS Code, mobile,
   headless) gets the `FALLBACK` behaviour in `client.ts`; don't add work for it unless asked.
-- **When Claude is done, don't serve a new question** (unless the person opted out with "Always serve" or
-  `/biteq pause off`). They can finish the one on screen.
+- **When Claude isn't working, don't serve a new question** (unless the person opted out with "Always serve" or
+  `/biteq pause off`). That covers Claude being done and a new session where Claude hasn't run yet: the pane opens
+  resting ("Claude hasn't started yet. The next time Claude cooks, we will serve the question."). They can finish the question on screen; **Serve next question** serves one anyway.
 - **Questions are served as a mix of the selected banks only** (default `cs`, general CS). Unselected banks are
   never served; once every selected question is answered the pane says so and offers **Start over** (SUP-15).
-- **CLI keys:** answers are arrow-selectable buttons with `a`-`d`; Next/Skip/Banks/Close are a hint bar on the pane's
-  bottom row (`n: skip · z: banks · q: close`, `⏎ next` after answering) and are never in the focus ring.
+- **CLI keys:** answers are arrow-selectable buttons with `a`-`d`; Next/Skip/Banks are a hint bar on the pane's
+  bottom row (`n: skip · z: banks`, `⏎ next` after answering) and are never in the focus ring.
 - **Banks are switched in the pane** (`z`, any time): a screen of toggles, digits `1`-`9` in the CLI, saved as
   they change, at least one kept checked. `z` again goes back to the quiz.
-- **Desktop:** everything is clickable; action buttons are framed so they read as buttons; no key hints.
+- **No Close button or `q: close`** in the CLI or desktop pane: both panes have their own X, which closes it.
+- **Desktop:** everything is clickable; action buttons are bracketed in the BiteQ colour, `[ Skip ]`, so they read as
+  buttons; no key hints. The desktop app draws a Button's `label` string only: it ignores a Button's children,
+  `hover` styles and any colour or background, so the orange brackets are Text beside the Button (a click on a
+  bracket itself isn't a press). It takes clicks on the label only, so a frame drawn around a Button had a dead gap.
 
 ## Layout
 
@@ -104,7 +109,8 @@ claude -p "/biteq check" --plugin-dir ./plugins/biteq < /dev/null   # real engin
   Press Esc and confirm the prompt has the keyboard before typing a prompt, or the letters land on pane hotkeys
   (an `s` once switched on "Always serve" in the real store).
 - Desktop app sessions load the plugin when they start (from `CLAUDE_CODE_PLUGIN_DIRS`); open a new Code session
-  to see a change.
+  to see a change. The pane's title shows the version in `.claude-plugin/plugin.json` as that session loaded it
+  (`biteq v0.1.1`): bump the version to check a new session picked your change up.
 - Stats and config live in Claude Code's plugin store (`~/.claude/plugins/store/biteq_*.json`), shared by every
   session. Don't leave test runs' changes in a real store.
 
