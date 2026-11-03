@@ -104,15 +104,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #9"
   },
   {
-    "id": "cs-fcc-013",
-    "prompt": "Which of the following algorithms is used to find the shortest path between two points in a connected weighted graph?",
-    "options": ["Kruskal Algorithm", "Dijkstra's Algorithm", "Prims Algorithms", "Floyd's Tortoise-Hare Algorithm"],
-    "answer": 1,
-    "explanation": "Dijkstra's algorithm finds shortest paths from a source in a graph with non-negative weights. Kruskal's and Prim's build a minimum spanning tree, which is not the same as shortest paths. Floyd's tortoise and hare finds cycles in a linked list.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #13"
-  },
-  {
     "id": "cs-fcc-016",
     "prompt": "A stable sort keeps items that compare equal in their original order. Which of these sorting algorithms is stable?",
     "options": ["Merge Sort", "Selection sort", "Heap Sort", "Quick Sort"],
@@ -129,15 +120,6 @@
     "explanation": "Merge sort has a time complexity of O(nlogn) in all cases - best, average and worst.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #17"
-  },
-  {
-    "id": "cs-fcc-021",
-    "prompt": "Which term is used for removing elements from the front of the queue?",
-    "options": ["Peek.", "Dequeue.", "isFull.", "Enqueue."],
-    "answer": 1,
-    "explanation": "Dequeue is the term for removing elements from the front of the queue.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #21"
   },
   {
     "id": "cs-fcc-026",
@@ -176,15 +158,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #34"
   },
   {
-    "id": "cs-fcc-036",
-    "prompt": "Which operation is used to add an item to the back of the queue?",
-    "options": ["isFull", "Peek", "Dequeue", "Enqueue"],
-    "answer": 3,
-    "explanation": "Enqueue is the operation used to add an item to the back of the queue.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #36"
-  },
-  {
     "id": "cs-fcc-039",
     "prompt": "Which of the following is the most correct statement?",
     "options": ["All undirected graphs have topological ordering", "A cyclic graph also has topological ordering.", "Topological sort is just an another name for BFS", "Topological sort is possible only for a Directed Acyclic Graph"],
@@ -193,15 +166,6 @@
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #39",
     "comment": "improve the topological ordering in explanation."
-  },
-  {
-    "id": "cs-fcc-041",
-    "prompt": "Which of the following is true for Big O?",
-    "options": ["2*logn = O(n)", "n! = O(n)", "2^n = O(n)", "n^2 = O(n)"],
-    "answer": 0,
-    "explanation": "Big O notation describes the upper bound. The function n upper bounds the function 2*logn. However, it is not the tightest upper bound, and in general we always specify the tightest upper bound to quantify an algorithm.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #41"
   },
   {
     "id": "cs-fcc-042",
@@ -229,24 +193,6 @@
     "explanation": "Quick sort works by selecting one element (called “the pivot”) and finding the index where the pivot should end up in the sorted array.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #44"
-  },
-  {
-    "id": "cs-fcc-047",
-    "prompt": "Which one of these data structures follows the FIFO(First In First Out) method?",
-    "options": ["Queues", "Arrays", "Stacks", "Trees"],
-    "answer": 0,
-    "explanation": "A queue is defined as a linear data structure that is open at both ends and the operations are performed in First In First Out (FIFO) order.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #47"
-  },
-  {
-    "id": "cs-fcc-050",
-    "prompt": "What is Big O Notation?",
-    "options": ["A way to notate changes from the server.", "A way to notate the different elements in an array.", "A way to notate the different types in a file system.", "A way to measure the performance and efficiency of an algorithm."],
-    "answer": 3,
-    "explanation": "Big O notation is a way to measure the performance of an algorithm.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #50"
   },
   {
     "id": "cs-fcc-051",
@@ -285,78 +231,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #68"
   },
   {
-    "id": "cs-fcc-073",
-    "prompt": "Select the type of loop that repeats a sequence of instructions an unknown number of times while a condition is True.",
-    "options": ["While loop", "Infinite loop", "For loop", "Circular loop"],
-    "answer": 0,
-    "explanation": "While loops repeat a block of code an unknown number of times while a condition is True and they stop when the condition is False.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #73"
-  },
-  {
-    "id": "cs-fcc-093",
-    "prompt": "What does DOM stand for?",
-    "options": ["Documentary Object Mobile", "Direct Object Model", "Document Objective Model", "Document Object Model"],
-    "answer": 3,
-    "explanation": "DOM stands for Document Object Model: the browser's live tree of objects built from a page's HTML, one node per element, attribute and piece of text.\n\nIt matters because it is the API between JavaScript and the page. Everything that changes a page after it loads goes through it:\n\ndocument.querySelector('#total').textContent = '$42'   # change text\nbutton.addEventListener('click', save)                # react to the user\n\nFrameworks like React update the DOM for you, and its cost is why they batch and minimise DOM changes.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #93"
-  },
-  {
-    "id": "cs-fcc-095",
-    "prompt": "What color would rgb(255,255,255) give?",
-    "options": ["White", "Blue", "Red", "Black"],
-    "answer": 0,
-    "explanation": "The maximum value of 255 represents that the full amount of all colors and their full intensity is on display.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #95"
-  },
-  {
-    "id": "cs-fcc-100",
-    "prompt": "The process by which a function calls itself directly or indirectly is known as...",
-    "options": ["Decomposition", "Recursion", "Looping", "Encapsulation"],
-    "answer": 1,
-    "explanation": "Recursion is the process by which a function calls itself directly or indirectly during its execution. This works for problems that can be solved by solving smaller instances of the same problem.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #100"
-  },
-  {
-    "id": "cs-fcc-113",
-    "prompt": "What type of loop is used to repeat a block of code a known number of times?",
-    "options": ["Triangular loop", "While loop", "Infinite loop", "For loop"],
-    "answer": 3,
-    "explanation": "For loops repeat a block of code a known number of times, so we can use them when we know in advance how many iterations we need to run to complete a task.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #113"
-  },
-  {
-    "id": "cs-fcc-114",
-    "prompt": "Which one is NOT a standard HTTP response status code?",
-    "options": ["201", "504", "702", "403"],
-    "answer": 2,
-    "explanation": "HTTP response status codes are divided in five groups between 100-599.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #114"
-  },
-  {
-    "id": "cs-fcc-118",
-    "prompt": "A value passed to a function (or method) when calling the function is known as...",
-    "options": ["Return value", "Parameter", "Argument", "Class"],
-    "answer": 2,
-    "explanation": "An argument is a value passed to a function (or method) when the function or method is called.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #118"
-  },
-  {
-    "id": "cs-fcc-120",
-    "prompt": "What is Lossless compression?",
-    "options": ["a reverse algorithm", "a sorting algorithm", "an algorithm that converts wav files to mp3 files", "a compression algorithm that allows the original data to be perfectly reconstructed from the compressed data."],
-    "answer": 3,
-    "explanation": "Lossless compression is a compression algorithm that allows the original data to be perfectly reconstructed from the compressed data.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #120"
-  },
-  {
     "id": "cs-fcc-122",
     "prompt": "Which data structure is used for the implementation of a recursive algorithm?",
     "options": ["Linked list", "Stack", "Queue", "Tree"],
@@ -364,15 +238,6 @@
     "explanation": "In recursion, the nested function that is called later returns the value first, which is in the same nature as that of a stack (Last In First Out).",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #122"
-  },
-  {
-    "id": "cs-fcc-124",
-    "prompt": "Which one is NOT a real logic gate?",
-    "options": ["NAND", "XAND", "AND", "XNOR"],
-    "answer": 1,
-    "explanation": "The seven logic gates in boolean algebra are AND, OR, XOR, NOT, NAND, NOR, and XNOR.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #124"
   },
   {
     "id": "cs-fcc-127",
@@ -420,24 +285,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #136"
   },
   {
-    "id": "cs-fcc-137",
-    "prompt": "In Banker's algorithm, which part of the computer represents the 'Banker'?",
-    "options": ["RAM", "Register", "CPU", "Operating System"],
-    "answer": 3,
-    "explanation": "Banker's algorithm is a deadlock-avoidance algorithm: the operating system, like a banker, grants a process's request for resources only if every process can still finish afterwards.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #137"
-  },
-  {
-    "id": "cs-fcc-138",
-    "prompt": "What is Big Theta notation?",
-    "options": ["A tight bound: growth bounded above and below by the same function", "Only the lower bound of an algorithm's performance", "Only the upper bound of an algorithm's performance", "The average case for an algorithm's performance"],
-    "answer": 0,
-    "explanation": "Θ(f(n)) means the running time is both O(f(n)) and Ω(f(n)): it grows at the same rate as f(n), up to constant factors.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #138"
-  },
-  {
     "id": "cs-recursion-two-calls",
     "prompt": "How many calls does f(n) make in total, in Big-O?",
     "code": "def f(n):\n    if n <= 1:\n        return 1\n    return f(n - 1) + f(n - 1)",
@@ -455,60 +302,6 @@
     "explanation": "The worst case time complexity for linear search O(n) because we have to iterate through n elements. The worst case time complexity for binary search is O(logn) because it is a divide and conquer algorithm.",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #140"
-  },
-  {
-    "id": "cs-fcc-143",
-    "prompt": "How does the Bubble Sort algorithm work?",
-    "options": ["This algorithm traverses a list, compares adjacent values, and swaps them if they are not in the correct order.", "This algorithm divides the list into different buckets and sorts these buckets individually.", "This algorithm breaks down an unsorted list into two halves.", "This algorithm selects the current smallest element, and swaps it into place."],
-    "answer": 0,
-    "explanation": "The Bubble Sort algorithm traverses a list, compares adjacent values, and swaps them if they are not in the correct order.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #143"
-  },
-  {
-    "id": "cs-fcc-144",
-    "prompt": "What is the underlining process behind the Merge Sort algorithm?",
-    "options": ["backtracking", "graph traversal", "Recursion", "String matching and parsing"],
-    "answer": 2,
-    "explanation": "The Merge Sort algorithm works by recursively breaking down an unsorted list into two halves until it reaches a point where it can no longer be broken down.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #144"
-  },
-  {
-    "id": "cs-fcc-146",
-    "prompt": "What is the worst case time complexity for Bubble sort?",
-    "options": ["O(n^2)", "O(nlogn)", "O(n)", "O(logn)"],
-    "answer": 0,
-    "explanation": "Bubble sort has a worst case time complexity of O(n^2), which is slow compared to other sorting algorithms.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #146"
-  },
-  {
-    "id": "cs-fcc-148",
-    "prompt": "Which of the following time complexities is considered to be the fastest?",
-    "options": ["O(n)", "O(logn)", "O(nlogn)", "O(1)"],
-    "answer": 3,
-    "explanation": "O(1) is independent of input size so it remains in constant time regardless of the size of the input.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #148"
-  },
-  {
-    "id": "cs-fcc-149",
-    "prompt": "What is the worst case time complexity for Selection sort?",
-    "options": ["O(n*logn)", "O(n^3)", "O(n*n)", "O(n+k)"],
-    "answer": 2,
-    "explanation": "Selection sort has a worst case time complexity of O(n*n), due to the two nested loops.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #149"
-  },
-  {
-    "id": "cs-fcc-150",
-    "prompt": "Which of the following is a dynamically typed language?",
-    "options": ["Python", "C++", "Java", "C"],
-    "answer": 0,
-    "explanation": "Statically-typed languages like C, C++, and Java, perform type checking at compile time whereas dynamically-typed languages like Python and JavaScript  perform type checking at runtime.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #150"
   },
   {
     "id": "cs-fizzbuzz-order",
@@ -530,24 +323,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #152"
   },
   {
-    "id": "cs-fcc-154",
-    "prompt": "Which of the following examples shows the correct syntax for kebab case?",
-    "options": ["number*of*donuts", "number_of_donuts", "number-of-donuts", "numberOfDonuts"],
-    "answer": 2,
-    "explanation": "Kebab case writes words in lowercase, joined by hyphens: number-of-donuts.\n\nIt's used where names live in text rather than in code, because a hyphen is a minus sign in most languages: URLs and slugs (/blog/my-first-post), CSS classes (.nav-bar), HTML data attributes (data-user-id), command-line flags (--dry-run), npm package names and file names.\n\nnumber_of_donuts is snake case (Python, Ruby, SQL); numberOfDonuts is camel case (JavaScript, Java).",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #154"
-  },
-  {
-    "id": "cs-fcc-155",
-    "prompt": "Which of the following type of trees is also known as a 'large key' tree?",
-    "options": ["Ternary Tree", "Adelson-Velsky and Landis Tree (AVL Tree/Height balanced tree)", "Binary Search Tree", "B-Tree"],
-    "answer": 3,
-    "explanation": "A B-tree is a self-balancing search tree whose nodes each hold many sorted keys (often hundreds) and have many children, rather than one key and two children.\n\nSearching reads one node, finds where the key falls among its sorted keys, and follows that child down. Because each node branches so widely, the tree stays only a few levels deep, even for millions of keys.\n\nThat fits disks and SSDs, which read in blocks: one node is one block, so a lookup costs a handful of reads. That's why databases (indexes in PostgreSQL and MySQL) and file systems use B-trees.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #155"
-  },
-  {
     "id": "cs-fcc-156",
     "prompt": "Which data structure is used to implement an auto-complete feature?",
     "options": ["Trie", "Stack", "Linked List", "Tree"],
@@ -557,24 +332,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #156"
   },
   {
-    "id": "cs-fcc-157",
-    "prompt": "Which of the following tree traversal algorithms has an O(1) space complexity?",
-    "options": ["Dijkstra's algorithm", "Morris algorithm", "Bellman-Ford algorithm", "Floyd Warshall algorithm"],
-    "answer": 1,
-    "explanation": "Morris traversal is a tree traversal algorithm that does not employ the use of recursion or a stack. In this traversal, links are created as successors and nodes are printed using these links.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #157"
-  },
-  {
-    "id": "cs-fcc-159",
-    "prompt": "In the RotateLeft or RotateRight function in an AVL tree, when do we update the root of the tree?",
-    "options": ["when the node becomes a leaf of the tree", "when the node becomes nullptr", "when the Parent of the node becomes nullptr", "when the height balance is restored"],
-    "answer": 2,
-    "explanation": "When the parent of the node becomes nullptr, this means the  node is the root of the tree.  So when we make a right or left rotation, we need to update the root of the tree with the appropriate child of the node.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #159"
-  },
-  {
     "id": "cs-fcc-161",
     "prompt": "What is a data structure that consists of nodes, where each node has data and a reference to the next node in the sequence?",
     "options": ["Vector", "Linked List", "Heap", "Stack"],
@@ -582,42 +339,6 @@
     "explanation": "A Linked List contains nodes and each node has data and a reference to next node so that it can have access to the data of its next node and we can get the information of all nodes by iterating the node until it reaches nullptr.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #161"
-  },
-  {
-    "id": "cs-fcc-162",
-    "prompt": "What is the basis for a Red-Black tree?",
-    "options": ["AVL Tree", "Linked List", "Red-Black Graphs", "2-3-4 tree"],
-    "answer": 3,
-    "explanation": "A red-black tree is a self-balancing binary search tree. Each node is coloured red or black, and two rules keep it balanced: a red node never has a red child, and every path from the root down to a leaf passes the same number of black nodes. So the longest path is at most twice the shortest, and the height stays O(log n).\n\nAfter an insert or delete breaks a rule, the tree recolours nodes and rotates a few of them to restore it.\n\nIt is a binary encoding of a 2-3-4 tree: a black node together with its red children forms one 2-3-4 node holding up to 3 keys. Java's TreeMap and C++'s std::map are red-black trees.",
-    "practicality": 1,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #162"
-  },
-  {
-    "id": "cs-fcc-163",
-    "prompt": "What are the space and time complexities for Red-Black Trees where n are the number of entries?",
-    "options": ["O(nlogn), O(1)", "O(n), O(logn)", "O(logn), O(logn)", "O(n), O(n^2)"],
-    "answer": 1,
-    "explanation": "A red-black tree is a self-balancing binary search tree: every node is red or black, a red node has no red child, and every root-to-leaf path has the same number of black nodes. Those rules keep its height within about 2·log n.\n\nSpace: one node per entry, so O(n).\nTime: search walks one root-to-leaf path, O(log n). Insert and delete also walk one path and then fix the colours with at most a few rotations, so they're O(log n) too.\n\nAn unbalanced binary search tree can degrade to a linked list and O(n) per operation; the colour rules are what prevent that.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #163"
-  },
-  {
-    "id": "cs-fcc-164",
-    "prompt": "Which of the following algorithms is used in Identifying a circular linked list?",
-    "options": ["Dijkstra's Algorithm", "Floyd's Tortoise-Hare Algorithm", "Greedy Algorithms", "Linear Search Algorithm"],
-    "answer": 1,
-    "explanation": "Floyd's Tortoise-Hare Algorithm is for finding a circular Linked list. The Hare is a pointer which jumps 2 nodes while the Tortoise moves one node at a time. In case they both meet, we get a circular linked list. If any of them becomes nullptr, then there is no Circular Linked list.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #164"
-  },
-  {
-    "id": "cs-fcc-166",
-    "prompt": "In the context of machine learning, what is the bias-variance trade-off?",
-    "options": ["The trade-off between precision and recall in classification.", "A technique to reduce overfitting in neural networks.", "The balance between underfitting (high bias) and overfitting (high variance) in a model.", "The relationship between accuracy and complexity in algorithms."],
-    "answer": 2,
-    "explanation": "A model underfits when it's too simple to capture the pattern: it does badly even on its training data (high bias). It overfits when it memorises the training data, noise included: it scores well there but badly on new data (high variance).\n\nAnalogy: studying for an exam. Underfitting is skimming the chapter titles; you fail the practice test and the real one. Overfitting is memorising the practice test's answers; you ace it, then fail the real exam with different questions.\n\nMaking a model more complex lowers bias but raises variance, so you look for the point where error on held-out data (a validation set) is lowest. It's why you never judge a model by its training score alone.",
-    "practicality": 2,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #166"
   },
   {
     "id": "cs-fcc-168",
@@ -647,24 +368,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #172"
   },
   {
-    "id": "cs-fcc-175",
-    "prompt": "What is a key characteristic of a complete binary tree?",
-    "options": ["All nodes have exactly two children", "Every level is full except possibly the last, which fills from the left", "The last level may have gaps between nodes", "It has the maximum number of nodes for its height"],
-    "answer": 1,
-    "explanation": "A complete binary tree fills level by level, left to right, which is why a heap can be stored in a plain array. A tree with the maximum number of nodes for its height is a perfect binary tree.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #175"
-  },
-  {
-    "id": "cs-fcc-177",
-    "prompt": "Which data structure allows for efficient retrieval of data based on a key?",
-    "options": ["Hash Table", "Linked List", "Queue", "Binary Tree"],
-    "answer": 0,
-    "explanation": "A hash table allows for efficient data retrieval based on a key through the use of a hash function.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #177"
-  },
-  {
     "id": "cs-fcc-179",
     "prompt": "What is load balancing?",
     "options": ["Removing excess load from a server", "An Internet Protocol", "Distributing network traffic across multiple servers", "Allocating more resources to a single server"],
@@ -672,42 +375,6 @@
     "explanation": "Load balancing is a technique used in computing and networking to distribute incoming network traffic or workload across multiple servers, devices, or resources. The primary goal of load balancing is to optimize resource utilization, maximize throughput, minimize response time, and ensure high availability of services.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #179"
-  },
-  {
-    "id": "cs-fcc-181",
-    "prompt": "Which data structure uses the LIFO (Last In, First Out) principle?",
-    "options": ["Stack", "Hash Table", "Linked List", "Queue"],
-    "answer": 0,
-    "explanation": "A stack is a data structure that follows the Last In, First Out (LIFO) principle, meaning the last element added to the stack will be the first one to be removed.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #181"
-  },
-  {
-    "id": "cs-fcc-182",
-    "prompt": "In object-oriented programming, what is encapsulation?",
-    "options": ["The ability to define multiple methods with the same name", "The concept of wrapping data and methods that operate on the data within a single unit or class", "The ability of a function to call itself", "The concept of using symbols to represent operations and data"],
-    "answer": 1,
-    "explanation": "Encapsulation is an object-oriented programming principle that bundles the data (attributes) and methods (functions) that operate on the data into a single unit or class, and restricts direct access to some of the object's components.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #182"
-  },
-  {
-    "id": "cs-fcc-183",
-    "prompt": "What is polymorphism in the context of object-oriented programming?",
-    "options": ["The ability of different objects to respond uniquely to the same method call", "The process of defining a new class based on an existing class", "The concept of hiding the internal state of an object", "The ability to copy an object's state into a new object"],
-    "answer": 0,
-    "explanation": "Polymorphism is an object-oriented programming principle that allows objects of different classes to be treated as objects of a common super class. It enables a single method to behave differently based on the object that it is acting upon.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #183"
-  },
-  {
-    "id": "cs-fcc-184",
-    "prompt": "What does a compiler do?",
-    "options": ["Manages memory allocation", "Debugs code", "Translates high-level code to machine code", "Optimizes performance"],
-    "answer": 2,
-    "explanation": "A compiler is a utility program that transforms your code into executable machine code files.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #184"
   },
   {
     "id": "cs-http-401-vs-403",
@@ -766,5 +433,161 @@
     "answer": 1,
     "explanation": "A cache stampede is when a heavily requested key's TTL (time to live) runs out and many requests miss at once. Every one of them queries the database to rebuild the same entry, and that pile-up is the CPU spike. A lock scoped to that key lets one request rebuild it while the rest wait and read from the cache again.\n\nWithout a lock:\n  GET product:99 -> nil\n    # TTL ran out, the key is gone\n  10,000 requests miss\n    # each one queries PostgreSQL for product 99\n\nWith a lock on product 99:\n  request 1: takes lock:product:99\n    # queries PostgreSQL, then SETs product:99\n  requests 2..n: lock is taken\n    # sleep ~50ms, then GET product:99 again (now a hit)\n  requests for other products\n    # use other lock keys, so they are not held up\n\nSimilar names, different problems:\n  avalanche\n    # many keys expire together; jittered TTLs fix that,\n    # but one hot key still stampedes\n  penetration\n    # keys that exist nowhere, cache or database; a Bloom filter\n    # fixes that, but product 99 does exist\n\nRead replicas spread the load but do not stop thousands of identical queries; the lock does.",
     "practicality": 6
+  },
+  {
+    "id": "cs-cache-aside-stale-write",
+    "title": "Stale write after DEL",
+    "prompt": "Thread A updates the row, then deletes `product:99` from the cache. Slow thread B read the old row before the update and fills the cache after the delete. The cache now serves old data. What consistently stops this?",
+    "code": "B: read product 99 from DB       # sees version 7\nA: UPDATE product 99             # now version 8\nA: DEL product:99\nB: SET product:99 = version 7    # stale data is back in the cache",
+    "options": ["Shorten the TTL so stale entries expire sooner","Delete the key a second time after a short delay","Store a version with each entry and reject a cache write older than what is already there","Read from a database replica so reads never see old data"],
+    "answer": 2,
+    "explanation": "A plain DEL leaves nothing to compare against, so B's late SET wins. Give every entry a version from the database and make the cache fill conditional: write only if the incoming version is newer than what is stored.\n\nA: UPDATE product 99 -> version 8\nA: SET product:99 = tombstone v8   # instead of DEL, so a version exists to compare against\nB: SET product:99 = old data v7    # compare-and-set sees 7 < 8 and rejects it\nB: next read misses and refills from the database at v8\n\nIn Redis, do the compare and the SET in one Lua script, or the check itself can race.\n\nThe other options only narrow the window:\n  delete again after a delay\n    # a mitigation, not a fix: it works only if B finishes before the second delete,\n    # and a slower B (a GC pause, a slow query) still writes stale data afterwards\n  shorter TTL\n    # the stale entry still lives until it expires\n  read replicas\n    # replicas lag the primary, so B reads old data more often, not less",
+    "practicality": 6
+  },
+  {
+    "id": "cs-shard-double-n",
+    "title": "Doubling the shards",
+    "prompt": "Posts are sharded by the rule below. A celebrity's new post draws 90% of all reads, and every one lands on shard 3 of 8. The team doubles the cluster to 16 shards. Where does the celebrity's traffic go afterwards?",
+    "code": "shard = hash(user_id) % N",
+    "options": ["It spreads across all 16 shards","It splits evenly across two shards","It drops, because each shard now holds less data","It still lands on one shard"],
+    "answer": 3,
+    "explanation": "The shard comes from user_id alone, so every post and every read for the celebrity computes the same hash and goes to the same shard, however many shards there are. Changing N can move them to a different shard, but never split them across several.\n\nuser_id = 1000003           # the celebrity\nhash(user_id) = 1000003     # a toy hash, to keep the numbers visible\n1000003 % 8  = 3            # today: shard 3 of 8\n1000003 % 16 = 3            # after doubling: shard 3 of 16, one shard still takes everything\n                            # (another hash could give 11 instead, but it is always exactly one)\n\nConsistent hashing has the same limit: one key still maps to one shard.\n\nWhat helps without changing the key:\n  cache the hot post (a CDN or Redis)\n    # and copy that key across a few cache nodes, so most reads never reach the shard\n  add read replicas to the hot shard\n    # spreads the reads across copies of the same data",
+    "practicality": 5
+  },
+  {
+    "id": "cs-dns-ttl-lowered-late",
+    "title": "Lowering a TTL too late",
+    "prompt": "You lower the TTL on `www.example.com` from 24h to 60s one hour before a migration, then switch the record to the new IP. Some users keep reaching the old IP for up to 23 hours afterwards. Why?",
+    "code": "10:00  a resolver caches www.example.com = 203.0.113.10 (TTL 24h)\n12:00  you lower the TTL to 60s\n13:00  you switch the record to 198.51.100.20\n13:05  that resolver still answers 203.0.113.10",
+    "options": ["Browsers cache DNS answers for 24h whatever the TTL says","DNS changes spread outward from the root servers, which takes up to 24h","A resolver that already cached the old record keeps it until its old 24h TTL runs out","Your authoritative server keeps serving the old IP until its own cache expires"],
+    "answer": 2,
+    "explanation": "Updating the TTL does not push it to resolvers that already cached the record. They still hold the old copy with the old 24h countdown, and they won't see the 60s value until it runs out. A TTL is a countdown that starts when a resolver fetches the record, using the TTL it was given at that moment, so lowering a TTL only helps once the old TTL has expired everywhere. Lower it at least one full old TTL before the migration.\n\n10:00  cached with TTL 24h          # expires tomorrow 10:00, whatever you change now\n12:00  you lower the TTL to 60s     # applies only to answers fetched from now on\n13:00  you switch the IP            # that resolver still holds the old one\n10:00 next day: its copy expires    # 21 hours after cutover; one cached at 11:59 would hold it until 11:59 next day, 23h after\n\nCommon wrong ideas:\n  authoritative servers\n    # they answer from the zone and don't cache it, so they switch the moment you change it\n  the plan\n    # lower the TTL 24h ahead, migrate, then raise it again once the new IP is stable",
+    "practicality": 8
+  },
+  {
+    "id": "cs-dns-resolution-order",
+    "title": "Cold-cache DNS lookup",
+    "prompt": "A recursive resolver with an empty cache looks up `www.example.com`. Which sequence of servers does it ask, and in what order?",
+    "options": ["The example.com server, then the .com server, then a root server","A .com server, then a root server, then the example.com server","A root server, which knows every domain and returns the IP directly","A root server, then a .com server, then the example.com server"],
+    "answer": 3,
+    "explanation": "The resolver starts at the top and gets pointed one level down at each step. A root server doesn't know the IP, only who runs .com. The .com server doesn't know it either, only who runs example.com. Only that last server, the domain's authoritative server, returns the real answer.\n\nroot server         -> \"ask the .com servers\" (a.gtld-servers.net ...)    # a referral, not an answer\n.com server         -> \"ask hera.ns.cloudflare.com ...\" for example.com   # another referral\nexample.com server  -> www.example.com A 172.66.147.243                  # the actual answer\n\nOnce cached, later lookups skip the top levels: the resolver keeps each referral for its own TTL, so a warm cache goes straight to the example.com server, or answers locally.",
+    "practicality": 5
+  },
+  {
+    "id": "cs-post-idempotency-key",
+    "title": "Retrying a timed-out POST",
+    "prompt": "A client times out on `POST /charge` and can't tell whether the server processed it. `GET`, `PUT` and `DELETE` can be retried automatically, but a retried `POST` could charge the customer twice. What makes the retry safe?",
+    "code": "POST /charge\n{ \"amount\": 4200, \"card\": \"tok_123\" }\n-> no response (timeout)",
+    "options": ["Retry with exponential backoff and jitter","Put a fresh request ID on each attempt and log it on the server","Send Cache-Control: no-store so the retry always reaches the server","Send an Idempotency-Key created once per charge and reused on every retry; the server stores the first result and replays it"],
+    "answer": 3,
+    "explanation": "A timeout doesn't tell you whether the charge ran, so retrying a non-idempotent POST blindly can create it twice. GET, HEAD, PUT, DELETE and OPTIONS are idempotent by spec, so clients and proxies may retry them. POST is not. An Idempotency-Key makes it behave like one: the client creates the key once per charge and sends the same key on every retry, and the server stores the key with the first outcome and returns that stored result when it sees the key again.\n\nattempt 1: POST /charge  Idempotency-Key: k-81f3   # server charges, stores k-81f3 -> 201 ch_1; reply is lost\nattempt 2: POST /charge  Idempotency-Key: k-81f3   # server finds k-81f3, returns 201 ch_1; no second charge\nattempt 3 with a new key                           # looks like a new charge, so it charges again\n\nBackoff only spaces retries out and doesn't stop duplicates. A fresh request ID per attempt is good for tracing, but the server can't tell the attempts are the same charge.",
+    "practicality": 9
+  },
+  {
+    "id": "cs-feed-fanout-celebrity",
+    "title": "Celebrity fan-out",
+    "prompt": "A user with 20 million followers posts on a fan-out-on-write system, and the write queues back up. What is the best fix? Fan-out-on-write copies each new post into every follower's stored feed when it is published. Fan-out-on-read builds a feed from the accounts you follow when it is opened.",
+    "code": "normal user posts (300 followers)   -> 300 feed writes\ncelebrity posts (20M followers)     -> 20,000,000 feed writes",
+    "options": ["Keep fan-out-on-write for everyone and add more queue partitions","Switch every user to fan-out-on-read, building each feed when it is opened","Keep fan-out-on-write for normal accounts, and merge huge accounts' posts into the feed at read time","Publish one global feed to a CDN and personalize it on the client"],
+    "answer": 2,
+    "explanation": "A post's write cost is the author's follower count, while a feed's read cost is only the number of accounts the reader follows. Fan-out-on-write keeps reads cheap, but one celebrity post becomes 20 million writes. So skip the fan-out for the few huge accounts and keep it for everyone else. Each time a feed is loaded, merge the reader's stored feed with the latest posts from the huge accounts they follow. The celebrity's post is never copied into each follower's feed.\n\nnormal user posts (300 followers)   -> 300 writes        # fan-out-on-write, cheap\ncelebrity posts (20M followers)     -> 1 write           # stored once, in their own post list\nreader opens feed                   -> 1 feed lookup + latest posts of a handful of followed celebrities, merged by time\n                                                         # repeated on every load, but a reader follows few huge accounts\n\nThe other options fail for specific reasons:\n  more partitions\n    # spreads the 20M writes out but does not shrink them; the cost still grows with followers\n  fan-out-on-read for everyone\n    # feeds are opened far more often than people post, and every open queries and merges hundreds of accounts\n  one global feed on a CDN\n    # a feed differs per reader, so one shared copy cannot hold it",
+    "practicality": 5
+  },
+  {
+    "id": "cs-n-plus-one",
+    "title": "One query per row",
+    "prompt": "This page shows 50 posts with their authors. It is slow. How many queries run, and what is the fix?",
+    "code": "posts = query(\"SELECT id, title, author_id FROM posts LIMIT 50\")\nfor post in posts:\n    author = query(\"SELECT name FROM users WHERE id = ?\", post.author_id)\n    print(post.title, author.name)",
+    "options": ["50 queries; add an index on author_id","51 queries; raise the connection pool size so they run in parallel","51 queries; fetch all the authors in one query, with a join or WHERE id IN (...)","51 queries; show 10 posts per page instead of 50"],
+    "answer": 2,
+    "explanation": "The loop runs a query for every post, on top of the one that fetched the posts: 1 + 50 = 51 round trips. Each query is fast, but the round trips add up, and the count grows with the page size. Fetch all the authors in one query, then match them to the posts in memory, or use a join. ORMs hide this: a lazily loaded relation looks like a plain attribute but runs a query.\n\nSELECT id, title, author_id FROM posts LIMIT 50    # 1 query\nSELECT name FROM users WHERE id = 7                # post 1's author\nSELECT name FROM users WHERE id = 3                # post 2's author ... 50 times\n\nfixed:\nSELECT id, title, author_id FROM posts LIMIT 50\nSELECT id, name FROM users WHERE id IN (7, 3, ...)    # 2 queries in total\n\nThe other fixes leave the problem in place:\n  an index\n    # each lookup is faster, but there are still 50 of them\n  a bigger pool\n    # they run in parallel, but it is still 51 queries\n  fewer posts per page\n    # 11 queries instead of 51, and the same shape",
+    "practicality": 8
+  },
+  {
+    "id": "cs-db-index-email",
+    "title": "Adding an index",
+    "prompt": "A `users` table has 10 million rows. This query takes about 2 seconds, and `EXPLAIN` shows a full table scan. What does adding an index on `email` change, and what does it cost?",
+    "code": "SELECT * FROM users WHERE email = 'ada@example.com';",
+    "options": ["Rows are re-sorted on disk by email, so every other query on the table gets faster too, at no cost","The result is cached after the first run, so repeat queries are instant, at the cost of memory","The database jumps straight to the matching row, and the index is built once and never needs updating afterwards","The database walks a B-tree to the row instead of checking every row; it costs disk space and makes every INSERT and UPDATE of that column slower"],
+    "answer": 3,
+    "explanation": "Without an index, the database reads every row and compares each email, so the work grows with the table. An index is a separate sorted structure (usually a B-tree) on email, so it can walk a few levels straight to the matching row. The price is that every write also has to update the index, and the index takes up space, so index the columns you filter and join on, not everything.\n\nno index      -> read all 10,000,000 rows, compare each email       # grows with the table\nwith index    -> walk the B-tree: about 4 page reads to the row     # grows very slowly\nINSERT a user -> write the row AND update the email index           # the cost\n\nLookups through a B-tree are O(log n), not O(1). A hash index is O(1) for exact matches, but it cannot do ranges or ORDER BY, which is why the B-tree is the usual default.\n\nAn index isn't always used. WHERE LOWER(email) = ... and LIKE '%example.com' can't use a plain index on email, so they still scan.",
+    "practicality": 8
+  },
+  {
+    "id": "cs-hash-mutable-key",
+    "title": "Changing a key after inserting it",
+    "prompt": "A `Point` hashes and compares equal by its `x` and `y` values. What do the last two lookups return?",
+    "code": "key = Point(1, 2)\ntable[key] = \"a\"\nkey.x = 5\ntable.get(key)\ntable.get(Point(1, 2))",
+    "options": ["\"a\" and \"a\"","\"a\" and not found","not found and \"a\"","not found and not found"],
+    "answer": 3,
+    "explanation": "The table filed the entry in a slot chosen by the hash of the key at insert time, and it stores a reference to your object, not a copy. Changing key.x doesn't move the entry, but it does change the stored key. Both lookups then fail, for different reasons.\n\ntable[key] = \"a\"          # hash(1, 2) picks slot H1; the entry holds a reference to key\nkey.x = 5                 # the stored key is now (5, 2), but the entry stays in slot H1\ntable.get(key)            # hash(5, 2) picks a different slot H2: nothing there\ntable.get(Point(1, 2))    # hash(1, 2) picks slot H1: found, but the stored key is now (5, 2), which does not equal (1, 2)\n\nSo the first lookup goes to the wrong slot, and the second goes to the right slot but the key no longer matches. Even a fresh Point(5, 2) fails, because it hashes to H2. The entry is still in the table, and it only turns up if you iterate over it.\n\nUse immutable values as keys, or never change the fields that feed the hash once a key is in a table.",
+    "practicality": 8
+  },
+  {
+    "id": "cs-array-remove-front",
+    "title": "Draining a queue stored in an array",
+    "prompt": "This loop drains a queue that is stored in an array. What is the total time for n items?",
+    "code": "queue = [item_1, item_2, ..., item_n]\nwhile queue is not empty:\n    item = queue.remove_first()\n    process(item)",
+    "options": ["O(n), because each removal is a single step","O(n log n), because the array reorders itself after each removal","O(n²), because each removal shifts every remaining item one place left","O(n), because the array gets shorter, so later removals cost less"],
+    "answer": 2,
+    "explanation": "Removing the first item from an array isn't free. The items sit in consecutive slots, so every remaining item has to move one slot left to close the gap. That's n-1 moves for the first removal, n-2 for the second, and so on: (n-1) + (n-2) + ... + 1, which adds up to about n²/2 moves, so O(n²). It looks like it should be O(n) because the array shrinks, but the shrinking only halves the total. It doesn't change the growth: double n and the work quadruples.\n\n[a, b, c, d]\nremove_first -> [b, c, d]    # b, c, d each moved left: 3 moves\nremove_first -> [c, d]       # 2 moves\nremove_first -> [d]          # 1 move\nn = 100,000                  # about 5,000,000,000 moves in total\n\nWays to avoid it:\n  a deque (double-ended queue)\n    # removes from the front in O(1)\n  an index that moves forward (i += 1)\n    # instead of removing anything\n  removing from the end\n    # already O(1), because nothing has to shift",
+    "practicality": 8
+  },
+  {
+    "id": "cs-top-k-min-heap",
+    "title": "Top 10 from a stream",
+    "prompt": "100 million numbers arrive one at a time, and you can't keep them all in memory. You need the 10 largest. Which approach works?",
+    "options": ["Sort the whole stream, then take the last 10","Put every number in a max-heap, then pop 10 times","Keep a max-heap of size 10, so the largest number is always on top","Keep a min-heap of size 10, and replace its smallest number whenever a bigger one arrives"],
+    "answer": 3,
+    "explanation": "You only need to remember the 10 best numbers so far. For each new number the question is \"does it beat the weakest of my current 10?\", and the weakest is the smallest. A min-heap keeps its smallest number on top, ready to compare and replace. It looks backwards to use a min-heap to find the largest, but the heap's job is to guard the cut-off, not to hold the best.\n\nheap = min-heap holding the first 10 numbers\nfor each number x that arrives:\n    if x > heap.smallest:          # beats the weakest of the current top 10\n        heap.replace_smallest(x)   # costs log 10, a handful of steps\n# at the end the heap holds the 10 largest\n\nEach number costs one comparison and at most one tiny replacement, so the total is about O(n) time and only 10 numbers of memory. Sorting everything is O(n log n) time and O(n) memory.\n\nA max-heap of 10 puts the largest number on top, which is the one you don't need. To decide whether a new number belongs, you'd compare against the smallest, and that one is buried. The natural rule with a max-heap (\"replace the top when a smaller one arrives\") keeps the 10 smallest instead.",
+    "practicality": 7
+  },
+  {
+    "id": "cs-list-remove-while-looping",
+    "title": "Removing while looping",
+    "prompt": "The loop steps through the list by position (0, 1, 2, ...). What does it print?",
+    "code": "nums = [2, 4, 6]\nfor x in nums:\n    if x is even:\n        nums.remove(x)\nprint(nums)",
+    "options": ["[4]","[]","[4, 6]","An error, because the list changed during the loop"],
+    "answer": 0,
+    "explanation": "Removing an item shifts everything after it one place left, but the loop still moves on to the next position. So the item that slid into the gap is never looked at.\n\nposition 0: x = 2   # even, removed; the list is now [4, 6]\nposition 1: x = 6   # 4 slid into position 0, so position 1 is now 6; even, removed; the list is now [4]\nposition 2:         # past the end, so the loop stops. 4 was never checked.\n\nFix it by building a new list ([x for x in nums if x is odd]), looping over a copy, or looping backwards. Some languages throw an error here instead, but either way: don't change a list while you loop over it.",
+    "practicality": 8
+  },
+  {
+    "id": "cs-heap-array-not-sorted",
+    "title": "A heap is not sorted",
+    "prompt": "A min-heap is stored level by level in an array: the children of index i are at 2i+1 and 2i+2. Which statement is true of this array?",
+    "code": "[1, 3, 2, 7, 4]",
+    "options": ["It is not a valid heap, because it is not sorted","It is a valid heap, and reading it left to right gives sorted order","It is a valid heap, and the second smallest value is always at index 1","It is a valid min-heap, but not sorted: only each parent is smaller than its children"],
+    "answer": 3,
+    "explanation": "A heap only promises one thing: every parent is no bigger than its children. The two children of a node have no order between them, so 3 can sit before 2. Here the second smallest value is 2, at index 2, not index 1.\n\n        1\n      /   \\\n     3     2        # siblings: no order between them\n    / \\\n   7   4\n\nThe smallest is always at the root, but nothing else is in order. To get sorted values you pop repeatedly (1, 2, 3, 4, 7), which is how heap sort works. A binary search tree is different: there, left < node < right.",
+    "practicality": 6
+  },
+  {
+    "id": "cs-hash-no-range",
+    "title": "Ranges in a hash map",
+    "prompt": "Users are stored in a hash map keyed by username. How do you find every username from \"ada\" to \"adz\" alphabetically?",
+    "options": ["Ask the map for the keys between \"ada\" and \"adz\", since it keeps its keys in order","Hash \"ada\" and \"adz\" and read the slots between them","Scan every entry, or keep a sorted structure (a sorted array or a B-tree) and walk from \"ada\" to \"adz\"","Make the table bigger so alphabetically close names land in nearby slots"],
+    "answer": 2,
+    "explanation": "A hash function scatters keys on purpose. \"ada\" and \"adb\" are next to each other alphabetically but land in unrelated slots. A hash map is excellent at \"find this exact key\" and has no idea which keys sit between two others, so the only way to get a range from it is to check every entry, which gets slower as the map grows.\n\nslot(\"ada\") -> 9    slot(\"adb\") -> 0    slot(\"adc\") -> 3    slot(\"add\") -> 7    # for example: no pattern\n\nA sorted structure keeps neighbours together. With a sorted array, binary search to \"ada\" and walk until you pass \"adz\", so you only touch the names in the range. A B-tree does the same, which is why databases use B-tree indexes for BETWEEN and ORDER BY.",
+    "practicality": 7
+  },
+  {
+    "id": "cs-offset-deep-pages",
+    "title": "Deep pages",
+    "prompt": "An API lists orders 20 at a time, sorted by the indexed `id`. Page 1 returns in 2 ms. How does the page at offset 1,000,000 compare, and why?",
+    "code": "SELECT * FROM orders ORDER BY id LIMIT 20 OFFSET 1000000",
+    "options": ["Much slower: the database still walks past the first 1,000,000 rows and throws them away","About the same: the index jumps straight to row 1,000,000","Slightly slower, because the larger number takes longer to parse","Faster: fewer rows are left after the offset"],
+    "answer": 0,
+    "explanation": "OFFSET n doesn't jump to row n. The database has to count its way past n rows to find where the page starts, so the cost grows with how deep you go: page 1 reads 20 rows, but the page at offset 1,000,000 reads 1,000,020 rows and returns only the last 20. The fix is keyset pagination: remember the last id you returned and ask for the rows after it, which uses the index to start at the right place.\n\npage 1:              LIMIT 20 OFFSET 0         # reads 20 rows\noffset 1,000,000:    LIMIT 20 OFFSET 1000000   # reads 1,000,020 rows, throws away a million\n\nkeyset:\nSELECT * FROM orders WHERE id > 1000000 ORDER BY id LIMIT 20    # starts at the right place: same cost on every page\n\nThe trade-off: keyset pagination can't jump straight to \"page 37\", only to the next and previous pages, and it needs a unique, ordered column to key on.",
+    "practicality": 8
+  },
+  {
+    "id": "cs-backoff-jitter",
+    "title": "Backoff without jitter",
+    "prompt": "A service is down for 10 seconds. 10,000 clients each retry with exponential backoff (wait 1s, 2s, 4s, 8s...). The service comes back and falls over again within seconds. What is missing?",
+    "options": ["Random jitter: clients that failed together all retry at the same instants","A longer maximum backoff","More retries per client","A shorter timeout on each request"],
+    "answer": 0,
+    "explanation": "All 10,000 clients failed at the same moment, so exponential backoff gives them all the same schedule. Backoff spaces the waves out, but it doesn't spread the clients within a wave: every client retries at 1s, 3s, 7s and 15s. The service comes back at 10s, and the next wave, at 15s, is all 10,000 requests in a single second. Adding random jitter, so each client waits a random time up to its backoff value, spreads the clients across the whole window.\n\nno jitter:    10,000 requests at 1s, 3s, 7s, 15s   # the wave at 15s hits the recovered service all at once\nfull jitter:  retries spread over each window      # roughly 1,500 requests a second at worst after recovery\n\nwait = random(0, backoff)    # instead of exactly backoff\n\nThe other options keep the clients in lockstep. More retries or a longer maximum backoff just make the waves bigger and later, and a shorter timeout doesn't change when they retry.",
+    "practicality": 8
   }
 ]
