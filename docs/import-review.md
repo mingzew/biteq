@@ -20,50 +20,9 @@ entry for each changed question whenever you import (see "Importing questions" i
 | lydiahallie/javascript-questions | a8b427b9f7f9 | `js-lydia-<n>` | 2026-10-14 |
 | freeCodeCamp/Developer_Quiz_Site | d71a60ba0811 | `python-fcc-<n>`, `cs-fcc-<n>`, `js-fcc-<n>` | 2026-10-18 |
 
-## 1. The source marked the wrong answer (8)
+## 1. The source marked the wrong answer (7)
 
 I changed which answer is correct. Check these first.
-
-### `python-fcc-010` (python-quiz.ts #10)
-
-- [ ] Checked by us
-
-*Why:* 'free' + 'code camp' is 'freecode camp': + adds no space.
-
-*Explanation:* rewritten · *Practicality:* 7
-
-**Original**
-
-In Python, if we have word ='free' and phrase='code camp', then what is the result here: print(word + phrase)?
-
-- ✅ free code camp
-- ▫️ free camp code
-- ▫️ free + code camp
-- ▫️ code camp free
-
-> To concatenate two strings, you can use the + operator.
-
-**Ours**
-
-What does this print?
-
-```
-word = 'free'
-phrase = 'code camp'
-print(word + phrase)
-```
-
-- ▫️ free + code camp
-- ✅ freecode camp
-- ▫️ free code camp
-- ▫️ code campfree
-
-> + joins strings exactly as they are, without adding a space. 'free' has no trailing space, so the result is 'freecode camp'.
-> 
-> 'free' + ' ' + 'code camp'   # 'free code camp'
-> f'{word} {phrase}'           # same, with an f-string
-
----
 
 ### `python-fcc-121` (python-quiz.ts #121)
 
@@ -289,41 +248,9 @@ How do you add two classes to an element at once?
 
 ---
 
-## 2. A "wrong" option was also correct (13)
+## 2. A "wrong" option was also correct (12)
 
 I replaced that option (or narrowed the prompt) so exactly one answer is right.
-
-### `python-fcc-155` (python-quiz.ts #155)
-
-- [ ] Checked by us
-
-*Why:* math.pow(9, 3) is also NOT 5 to the 9th, so two options were correct.
-
-*Explanation:* rewritten · *Practicality:* 5
-
-**Original**
-
-In Python, which of the following is NOT the right way to find 5 raised to the power of 9?
-
-- ✅ print(deg(5,9))
-- ▫️ print(5**9)
-- ▫️ print(pow(5,9))
-- ▫️ print(math.pow(9, 3))
-
-> In Python, the '**' operator, the built-in function pow() and the math.pow() function are three different ways to get the exponent to the base.
-
-**Ours**
-
-Which of the following is NOT the right way to find 5 raised to the power of 9?
-
-- ▫️ print(5**9)
-- ▫️ print(math.pow(5, 9))
-- ▫️ print(pow(5, 9))
-- ✅ print(deg(5,9))
-
-> There is no built-in deg() function. 5**9, pow(5, 9) and math.pow(5, 9) all compute 5 to the 9th (math.pow returns a float).
-
----
 
 ### `cs-fcc-008` (general-cs-quiz.ts #8)
 
@@ -853,7 +780,7 @@ What is the time complexity of Kruskal's algorithm in terms of the number of edg
 
 ---
 
-## 4. Question reworded: ambiguous, outdated or false premise (24)
+## 4. Question reworded: ambiguous, outdated or false premise (22)
 
 The answer is the same idea; the question or options were fixed so it has one defensible answer.
 
@@ -889,42 +816,6 @@ Which method removes whitespace from both ends of a string?
 > 
 > '  hi  '.strip()    # 'hi'
 > '  hi  '.rstrip()   # '  hi'
-
----
-
-### `python-fcc-050` (python-quiz.ts #50)
-
-- [ ] Checked by us
-
-*Why:* Curly quotes made it invalid Python; the answer is now the actual value.
-
-*Explanation:* rewritten · *Practicality:* 5
-
-**Original**
-
-In Python, what is the result of this code: “Hi” * 2?
-
-- ✅ HiHi
-- ▫️ “Hihi”
-- ▫️ “HiHiHiHi”
-- ▫️ A SyntaxError
-
-> The * operator in Python can be used to repeat a string a given number of times. In this case, the string “Hi” is repeated two times. 
-
-**Ours**
-
-What does this evaluate to?
-
-```
-'Hi' * 2
-```
-
-- ▫️ A TypeError
-- ✅ 'HiHi'
-- ▫️ 'Hi2'
-- ▫️ 'HiHiHiHi'
-
-> * with a string and an int repeats the string: 'Hi' * 2 is 'HiHi'.
 
 ---
 
@@ -989,38 +880,6 @@ Which file marks a directory as a regular Python package?
 - ▫️ __main__.py
 
 > __init__.py marks a directory as a regular package and runs when the package is imported. Since Python 3.3, a directory without one can still be imported as a namespace package. __main__.py is what python -m package runs.
-
----
-
-### `python-fcc-126` (python-quiz.ts #126)
-
-- [ ] Checked by us
-
-*Why:* / also can't be used with strings, so two options were right. Rephrased.
-
-*Explanation:* rewritten · *Practicality:* 4
-
-**Original**
-
-What arithmetic operators cannot be used with strings in Python?
-
-- ✅ -
-- ▫️ +
-- ▫️ /
-- ▫️ *
-
-> + is used to concatenate and * is used to multiply strings
-
-**Ours**
-
-Which of these operators never works with a string operand?
-
-- ▫️ *
-- ✅ -
-- ▫️ +
-- ▫️ %
-
-> + concatenates two strings, * repeats a string (with an int), and % formats one ('%s!' % 'hi'). - has no string meaning: 'ab' - 'b' raises TypeError.
 
 ---
 
@@ -1636,111 +1495,13 @@ Which type of cookie is deleted when the browser session ends?
 
 ---
 
-## 5. Explanation was wrong (answer unchanged) (11)
-
-### `python-fcc-007` (python-quiz.ts #7)
-
-- [ ] Checked by us
-
-*Why:* Said ^ is bitwise NOT; it is XOR.
-
-*Explanation:* rewritten · *Practicality:* 3
-
-**Original**
-
-In Python, which operator is used to perform Bitwise XOR operations?
-
-- ✅ ^
-- ▫️ ~
-- ▫️ |
-- ▫️ &
-
-> The ^ operator is used in Python to perform Bitwise NOT operations.
-
-**Ours**
-
-Which operator is used to perform Bitwise XOR operations?
-
-- ▫️ ~
-- ▫️ &
-- ✅ ^
-- ▫️ |
-
-> The ^ operator is bitwise XOR: each result bit is 1 where exactly one of the operands has a 1.
-> 
-> 5 ^ 3   # 6  (0b101 ^ 0b011 = 0b110)
-
----
-
-### `python-fcc-018` (python-quiz.ts #18)
-
-- [ ] Checked by us
-
-*Why:* Talked about Python 2 longs; in Python 3, 3l is a SyntaxError.
-
-*Explanation:* rewritten · *Practicality:* 2
-
-**Original**
-
-In Python, which of the following is not a complex number?
-
-- ✅ 2 + 3l
-- ▫️ 2 + 3j
-- ▫️ complex(2, 3)
-- ▫️ 2 + 3J
-
-> In Python, the letter 'l' (or L) stands for long and 2 + 3l would not result in a complex number.
-
-**Ours**
-
-Which of the following is not a complex number?
-
-- ✅ 2 + 3l
-- ▫️ complex(2, 3)
-- ▫️ 2 + 3j
-- ▫️ 2 + 3J
-
-> Python 3 has no l suffix: 2 + 3l is a SyntaxError. (In Python 2, l or L marked a long integer.) j or J marks the imaginary part, and complex(2, 3) builds 2+3j.
-
----
-
-### `python-fcc-045` (python-quiz.ts #45)
-
-- [ ] Checked by us
-
-*Why:* Ended with "Canonical is a software company", which is unrelated.
-
-*Explanation:* rewritten · *Practicality:* 2
-
-**Original**
-
-The canonical implementation of the Python programming language, as distributed on python.org is known as...
-
-- ✅ CPython
-- ▫️ PPython
-- ▫️ QPython
-- ▫️ MPython
-
-> CPython is the canonical implementation of the Python programming language, as distributed on python.org. Canonical is a software company
-
-**Ours**
-
-The canonical implementation of the Python programming language, as distributed on python.org is known as...
-
-- ▫️ QPython
-- ✅ CPython
-- ▫️ PPython
-- ▫️ MPython
-
-> CPython is the reference implementation of Python, written in C and distributed on python.org. Others include PyPy and Jython.
-
----
+## 5. Explanation was wrong (answer unchanged) (8)
 
 ### `python-fcc-017` (python-quiz.ts #17)
 
 - [ ] Checked by us
 
-*Why:* Did not mention that pop() also removes the item.
+*Why:* Did not mention that pop() also removes the item. The prompt was later reworded to ask for the last item without removing it, so only one option is right.
 
 *Explanation:* rewritten · *Practicality:* 7
 
@@ -1757,14 +1518,24 @@ In Python, which one is the correct way to get the last item for the following l
 
 **Ours**
 
-Which one is the correct way to get the last item for the following list: numbers = [1, 2, 3, 4, 5]?
+Which of these gets the last item without removing it?
+
+```
+numbers = [1, 2, 3, 4, 5]
+```
 
 - ▫️ numbers.pop()
-- ▫️ numbers[len(numbers)-1]
-- ▫️ numbers[-1]
-- ✅ All of the above
+- ✅ numbers[-1]
+- ▫️ numbers[len(numbers)]
+- ▫️ numbers.last()
 
-> All three get the last item. numbers[-1] and numbers[len(numbers)-1] read it; numbers.pop() also removes it from the list.
+> A negative index counts from the end, so numbers[-1] reads the last item and leaves the list alone. pop() also returns it, but removes it.
+> 
+> numbers = [1, 2, 3, 4, 5]
+> numbers[-1]                # => 5  (counts from the end; the list is unchanged)
+> numbers[len(numbers) - 1]  # => 5  (the same item, with the index spelled out)
+> numbers[len(numbers)]      # => IndexError: list index out of range  (the last index is len - 1)
+> numbers.pop()              # => 5  (but numbers is now [1, 2, 3, 4])
 
 ---
 
@@ -2801,105 +2572,9 @@ console.log('❤️' === '❤️');
 
 ---
 
-## 7. Wording or typos only (15)
+## 7. Wording or typos only (12)
 
 No change in meaning; listed so nothing is hidden.
-
-### `python-fcc-047` (python-quiz.ts #47)
-
-- [ ] Checked by us
-
-*Why:* Leading spaces in options.
-
-*Explanation:* unchanged (apart from formatting) · *Practicality:* 5
-
-**Original**
-
-In Python, what is the addition assignment operator?
-
-- ✅  +=
-- ▫️  =+
-- ▫️  +
-- ▫️ ==
-
-> The += operator lets you add a value (right operand) to the current value of a variable and store the result of the calculation in the same variable (left operand). This is shorter than using + and then = separately.
-
-**Ours**
-
-What is the addition assignment operator?
-
-- ▫️ ==
-- ▫️ =+
-- ▫️ +
-- ✅ +=
-
-> The += operator lets you add a value (right operand) to the current value of a variable and store the result of the calculation in the same variable (left operand). This is shorter than using + and then = separately.
-
----
-
-### `python-fcc-060` (python-quiz.ts #60)
-
-- [ ] Checked by us
-
-*Why:* Typo "smallest)".
-
-*Explanation:* unchanged (apart from formatting) · *Practicality:* 5
-
-**Original**
-
-In Python, what built-in function returns the smallest item in an iterable or the smallest of two or more arguments?
-
-- ✅ min()
-- ▫️ max()
-- ▫️ minimum()
-- ▫️ smallest)
-
-> The min() function returns the smallest item in an iterable or the smallest of two or more arguments.
-
-**Ours**
-
-What built-in function returns the smallest item in an iterable or the smallest of two or more arguments?
-
-- ▫️ minimum()
-- ▫️ max()
-- ▫️ smallest()
-- ✅ min()
-
-> The min() function returns the smallest item in an iterable or the smallest of two or more arguments.
-
----
-
-### `python-fcc-068` (python-quiz.ts #68)
-
-- [ ] Checked by us
-
-*Why:* Curly quotes.
-
-*Explanation:* unchanged (apart from formatting) · *Practicality:* 3
-
-**Original**
-
-In Python, how can you write a “Hello, World” program?
-
-- ✅ print(“Hello, World!”)
-- ▫️ console.log(“Hello, World!”)
-- ▫️ show(“Hello, World!”)
-- ▫️ console(“Hello, World!”)
-
-> In Python, we use the built-in print() function to print a value to the console. We pass the value as an argument within parentheses. 
-
-**Ours**
-
-How can you write a “Hello, World” program?
-
-- ✅ print("Hello, World!")
-- ▫️ echo("Hello, World!")
-- ▫️ show("Hello, World!")
-- ▫️ console.log("Hello, World!")
-
-> In Python, we use the built-in print() function to print a value to the console. We pass the value as an argument within parentheses.
-
----
 
 ### `python-fcc-137` (python-quiz.ts #137)
 
