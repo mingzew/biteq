@@ -15,16 +15,16 @@ claude --plugin-dir ./plugins/biteq
 The pane opens with the session and again on each prompt (unless you close it). In the desktop app,
 click an answer, then **Next**. In the terminal it docks beside the conversation at 144+ columns,
 otherwise inline; `ctrl+x tab` gives it the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter)
-answer, and a hint bar on the pane's bottom row names the rest: `n: skip · z: banks` before
-answering, `⏎ next · z: banks` after (Enter on the answered question moves on; `n` still does,
+answer, and a hint bar on the pane's bottom row names the rest: `n: skip · z: banks · q: close` before
+answering, `⏎ next · z: banks · q: close` after (Enter on the answered question moves on; `n` still does,
 unshown). Esc goes back to the prompt. Resting after Claude is done, the bar reads `n: serve next · s: always
-serve · z: banks`. Missed questions come back (30% of the time, and only those once nothing is
+serve · z: banks · q: close`. Missed questions come back (30% of the time, and only those once nothing is
 unseen). Once every selected question is answered, and every missed one answered right since, the pane says
 "Congratulations! 38 of 47 in one shot." (the total only with several banks), lists each bank with how many of
 its questions you got right the first time you ever saw them (`✓ ruby  one-shot 35/44`, a perfect bank in
 the BiteQ colour) and says how to go on: "Press n to start over, or z to choose other banks." in the terminal,
 "Click Start over to go again, or Switch Q banks to choose other banks." in the desktop app; the bar reads
-`n: start over · z: banks`. To close the pane, use its own X.
+`n: start over · z: banks · q: close`. In the desktop app, the pane's own X closes it.
 
 `z` (desktop: **Switch Q banks**) opens the bank screen at any time: one toggle per bank, `[x] js - 307 questions` (the small `bash`, `git`, `sql`
 and `ts` banks aren't offered yet),

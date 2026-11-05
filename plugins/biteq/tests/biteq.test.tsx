@@ -336,24 +336,25 @@ describe('terminal hint bar', () => {
   const title = async (ui: Drawing) => (await find(ui, { text: /^Pick / }))?.text
   const hint = async (ui: Drawing, label: string) => find(ui, { type: 'Button', text: new RegExp(`^${label}$`) })
 
-  test('next/skip and banks are dim hotkey buttons (n, z) at the bottom; no close: the pane has its own X', async ($, on) => {
+  test('next/skip, banks and close are dim hotkey buttons (n, z, q) at the bottom', async ($, on) => {
     const { ui } = await terminal($, on)
     const skip = await hint(ui, 'skip')
     const banks = await hint(ui, 'banks')
+    const close = await hint(ui, 'close')
     expect(skip?.props).toMatchObject({ hotkey: 'n', plain: true, dimColor: true })
     expect(banks?.props).toMatchObject({ hotkey: 'z', plain: true, dimColor: true })
+    expect(close?.props).toMatchObject({ hotkey: 'q', plain: true, dimColor: true })
     expect(await hint(ui, 'Next')).toBeUndefined()
-    expect(await hint(ui, 'close')).toBeUndefined()
     expect(await hint(ui, 'Close')).toBeUndefined()
     // the bar is the pane's last row
     const drawn = JSON.stringify(await ui.drawn())
-    expect(drawn.lastIndexOf('"banks"')).toBeGreaterThan(drawn.lastIndexOf('Pick '))
+    expect(drawn.lastIndexOf('"close"')).toBeGreaterThan(drawn.lastIndexOf('Pick '))
   })
 
   test('the arrow keys and Tab never land on the hint bar', async ($, on) => {
     const { ui } = await terminal($, on)
     const answerKey = await keyOf(ui, OPEN(ui, 'a'))
-    for (const label of ['skip', 'banks']) {
+    for (const label of ['skip', 'banks', 'close']) {
       const key = (await hint(ui, label))?.key ?? ''
       const res = await $.ui.focus({ requestId: 'biteq', key } as never)
       expect(res).toMatchObject({ deny: expect.stringContaining('hint bar') } as never)
@@ -362,13 +363,18 @@ describe('terminal hint bar', () => {
     expect((ok as { deny?: string }).deny ?? '').not.toContain('hint bar')
   })
 
-  test('n skips, then after an answer reads "next"', async ($, on) => {
-    const { ui } = await terminal($, on)
+  test('n skips, then after an answer reads "next"; q closes and the pane stays closed', async ($, on) => {
+    const { ui, opened } = await terminal($, on)
     const before = await title(ui)
     await click(ui, /^skip$/)
     expect(await title(ui)).not.toBe(before)
     await click(ui, OPEN(ui, 'a'))
     expect(await hint(ui, 'next')).toBeDefined()
+    await click(ui, /^close$/)
+    const count = opened.length
+    await $.turn.complete(DONE)
+    await $.turn.start({ text: 'again', turnId: 't2' })
+    expect(opened.length).toBe(count)   // dismissed: no reopen
   })
 
   test('after an answer the bar shows "⏎ next"; n still moves on but is not shown', async ($, on) => {

@@ -16,7 +16,7 @@ export enum Client {
 
 /** What biteq does differently per client. Add a field here rather than a client check at a call site. */
 export type ClientTraits = {
-  /** Buttons answer to letter hotkeys (a–d, n, z) and show them; ctrl+x tab gives the pane the keyboard. */
+  /** Buttons answer to letter hotkeys (a–d, n, z, q) and show them; ctrl+x tab gives the pane the keyboard. */
   hotkeys: boolean
   /** Next/Skip and Banks are a hint bar on the pane's bottom row, pressed by hotkey and kept out of the focus ring. */
   hintBar: boolean
@@ -38,7 +38,7 @@ export type ClientTraits = {
   clientModule: boolean
   /** A new wait asks for the pane's keyboard (the composer is empty then), so the first click is a press. */
   focusOnWait: boolean
-  /** The pane draws its own Close button (or the hint bar's q: close). The CLI and desktop panes have an X for that. */
+  /** The pane offers its own close: a Close button, or the CLI hint bar's q: close. The desktop pane's X does that. */
   closeButton: boolean
 }
 
@@ -46,7 +46,7 @@ export const TRAITS: Record<Client, ClientTraits> = {
   [Client.ClaudeCli]: {
     hotkeys: true, hintBar: true, enterMovesOn: true, dimsWhenUnfocused: true, bracketActions: false,
     showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: false,
-    closeButton: false,
+    closeButton: true,
   },
   [Client.ClaudeDesktop]: {
     hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,

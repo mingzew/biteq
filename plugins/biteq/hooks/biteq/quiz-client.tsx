@@ -57,7 +57,7 @@ function hintBar(v: PaneView, el: QuizElements, traits: ClientTraits, onPress: (
   const q = v.question
   const hint = (k: string, label: string, hotkey: string) =>
     <Button key={k} label={label} hotkey={hotkey} plain dimColor onPress={() => onPress(k)} />
-  // no q: close where the pane has its own X
+  // q: close, where the client wants it (the CLI); the desktop pane's own X closes it
   const close = traits.closeButton ? [hint(keys.close, 'close', 'q')] : []
   if (v.picking) {
     const row = [<Text key="toggle" dimColor>⏎ toggle</Text>, hint(keys.banks, 'done', 'z'), ...close]

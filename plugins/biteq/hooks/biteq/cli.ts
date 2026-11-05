@@ -61,7 +61,7 @@ async function cmdPane(io: Io, lang: string | undefined, focus: boolean): Promis
   const placed = await openPane(io, focus)
   if (!placed) return 'biteq: the pane will show up once this window is wide enough.'
   const how = (await io.traits()).hotkeys
-    ? 'ctrl+x tab gives the pane the keyboard: a-d answer, n next, z banks.'
+    ? 'ctrl+x tab gives the pane the keyboard: a-d answer, n next, z banks, q close.'
     : 'click an answer, then Next.'
   const mix = langs.filter(l => available[l]).map(l => `${l} ${available[l]}`).join(', ')
   return `biteq: serving ${mix} (${questions.length} questions). ${how}`

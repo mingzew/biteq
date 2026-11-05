@@ -24,10 +24,10 @@ between Claude Code releases; the engine's own declarations are the authority (s
 - **Questions are served as a mix of the selected banks only** (default `cs`, general CS). Unselected banks are
   never served; once every selected question is answered the pane says so and offers **Start over** (SUP-15).
 - **CLI keys:** answers are arrow-selectable buttons with `a`-`d`; Next/Skip/Banks are a hint bar on the pane's
-  bottom row (`n: skip · z: banks`, `⏎ next` after answering) and are never in the focus ring.
+  bottom row (`n: skip · z: banks · q: close`, `⏎ next` after answering) and are never in the focus ring.
 - **Banks are switched in the pane** (`z`, any time): a screen of toggles, digits `1`-`9` in the CLI, saved as
   they change, at least one kept checked. `z` again goes back to the quiz.
-- **No Close button or `q: close`** in the CLI or desktop pane: both panes have their own X, which closes it.
+- **Closing:** the CLI keeps `q: close` in its hint bar; the desktop pane has no Close button (its own X closes it).
 - **Desktop:** everything is clickable; action buttons are bracketed in the BiteQ colour, `[ Skip ]`, so they read as
   buttons; no key hints. The desktop app draws a Button's `label` string only: it ignores a Button's children,
   `hover` styles and any colour or background, so the orange brackets are Text beside the Button (a click on a
