@@ -586,8 +586,10 @@ the question." **Serve next question** serves one anyway; **Always serve** turns
 good (`/biteq pause on` turns it back on).
 
 What happens next depends on the user. If they prompt Claude again, `turn.start` fires, the status
-goes `done → thinking`, and step 10's branch runs: a new wait is counted, and because the question
-on screen has been answered, `advance` serves a fresh one. That is the loop closing.
+goes `done → thinking`, and step 10's branch runs: a new wait is counted. An answered question stays on
+screen, explanation and all, so a prompt never pulls it away mid-read; Next serves a fresh one when the
+user is ready. Only a resting pane, with nothing on screen, gets a question served by the prompt itself.
+That is the loop closing.
 
 Two loose ends worth knowing about. An interrupt — pressing Escape — also fires `turn.complete`,
 with `reason: 'aborted'`, so an abandoned turn correctly reads as `done` rather than hanging on

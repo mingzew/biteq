@@ -211,6 +211,18 @@ describe('when Claude is done', () => {
   }
 
   for (const surface of ['terminal', 'desktop'] as const) {
+    test(`${surface}: a new prompt keeps an answered question and its explanation on screen; Next moves on`, async ($, on) => {
+      const ui = await done($, on, surface)
+      await click(ui, OPEN(ui, 'a'))
+      const answered = await title(ui)
+      expect(await find(ui, { text: /^because$/ })).toBeDefined()   // the explanation
+      await $.turn.start({ text: 'again', turnId: 't2' })   // Claude works again
+      expect(await title(ui)).toBe(answered)   // still being read: not replaced
+      expect(await find(ui, { text: /^because$/ })).toBeDefined()
+      await click(ui, NEXT(ui))
+      expect(await title(ui)).not.toBe(answered)   // Next, while Claude works: the next question
+    })
+
     test(`${surface}: a new session rests until Claude works; "serve next question" serves one now`, async ($, on) => {
       world(on, BANKS, surface)
       await $.session.start({ cwd: '.', surface, isInteractive: true })

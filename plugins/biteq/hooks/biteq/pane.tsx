@@ -240,8 +240,10 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
     await io.set('engaged', () => false)
     const s = await saveStats(io, st => ({ ...st, waits: st.waits + 1 }))
     await io.set('stats', () => s)
+    // Serve only when nothing is on screen (resting, or no question yet). An answered question stays: its
+    // explanation may still be being read, and Next moves on when the person is ready.
     const c = await io.get('current')
-    if (c.question === null || c.picked !== null) await advance(io, c.question, s)
+    if (c.question === null) await advance(io, null, s)
     if (!(await io.get('dismissed'))) {
       // Desktop: ask for the pane's keyboard now that the composer is empty, so the
       // first click on an option is a press. The CLI keeps ctrl+x tab. A grant is

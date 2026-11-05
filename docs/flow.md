@@ -102,8 +102,8 @@ Paths are relative to `plugins/biteq/`. Rows are in the order they happen.
 | `hooks/register.ts` | `on('turn.complete')` then `claudeEvent()` | **4. Claude comes back.** No `agentId` (a subagent finishing is ignored), so `parse` maps it to `done`. |
 | `hooks/biteq/pane.tsx` | `onStatus(thinking, done)` | Nothing changes on screen: Q1 and its explanation stay, and the keys still work. Pressing **Next** now would show the resting message instead of a question. |
 | `hooks/register.ts` | `on('turn.start')`, same chain | **5. Prompt 2.** `parse` → `thinking`; `setStatus` sees a change from `done`. |
-| `hooks/biteq/pane.tsx` | `onStatus(done, thinking)` then `advance()` | `done` → `thinking` counts as a new wait: `waits` goes up by 1 and `engaged` resets. Q1 was already answered (`picked` is set), so a fresh question Q2 is chosen. An unanswered question would have been kept. |
-| `hooks/biteq/pane.tsx` | `render()` | Shows Q2. |
+| `hooks/biteq/pane.tsx` | `onStatus(done, thinking)` | `done` → `thinking` counts as a new wait: `waits` goes up by 1 and `engaged` resets. Q1 stays on screen with its explanation, answered or not: the user may still be reading it. A question is served here (`advance()`) only when none is on screen, i.e. the pane was resting. |
+| `hooks/biteq/pane.tsx` | `press('next:<Q1 id>')` then `next(qid)` | The user presses **Next** when ready. Claude is working, so it doesn't rest: Q2 is picked and shown. |
 | `hooks/biteq/pane.tsx` | `answer(idx)` | **6. User answers 2 questions.** The user answers Q2. `engaged` was reset, so `engaged_waits` goes up by 1 again. |
 | `hooks/biteq/pane.tsx` | `press('next:<Q2 id>')` then `next(qid)` | The **Next** button, through the same `ui.press` hook. Q3 is picked, different from Q2, in one write to `current`, and only if Q2 is still on screen (so a double click moves on once). **Skip** does the same before answering. |
 | `hooks/biteq/pane.tsx` | `answer(idx)` | The user answers Q3. `engaged` is already true for this wait, so `engaged_waits` does not change. `answered` goes up and `stats` is saved. |
