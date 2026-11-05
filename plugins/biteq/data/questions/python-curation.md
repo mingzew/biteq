@@ -96,9 +96,11 @@ used `math.pow` without importing `math`, so two options failed).
 - **Code that runs as written.** Show the imports it needs. Never name a variable after a built-in (`009` used
   `list`; it is now `names`).
 - **Balanced options.** The right answer must not be the longest (`026`).
-- **The explanation shows the code.** One or two sentences of why, then the snippet with `# =>` outputs. The reviewer
-  trimmed anything the snippet already explains (a `Counter` example, `%d`, a `.reverse()` contrast), so keep the
-  prose short and let the code teach. For syntax such as `[::-1]` or `'%.3f'`, say what each symbol does.
+- **Explanations are short.** One or two sentences of why, plus the fix when there is one. Add a commented snippet
+  with `# =>` outputs only when the code explains it better than words (a shallow copy, `[::-1]`, `'%.3f'`); when
+  one sentence says it all, stop there. The reviewer trimmed anything the snippet already explains (a `Counter`
+  example, `%d`, a `.reverse()` contrast) and cut the snippet from most new questions. For syntax such as `[::-1]`
+  or `'%.3f'`, say what each symbol does.
 - **Neutral example strings.** `sentence='BiteQ 4Eva'` replaced a freeCodeCamp-specific string.
 - **Typos.** `023` had a stray space before the question mark.
 - **Verify by running.** Every output in a prompt or explanation was run before it went in.
@@ -112,7 +114,7 @@ Keep a question only if all of these hold:
 3. It doesn't duplicate a question already in the bank; if it does, keep the one with code or the clearer scenario.
 4. Every wrong option is something a developer might believe, and no option stands out by length.
 5. Code, run as written, beats a definition when the idea allows it.
-6. The explanation shows the code with outputs and says why, in as few words as it can.
+6. The explanation says why in as few words as it can, with a commented snippet only when it helps.
 
 When you remove an imported question, delete its entry in `docs/import-review.md` (if it has one) and fix the
 section counts.

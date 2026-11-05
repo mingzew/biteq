@@ -120,6 +120,86 @@
     "practicality": 7
   },
   {
+    "id": "python-sort-returns-none",
+    "title": "sort() returns None",
+    "prompt": "What does this print?",
+    "code": "nums = [3, 1, 2]\nnums = nums.sort()\nprint(nums)",
+    "options": ["[1, 2, 3]", "None", "[3, 1, 2]", "AttributeError"],
+    "answer": 1,
+    "explanation": "list.sort() sorts the list in place and returns None, so assigning its result replaces your list with None. Use sorted() if you want a new list back.",
+    "practicality": 9
+  },
+  {
+    "id": "python-shallow-copy",
+    "title": "Shallow copy",
+    "prompt": "What does this print?",
+    "code": "a = [[1, 2], [3, 4]]\nb = a.copy()\nb[0].append(99)\nprint(a)",
+    "options": ["[[1, 2], [3, 4]]", "[[1, 2], [3, 4, 99]]", "[[1, 2, 99], [3, 4]]", "[[1, 2, 99], [3, 4, 99]]"],
+    "answer": 2,
+    "explanation": "copy() makes a new outer list, but the inner lists are the same objects, so changing one shows up in both. Use copy.deepcopy() to copy the inner lists too.\n\na = [[1, 2], [3, 4]]\nb = a.copy()           # new outer list, same inner lists\nb[0].append(99)        # changes the inner list that a also holds\nprint(a)               # => [[1, 2, 99], [3, 4]]\n\nimport copy\nc = copy.deepcopy(a)   # copies the inner lists too\nc[0].append(7)         # a is unaffected",
+    "practicality": 9
+  },
+  {
+    "id": "python-float-equality",
+    "title": "Comparing floats",
+    "prompt": "What does this print?",
+    "code": "print(round(0.1 + 0.2, 2) == 0.3, 0.1 + 0.2 == 0.3)",
+    "options": ["True True", "False False", "False True", "True False"],
+    "answer": 3,
+    "explanation": "Most decimals like 0.1 are stored as binary approximations, so 0.1 + 0.2 is really 0.30000000000000004 and == says False. Round first, or use math.isclose().",
+    "practicality": 8
+  },
+  {
+    "id": "python-unbound-local",
+    "title": "Assigning a global",
+    "prompt": "What does this print?",
+    "code": "count = 0\n\ndef bump():\n    count += 1\n\nbump()\nprint(count)",
+    "options": ["UnboundLocalError", "1", "0", "NameError"],
+    "answer": 0,
+    "explanation": "Assigning to a name inside a function makes it local to that function, so count += 1 reads a local count that has no value yet. Declare global count, or better, return the new value.",
+    "practicality": 8
+  },
+  {
+    "id": "python-zip-shortest",
+    "title": "zip drops items",
+    "prompt": "What does this print?",
+    "code": "names = ['a', 'b', 'c']\nscores = [90, 80]\nprint(list(zip(names, scores)))",
+    "options": ["[('a', 90), ('b', 80), ('c', None)]", "ValueError", "[('a', 90), ('b', 80)]", "[('a', 90), ('b', 80), ('c',)]"],
+    "answer": 2,
+    "explanation": "zip() stops when the shortest input runs out, so the extra items in the longer list are dropped without any error. Use itertools.zip_longest() to keep them.",
+    "practicality": 8
+  },
+  {
+    "id": "python-json-int-keys",
+    "title": "JSON turns keys into text",
+    "prompt": "What does this print?",
+    "code": "import json\nprint(json.loads(json.dumps({1: 'a'})))",
+    "options": ["{1: 'a'}", "{'1': 'a'}", "TypeError", "[[1, 'a']]"],
+    "answer": 1,
+    "explanation": "JSON object keys are always strings, so json.dumps() writes the key 1 as \"1\", and loading it back gives the string. Convert the keys yourself if you need ints.",
+    "practicality": 8
+  },
+  {
+    "id": "python-open-write-truncates",
+    "title": "'w' erases the file",
+    "prompt": "`log.txt` already contains the text \"old\". What does it contain after this runs?",
+    "code": "with open('log.txt', 'w') as f:\n    f.write('new')",
+    "options": ["new", "oldnew", "old", "FileExistsError"],
+    "answer": 0,
+    "explanation": "Mode 'w' truncates the file the moment it is opened, so the old content is gone before you write anything. Use 'a' to add to the end instead.",
+    "practicality": 8
+  },
+  {
+    "id": "python-class-attr-shared",
+    "title": "Shared class attribute",
+    "prompt": "What does this print?",
+    "code": "class Cart:\n    items = []\n    def add(self, x):\n        self.items.append(x)\n\na, b = Cart(), Cart()\na.add('pen')\nprint(b.items)",
+    "options": ["[]", "AttributeError", "['pen']", "None"],
+    "answer": 2,
+    "explanation": "items = [] sits on the class, not on each object, so every Cart shares one list and self.items.append() changes that shared list. Create the list in __init__ so each object gets its own.",
+    "practicality": 9
+  },
+  {
     "id": "python-fcc-001",
     "prompt": "What does this print?",
     "code": "print(list(range(3, 6)))",
