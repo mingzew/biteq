@@ -36,8 +36,9 @@ app's Code tab, and the VS Code / Cursor extension.
   nothing is unseen they come back until you get them right. Then the pane congratulates you, says how many
   you got right in one shot (the first time you ever saw them) for each bank, and offers **Start over** (`n` in
   the terminal) or other banks (`z`).
-- Stats are shared by every Claude Code session. `/biteq stats` tracks the key metric: in what share of AI
-  waits you practiced. For each bank it also shows your correct answers (re-asks included) and how many of
+- Stats are shared by every Claude Code session. `/biteq stats` tracks the key metric: how many AI waits (a
+  prompt until the next one) you practised in while Claude worked. It also counts the waits you practised in
+  at any time, after Claude was done included, and how many of those were only after. For each bank it also shows your correct answers (re-asks included) and how many of
   its questions you got right in one shot; Start over keeps that, only `/biteq reset --all` clears it.
 
 **Design rule: the quiz is a pane.** BiteQ is shown in a Claude Code pane (`$.ui.open`): docked beside
@@ -78,7 +79,7 @@ Cursor's own chat agent is a different harness and doesn't run Claude Code plugi
 | `/biteq [--lang a,b]` | Open the pane; `--lang` picks the banks to serve, mixed, and is remembered (default `cs`). In the pane, `z` does the same |
 | `/biteq langs` | List question banks, the selected ones first |
 | `/biteq check` | Validate the question banks |
-| `/biteq stats` | Your stats; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
+| `/biteq stats` | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
 | `/biteq doctor` | Claude Code version, plugin path, store, status, debug log, questions |
 | `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered |
 | `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log |

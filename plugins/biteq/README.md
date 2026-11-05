@@ -39,7 +39,7 @@ hints there.)
 | `/biteq [--lang a,b]` | Open the pane; `--lang` is validated and remembered (default `cs`). Only those banks are served, mixed: a random bank with unseen questions, then a random question in it. Once all are answered the pane offers Start over. Switching banks replaces an unanswered question from a bank no longer selected |
 | `/biteq langs` | List question banks and the selected languages |
 | `/biteq check` | Validate the question banks |
-| `/biteq stats` | Your stats; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
+| `/biteq stats` | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
 | `/biteq doctor` | Claude Code version, plugin path, store, status, debug log, questions |
 | `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered |
 | `/biteq debug [on\|off]` | Turn the event log on or off. Remembered. Does not change which sessions send telemetry |

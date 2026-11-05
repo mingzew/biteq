@@ -464,7 +464,7 @@ describe('presses', () => {
     await Promise.allSettled([ui.press({ key: a, ...inQuiz(ui) }), ui.press({ key: b, ...inQuiz(ui) })])
     expect(await find(ui, { text: /streak \d+ · best \d+/ })).toBeDefined()
     const stats = String(((await $.prompt.submit({ text: '/biteq stats', wait: false } as never)) as { drop?: string }).drop)
-    expect(stats).toContain('answered      1')   // once, not twice
+    expect(stats).toMatch(/^- Answered: 1 \(/m)   // once, not twice
   })
 
   test('hotkeys only in the terminal; the desktop keeps its keys in the message box', async ($, on) => {
@@ -874,6 +874,40 @@ describe('/biteq commands', () => {
     expect(langs.split('\n').map(l => l.split(/\s+/)[0])).toEqual(['python', 'js', 'cs', 'go', 'ruby'])
   })
 
+  test('stats count waits practised while Claude worked, and at any time in a wait (after it was done too)', async ($, on) => {
+    const more = ['c', 'd', 'e'].map(x => ({ id: `cs-${x}`, prompt: `Pick ${x}`, options: ['1', '2'], answer: 0, explanation: 'e', practicality: 5 }))
+    world(on, { cs: [...BANKS.cs!, ...more] }, 'desktop', { config: { pauseWhenDone: false } })
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await click(ui, OPEN(ui, 'a'))   // before any prompt: no wait to count
+    await click(ui, /^Next$/)
+    await $.turn.start({ text: 'one', turnId: 't1' })   // wait 1: answered while Claude works
+    await click(ui, OPEN(ui, 'a'))
+    await click(ui, /^Next$/)
+    await $.turn.complete({ ...DONE, turnId: 't1' })
+    await click(ui, OPEN(ui, 'a'))   // ...and again after it's done: still wait 1, counted once
+    await click(ui, /^Next$/)
+    await $.turn.start({ text: 'two', turnId: 't2' })   // wait 2: answered only once Claude is done
+    await $.turn.complete({ ...DONE, turnId: 't2' })
+    await click(ui, OPEN(ui, 'a'))
+    await click(ui, /^Next$/)
+    await $.turn.start({ text: 'three', turnId: 't3' })   // wait 3: no answer
+    const stats = await run($, 'stats')
+    expect(stats).toMatch(/^- Prompts sent to Claude: 3$/m)
+    expect(stats).toMatch(/^- Practised while Claude was working: 1 of 3 \(33%\)$/m)
+    expect(stats).toMatch(/^- Practised during or after Claude's work: 2 of 3 \(66%\), 1 only after Claude finished$/m)
+    expect(stats).toMatch(/^- Answered: 4 /m)
+    // no space-padded columns: the desktop app collapses runs of spaces, so they would read as one line of mush
+    expect(stats).not.toMatch(/\S {2,}/)
+  })
+
+  test('stats saved before practised waits were counted show their engaged waits as practised', async ($, on) => {
+    world(on, BANKS, 'terminal', { stats: { answered: 3, correct: 1, waits: 5, engaged_waits: 2 } })
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const stats = await run($, 'stats')
+    expect(stats).toMatch(/^- Practised during or after Claude's work: 2 of 5 \(40%\), 0 only after Claude finished$/m)
+  })
+
   test('stats, check, doctor, reset', async ($, on) => {
     world(on)
     await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
@@ -882,16 +916,17 @@ describe('/biteq commands', () => {
     await click(ui, OPEN(ui, 'a'))
 
     const stats = await run($, 'stats')
-    expect(stats).toContain('answered      1')
-    expect(stats).toMatch(/^ {13}correct {3}one-shot$/m)
-    expect(stats).toMatch(/^  cs {9}1\/1 {7}1\/2$/m)
-    expect(stats).toContain('AI waits      1  (you practiced during 100% of them)')
+    expect(stats).toMatch(/^- Answered: 1 \(1 correct, 100%\)$/m)
+    expect(stats).toMatch(/^- Prompts sent to Claude: 1$/m)
+    expect(stats).toMatch(/^- Practised while Claude was working: 1 of 1 \(100%\)$/m)
+    expect(stats).toMatch(/^By bank$/m)
+    expect(stats).toMatch(/^- cs: 1\/1 correct, 1\/2 one-shot$/m)
     expect(await run($, 'check')).toBe('7 questions in 5 banks: cs 2, go 0, js 1, python 2, ruby 2')
     expect(await run($, 'doctor')).toContain('selected      cs')
     expect(await run($, 'reset --all')).toContain('removed: status, stats, config')
     const cleared = await run($, 'stats')
-    expect(cleared).toContain('answered      0')
-    expect(cleared).not.toContain('one-shot')
+    expect(cleared).toMatch(/^- Answered: 0 /m)
+    expect(cleared).not.toContain('By bank')
   })
 
   test('check reports broken banks', async ($, on) => {

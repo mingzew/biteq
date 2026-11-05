@@ -207,8 +207,13 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
   if (!q) return
   const ok = idx === q.answer
   const status = await io.get('status')
+  // The first answer while Claude works counts the wait as engaged (the key metric). The first answer at
+  // any time counts it as practised: a wait runs from a prompt to the next one, so an answer after Claude
+  // is done still belongs to it. Before the session's first prompt (idle) there is no wait to count.
   const counts = (status === 'thinking' || status === 'waiting') && !(await io.get('engaged'))
   if (counts) await io.set('engaged', () => true)
+  const practises = status !== 'idle' && !(await io.get('practised'))
+  if (practises) await io.set('practised', () => true)
   const s = await saveStats(io, s => {
     const [c, n] = s.by_lang[q.lang] ?? [0, 0]
     const streak = ok ? s.streak + 1 : 0
@@ -224,6 +229,7 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
       // only the first answer ever counts; one seen before one_shot existed never does
       one_shot: q.id in s.one_shot ? s.one_shot : { ...s.one_shot, [q.id]: ok && !s.seen.includes(q.id) },
       engaged_waits: s.engaged_waits + (counts ? 1 : 0),
+      practised_waits: s.practised_waits + (practises ? 1 : 0),
     }
   })
   await io.set('stats', () => s)
@@ -238,6 +244,7 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
   if (now === was) return
   if (now === 'thinking' && was !== 'waiting') {
     await io.set('engaged', () => false)
+    await io.set('practised', () => false)
     const s = await saveStats(io, st => ({ ...st, waits: st.waits + 1 }))
     await io.set('stats', () => s)
     // Serve only when nothing is on screen (resting, or no question yet). An answered question stays: its
