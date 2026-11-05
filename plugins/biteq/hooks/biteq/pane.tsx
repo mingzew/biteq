@@ -87,6 +87,9 @@ export async function next(io: Io, qid: string): Promise<void> {
   if (c.question !== null && (await resting(io))) {
     // Claude is done: no next question until it works again (onStatus serves it then)
     await io.set('current', now => (now.question?.id === qid ? { question: null, picked: null } : now))
+    // The option that held the ring is gone, and the engine would move it to a neighbour, sometimes
+    // "always serve": an Enter there would switch pausing off. Put it on "serve next question" instead.
+    await io.focus(keys.serve)
     return
   }
   await advance(io, c.question, await freshStats(io))
@@ -94,9 +97,13 @@ export async function next(io: Io, qid: string): Promise<void> {
   if (now) await io.focus(keys.answer(now, 0))
 }
 
-/** Whether Next should rest instead of serving: Claude is done and the person hasn't opted out. */
+/**
+ * Whether to rest instead of serving: Claude isn't working, because it's done or hasn't been prompted yet
+ * this session (a new session opens the pane resting, not serving), and the person hasn't opted out.
+ */
 async function resting(io: Io): Promise<boolean> {
-  return (await io.get('status')) === 'done' && (await getPauseWhenDone(io))
+  const status = await io.get('status')
+  return (status === 'done' || status === 'idle') && (await getPauseWhenDone(io))
 }
 
 /** "Serve next question" while resting: one question now, the setting unchanged. */
@@ -134,12 +141,16 @@ export async function restart(io: Io): Promise<void> {
 // toggle Button whose key names the state it sets (`bank:on:cs`), so a click from an old drawing
 // can't undo the one before it. Every toggle is saved at once; the last bank can't be unchecked.
 
+// Banks too small to be worth choosing yet: kept in data/questions, not offered on the bank screen.
+// Take one off the list once it has enough questions.
+const HIDDEN_BANKS = ['bash', 'git', 'sql', 'ts']
+
 /** z: show the bank screen, or leave it. */
 export async function banks(io: Io): Promise<void> {
   if ((await io.get('picker')).open) return leaveBanks(io)
   const counts = await languageCounts(io)
   const langs = await getLangs(io)
-  const order = languageOrder(langs, Object.keys(counts)).filter(l => counts[l])
+  const order = languageOrder(langs, Object.keys(counts)).filter(l => counts[l] && !HIDDEN_BANKS.includes(l))
   shown = order.map(lang => ({ lang, count: counts[lang] ?? 0 }))
   const selected = langs.filter(l => counts[l])
   await io.set('picker', () => ({ open: true, selected }))
@@ -196,8 +207,13 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
   if (!q) return
   const ok = idx === q.answer
   const status = await io.get('status')
+  // The first answer while Claude works counts the wait as engaged (the key metric). The first answer at
+  // any time counts it as practised: a wait runs from a prompt to the next one, so an answer after Claude
+  // is done still belongs to it. Before the session's first prompt (idle) there is no wait to count.
   const counts = (status === 'thinking' || status === 'waiting') && !(await io.get('engaged'))
   if (counts) await io.set('engaged', () => true)
+  const practises = status !== 'idle' && !(await io.get('practised'))
+  if (practises) await io.set('practised', () => true)
   const s = await saveStats(io, s => {
     const [c, n] = s.by_lang[q.lang] ?? [0, 0]
     const streak = ok ? s.streak + 1 : 0
@@ -213,6 +229,7 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
       // only the first answer ever counts; one seen before one_shot existed never does
       one_shot: q.id in s.one_shot ? s.one_shot : { ...s.one_shot, [q.id]: ok && !s.seen.includes(q.id) },
       engaged_waits: s.engaged_waits + (counts ? 1 : 0),
+      practised_waits: s.practised_waits + (practises ? 1 : 0),
     }
   })
   await io.set('stats', () => s)
@@ -227,10 +244,13 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
   if (now === was) return
   if (now === 'thinking' && was !== 'waiting') {
     await io.set('engaged', () => false)
+    await io.set('practised', () => false)
     const s = await saveStats(io, st => ({ ...st, waits: st.waits + 1 }))
     await io.set('stats', () => s)
+    // Serve only when nothing is on screen (resting, or no question yet). An answered question stays: its
+    // explanation may still be being read, and Next moves on when the person is ready.
     const c = await io.get('current')
-    if (c.question === null || c.picked !== null) await advance(io, c.question, s)
+    if (c.question === null) await advance(io, null, s)
     if (!(await io.get('dismissed'))) {
       // Desktop: ask for the pane's keyboard now that the composer is empty, so the
       // first click on an option is a press. The CLI keeps ctrl+x tab. A grant is
@@ -298,8 +318,10 @@ export async function view(io: Io): Promise<PaneView> {
   const done = question === null && finished(stats)
   const p = await io.get('picker')
   return {
-    // Claude is done and Next rested: say so instead of showing a question
-    resting: status === 'done' && question === null && questions.length > 0 && !done,
+    // Claude isn't working and the pane rests: say so instead of showing a question. Session state only:
+    // the pause setting lives in the store, a round trip on every redraw, and it was already consulted when
+    // the question went (resting() in next/open/restart); with pausing off a question is served instead.
+    resting: question === null && questions.length > 0 && !done && (status === 'done' || status === 'idle') ? status : false,
     finished: done,
     banks: [...new Set(questions.map(q => q.lang))].map(lang => {
       const inBank = questions.filter(q => q.lang === lang)

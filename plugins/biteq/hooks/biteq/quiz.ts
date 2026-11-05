@@ -10,13 +10,15 @@ import { STATS, loadJson, saveJson } from './store'
 
 export const DEFAULT_STATS: Stats = {
   answered: 0, correct: 0, streak: 0, best_streak: 0,
-  waits: 0, engaged_waits: 0, seen: [], wrong: [], one_shot: {}, by_lang: {},
+  waits: 0, engaged_waits: 0, practised_waits: 0, seen: [], wrong: [], one_shot: {}, by_lang: {},
 }
 
 const REQUIRED = ['id', 'prompt', 'options', 'answer', 'explanation', 'practicality'] as const
 
 export async function loadStats(io: Io): Promise<Stats> {
-  return { ...DEFAULT_STATS, ...(await loadJson<Partial<Stats>>(io, STATS, {})) }
+  const saved = await loadJson<Partial<Stats>>(io, STATS, {})
+  // stats saved before practised_waits existed: every engaged wait was practised in, at least
+  return { ...DEFAULT_STATS, practised_waits: saved.engaged_waits ?? 0, ...saved }
 }
 
 /** Read, change, write. Re-reads first so two sessions answering at once don't erase each other. */

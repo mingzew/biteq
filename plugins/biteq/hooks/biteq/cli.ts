@@ -89,14 +89,27 @@ async function cmdStats(io: Io): Promise<string> {
   // (question ids start with "<lang>-")
   const oneShot = (lang: string) => Object.keys(s.one_shot).filter(id => s.one_shot[id] && id.startsWith(`${lang}-`)).length
   const langs = Object.entries(s.by_lang).sort()
+  // "- Label: value" lines, no columns: the desktop app shows the reply in a proportional font and
+  // collapses runs of spaces, so space-padded columns fall apart there
+  const row = (label: string, value: string) => `- ${label}: ${value}`
+  // a wait is one prompt to Claude, until the next one: answers after Claude finished still count for it
+  const ofWaits = (n: number) => `${n} of ${s.waits} (${pct(n, s.waits)})`
+  const onlyAfter = s.practised_waits - s.engaged_waits
   return [
-    `answered      ${s.answered}  (${pct(s.correct, s.answered)} correct)`,
-    `streak        ${s.streak}  (best ${s.best_streak})`,
-    `AI waits      ${s.waits}  (you practiced during ${pct(s.engaged_waits, s.waits)} of them)`,
-    ...(langs.length ? [`${' '.repeat(13)}${'correct'.padEnd(10)}one-shot`] : []),
-    ...langs.map(([lang, [c, n]]) =>
-      `  ${lang.padEnd(10)} ${`${c}/${n}`.padEnd(9)} ${sizes[lang] ? `${oneShot(lang)}/${sizes[lang]}` : '-'}`),
-    `to review     ${s.wrong.length} questions you missed`,
+    'Practice',
+    row('Prompts sent to Claude', String(s.waits)),
+    row('Practised while Claude was working', ofWaits(s.engaged_waits)),
+    row("Practised during or after Claude's work", `${ofWaits(s.practised_waits)}, ${onlyAfter} only after Claude finished`),
+    '',
+    'Answers',
+    row('Answered', `${s.answered} (${s.correct} correct, ${pct(s.correct, s.answered)})`),
+    row('Streak', `${s.streak} (best ${s.best_streak})`),
+    row('To review', `${s.wrong.length} ${s.wrong.length === 1 ? 'question' : 'questions'} you missed`),
+    ...(langs.length
+      ? ['', 'By bank',
+        ...langs.map(([lang, [c, n]]) =>
+          row(lang, `${c}/${n} correct, ${sizes[lang] ? `${oneShot(lang)}/${sizes[lang]}` : '-'} one-shot`))]
+      : []),
   ].join('\n')
 }
 

@@ -20,7 +20,9 @@ engine and calls its hooks directly, so there's no separate hook process, state 
 
 > **Resting when done.** When Claude finishes, the pane doesn't change: the question on screen stays, and the
 > keys still work. But Next doesn't serve another: the pane says "Claude is done, go review. The next time
-> Claude cooks, we will serve the question." until Claude works again (unless you chose **Always serve**).
+> Claude cooks, we will serve the question." until Claude works again (unless you chose **Always serve**). A new
+> session opens the pane resting too, since Claude hasn't run yet ("Claude hasn't started yet. The next time
+> Claude cooks, we will serve the question."); the first prompt serves the first question.
 
 ## Diagram
 
@@ -95,13 +97,13 @@ Paths are relative to `plugins/biteq/`. Rows are in the order they happen.
 | `hooks/biteq/store.ts` | `setStatus()` | Status `idle` → `thinking`: writes `status`. Returns the previous status. |
 | `hooks/biteq/pane.tsx` | `onStatus(idle, thinking)` | A new wait: `engaged` resets to false and `waits` goes up by 1 (`quiz.saveStats` re-reads the store first, so two sessions don't erase each other). Q1 isn't answered yet, so it's kept. Reopens the pane unless you closed it. |
 | `hooks/register.ts` | `on('tool.call')`: `claudeEvent` before and after `next(e)` | While Claude works, every tool call fires this. Before: `parse` returns `null` for an ordinary tool, so nothing happens. After: `parse` returns `thinking`, `setStatus` finds the same status, and `onStatus` does nothing. |
-| `hooks/register.ts` | `on('ui.press')` calling `pane.press(key)`, then `answer(qid, idx)` | **3. User answers Q1.** The user clicks an option, or in the terminal presses `a`–`d` after `ctrl+x tab` gives the pane the keyboard (the desktop app shows no key hints: its keys stay in the message box). Each Button's key names its action and question (`answer:0:python-…`). The `ui.press` hook acts on that key and answers the press itself, because the Buttons' own handlers change with every redraw and the desktop app can send a click from the previous drawing (logged as `ui_press not handled`). `answer()` first writes the pick into `current` (one write, so the pane redraws at once), only if that question is still on screen and unanswered (so a second click can't count twice). Then it records answered, correct, streak, `by_lang`, the seen and wrong lists, and `one_shot` (only on a question's first answer ever: whether it was right; Start over keeps it, so a repeat can't count). This is the first answer during this wait, so `engaged_waits` goes up by 1. Saves `stats`. |
+| `hooks/register.ts` | `on('ui.press')` calling `pane.press(key)`, then `answer(qid, idx)` | **3. User answers Q1.** The user clicks an option, or in the terminal presses `a`–`d` after `ctrl+x tab` gives the pane the keyboard (the desktop app shows no key hints: its keys stay in the message box). Each Button's key names its action and question (`answer:0:python-…`). The `ui.press` hook acts on that key and answers the press itself, because the Buttons' own handlers change with every redraw and the desktop app can send a click from the previous drawing (logged as `ui_press not handled`). `answer()` first writes the pick into `current` (one write, so the pane redraws at once), only if that question is still on screen and unanswered (so a second click can't count twice). Then it records answered, correct, streak, `by_lang`, the seen and wrong lists, and `one_shot` (only on a question's first answer ever: whether it was right; Start over keeps it, so a repeat can't count). This is the first answer during this wait, so `engaged_waits` and `practised_waits` each go up by 1. Saves `stats`. |
 | `hooks/biteq/pane.tsx` | `render()` | Shows ✓ or ✗ on the options, "Correct!" or "Not quite.", the explanation, and a **Next** button (`n`). |
 | `hooks/register.ts` | `on('turn.complete')` then `claudeEvent()` | **4. Claude comes back.** No `agentId` (a subagent finishing is ignored), so `parse` maps it to `done`. |
 | `hooks/biteq/pane.tsx` | `onStatus(thinking, done)` | Nothing changes on screen: Q1 and its explanation stay, and the keys still work. Pressing **Next** now would show the resting message instead of a question. |
 | `hooks/register.ts` | `on('turn.start')`, same chain | **5. Prompt 2.** `parse` → `thinking`; `setStatus` sees a change from `done`. |
-| `hooks/biteq/pane.tsx` | `onStatus(done, thinking)` then `advance()` | `done` → `thinking` counts as a new wait: `waits` goes up by 1 and `engaged` resets. Q1 was already answered (`picked` is set), so a fresh question Q2 is chosen. An unanswered question would have been kept. |
-| `hooks/biteq/pane.tsx` | `render()` | Shows Q2. |
+| `hooks/biteq/pane.tsx` | `onStatus(done, thinking)` | `done` → `thinking` counts as a new wait: `waits` goes up by 1 and `engaged` resets. Q1 stays on screen with its explanation, answered or not: the user may still be reading it. A question is served here (`advance()`) only when none is on screen, i.e. the pane was resting. |
+| `hooks/biteq/pane.tsx` | `press('next:<Q1 id>')` then `next(qid)` | The user presses **Next** when ready. Claude is working, so it doesn't rest: Q2 is picked and shown. |
 | `hooks/biteq/pane.tsx` | `answer(idx)` | **6. User answers 2 questions.** The user answers Q2. `engaged` was reset, so `engaged_waits` goes up by 1 again. |
 | `hooks/biteq/pane.tsx` | `press('next:<Q2 id>')` then `next(qid)` | The **Next** button, through the same `ui.press` hook. Q3 is picked, different from Q2, in one write to `current`, and only if Q2 is still on screen (so a double click moves on once). **Skip** does the same before answering. |
 | `hooks/biteq/pane.tsx` | `answer(idx)` | The user answers Q3. `engaged` is already true for this wait, so `engaged_waits` does not change. `answered` goes up and `stats` is saved. |
@@ -113,10 +115,12 @@ Paths are relative to `plugins/biteq/`. Rows are in the order they happen.
 |---|---|---|
 | `answered` | 3 | Q1, Q2, and Q3 |
 | `waits` | 2 | Two separate times the session went into `thinking` |
-| `engaged_waits` | 2 | You answered at least one question in each wait. Q3 shared a wait with Q2, so it counts once. |
+| `engaged_waits` | 2 | You answered at least one question in each wait while Claude worked. Q3 shared a wait with Q2, so it counts once. |
+| `practised_waits` | 2 | Waits with at least one answer at any time, after Claude was done included (a wait runs from a prompt to the next one). Same as `engaged_waits` here: every answer came while Claude worked. An answer only after Claude was done would raise this one alone. |
 
-`/biteq stats` reports the ratio of `engaged_waits` to `waits`, which is the metric the project tracks: the share
-of AI waits where you practiced.
+`/biteq stats` reports both against `waits`. `engaged_waits` is the metric the project tracks: the AI waits where
+you practised instead of reaching for your phone. `practised_waits` also counts the quick task where you answered
+once Claude was done; the difference between the two is those waits.
 
 ## Events not shown above
 

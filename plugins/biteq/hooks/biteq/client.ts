@@ -16,16 +16,16 @@ export enum Client {
 
 /** What biteq does differently per client. Add a field here rather than a client check at a call site. */
 export type ClientTraits = {
-  /** Buttons answer to letter hotkeys (a–d, n, q) and show them; ctrl+x tab gives the pane the keyboard. */
+  /** Buttons answer to letter hotkeys (a–d, n, z, q) and show them; ctrl+x tab gives the pane the keyboard. */
   hotkeys: boolean
-  /** Next/Skip and Close are a hint bar on the pane's bottom row, pressed by hotkey and kept out of the focus ring. */
+  /** Next/Skip and Banks are a hint bar on the pane's bottom row, pressed by hotkey and kept out of the focus ring. */
   hintBar: boolean
   /** Enter on the answered option moves on (the hint bar's "⏎ next"), so the ring stays on that option after answering. */
   enterMovesOn: boolean
   /** The pane dims while it doesn't have the keyboard. */
   dimsWhenUnfocused: boolean
-  /** Action buttons (Next, Close, Serve next question, ...) get a rounded frame: a bare Button draws as plain text. */
-  framedActions: boolean
+  /** Action buttons (Next, Skip, ...) draw bracketed in the BiteQ colour, "[ Skip ]": a bare Button draws as plain text. */
+  bracketActions: boolean
   /** The pane draws its own "BiteQ - ..." title row. */
   showsTitle: boolean
   /** How an answer option's letter reads: "a: ..." or "a) ...". */
@@ -38,26 +38,31 @@ export type ClientTraits = {
   clientModule: boolean
   /** A new wait asks for the pane's keyboard (the composer is empty then), so the first click is a press. */
   focusOnWait: boolean
+  /** The pane offers its own close: a Close button, or the CLI hint bar's q: close. The desktop pane's X does that. */
+  closeButton: boolean
 }
 
 export const TRAITS: Record<Client, ClientTraits> = {
   [Client.ClaudeCli]: {
-    hotkeys: true, hintBar: true, enterMovesOn: true, dimsWhenUnfocused: true, framedActions: false,
+    hotkeys: true, hintBar: true, enterMovesOn: true, dimsWhenUnfocused: true, bracketActions: false,
     showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: false,
+    closeButton: true,
   },
   [Client.ClaudeDesktop]: {
-    hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, framedActions: true,
+    hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,
     showsTitle: false, optionSeparator: ':', alignStart: true, autoFocus: true, clientModule: true, focusOnWait: true,
+    closeButton: false,
   },
 }
 
 /**
  * Anything else: a surface biteq doesn't support yet (the VS Code extension, mobile) or none at all
- * (a headless `claude -p`). A plain pane drawn by the hook: clickable framed buttons, no hotkeys.
+ * (a headless `claude -p`). A plain pane drawn by the hook: clickable bracketed buttons, no hotkeys.
  */
 export const FALLBACK: ClientTraits = {
-  hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, framedActions: true,
+  hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,
   showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: false,
+  closeButton: true,
 }
 
 const BY_SURFACE: Record<string, Client> = Object.fromEntries(Object.values(Client).map(c => [c, c]))

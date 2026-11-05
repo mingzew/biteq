@@ -22,13 +22,29 @@ import { COMMAND, boot, run, signal, typedArgs } from './biteq/cli'
 import { toClient, traitsOf } from './biteq/client'
 import { logEvent, rememberClaude } from './biteq/debug'
 import type { Io, View } from './biteq/io'
-import { isHintKey } from './biteq/draw'
+import { isHintKey, keys } from './biteq/draw'
 import { closed, press, render, view } from './biteq/pane'
 import { DEFAULT_STATS } from './biteq/quiz'
 import { reportOpen } from './biteq/telemetry'
 
 const PANE = 'biteq'
 const QUIZ = 'quiz'
+
+// The pane's title, "biteq v<version>": the version in plugin.json, read once when the session starts, so
+// the title shows which version this session loaded. Bump the version to see that a new session picked up
+// a change (the desktop app loads the plugin only when a session starts).
+let paneTitle = PANE
+async function loadTitle($: EngineInterface): Promise<void> {
+  try {
+    const manifest = JSON.parse(String(await $.fs.read(`${$.plugin.root}/.claude-plugin/plugin.json`))) as { version?: unknown }
+    if (typeof manifest.version === 'string' && manifest.version) paneTitle = `${PANE} v${manifest.version}`
+  } catch { /* no manifest or no version: plain "biteq" */ }
+}
+
+// The key the plugin's own $.ui.focus is moving the ring to, while that call runs. Its ui.focus hook lets
+// that one move onto "serve next" (pane.next, when the pane rests), without depending on how the engine
+// marks a plugin's own move.
+let ownFocus: string | null = null
 
 // Desktop Client failed: fall back to the pane hook's own tree (ui.fault).
 let clientOk = true
@@ -40,6 +56,7 @@ let clientOk = true
 const status = atom({ plugin: 'biteq', key: 'status' } as const, 'idle')
 const current = atom({ plugin: 'biteq', key: 'current' } as const, { question: null, picked: null })
 const engaged = atom({ plugin: 'biteq', key: 'engaged' } as const, false)
+const practised = atom({ plugin: 'biteq', key: 'practised' } as const, false)
 const dismissed = atom({ plugin: 'biteq', key: 'dismissed' } as const, false)
 const openReported = atom({ plugin: 'biteq', key: 'openReported' } as const, false)
 const stats = atom({ plugin: 'biteq', key: 'stats' } as const, DEFAULT_STATS)
@@ -55,6 +72,7 @@ function io($: EngineInterface): Io {
         case 'status': return read($, status)
         case 'current': return read($, current)
         case 'engaged': return read($, engaged)
+        case 'practised': return read($, practised)
         case 'dismissed': return read($, dismissed)
         case 'openReported': return read($, openReported)
         case 'stats': return read($, stats)
@@ -68,6 +86,7 @@ function io($: EngineInterface): Io {
         case 'status': return update($, status, change)
         case 'current': return update($, current, change)
         case 'engaged': return update($, engaged, change)
+        case 'practised': return update($, practised, change)
         case 'dismissed': return update($, dismissed, change)
         case 'openReported': return update($, openReported, change)
         case 'stats': return update($, stats, change)
@@ -87,10 +106,12 @@ function io($: EngineInterface): Io {
       }
     },
     openPane: async focus =>
-      (await $.ui.open(focus ? { id: PANE, title: 'biteq', focus: true } : { id: PANE, title: 'biteq' })).isPlaced,
+      (await $.ui.open(focus ? { id: PANE, title: paneTitle, focus: true } : { id: PANE, title: paneTitle })).isPlaced,
     closePane: () => $.ui.close({ id: PANE }),
     focus: async key => {
+      ownFocus = key
       try { await $.ui.focus({ requestId: PANE, key }) } catch { /* deny, or a surface with no ring */ }
+      finally { ownFocus = null }
     },
     client: async () => toClient(await $.session.surface()),
     traits: async () => traitsOf(toClient(await $.session.surface())),
@@ -131,6 +152,7 @@ export const register: Register = on => {
   // ---- boot and the /biteq command (cli)
   on('session.start', async ($, e, next) => {
     await $.command.register(COMMAND)
+    await loadTitle($)
     await boot(io($))
     return next(e)
   })
@@ -214,12 +236,17 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // The hint bar (next/skip, close): pressed by hotkey only, so the arrow keys and Tab skip it and
+  // The hint bar (next/skip, banks): pressed by hotkey only, so the arrow keys and Tab skip it and
   // only walk the answers. A person's move names its target `element`; the plugin's own
-  // `$.ui.focus` names it `key`. Clients without a hint bar keep Next/Close as focusable buttons.
+  // `$.ui.focus` names it `key`. Clients without a hint bar keep their actions as focusable buttons.
+  // One exception: the plugin itself puts the ring on "serve next" when it rests (pane.next), so
+  // Enter there serves a question rather than landing on "always serve". Only while that request of
+  // its own runs (ownFocus), and never for a move the engine marks as the person's.
   on('ui.focus', async ($, e, next) => {
     const target = e.element ?? (e as { key?: string }).key
-    if (e.requestId === PANE && target && isHintKey(target) && traitsOf(toClient(await $.session.surface())).hintBar) {
+    const person = (e as { origin?: { kind?: string } }).origin?.kind === 'person'
+    const ownServe = target === keys.serve && ownFocus === keys.serve && !person
+    if (e.requestId === PANE && target && isHintKey(target) && !ownServe && traitsOf(toClient(await $.session.surface())).hintBar) {
       return { deny: 'hint bar: pressed by its hotkey' }
     }
     return next(e)
