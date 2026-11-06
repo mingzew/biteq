@@ -80,16 +80,6 @@
     "practicality": 6
   },
   {
-    "id": "python-list-multiply-alias",
-    "title": "Nested list multiplication",
-    "prompt": "What does this print?",
-    "code": "a = [[0] * 2] * 2\na[0][0] = 1\nprint(a)",
-    "options": ["[[1, 0], [0, 0]]", "[[1, 0], [1, 0]]", "[[1, 1], [0, 0]]", "[[1, 1], [1, 1]]"],
-    "answer": 1,
-    "explanation": "The outer * 2 copies the reference, so both rows are the same list object. Use [[0] * 2 for _ in range(2)].",
-    "practicality": 8
-  },
-  {
     "id": "python-mutate-while-iterating",
     "title": "Removing while iterating",
     "prompt": "What does this print?",
@@ -98,16 +88,6 @@
     "answer": 1,
     "explanation": "Removing the first 2 shifts the list left, so the iterator skips the second 2. Lists don't raise an error here (dicts do). Build a new list instead.",
     "practicality": 9
-  },
-  {
-    "id": "python-regex-greedy",
-    "title": "Greedy regex",
-    "prompt": "What does this print?",
-    "code": "import re\nprint(re.findall(r\"a.*b\", \"a1b a2b\"))",
-    "options": ["['a1b', 'a2b']", "['a1b a2b']", "['a1b']", "[]"],
-    "answer": 1,
-    "explanation": ".* is greedy and matches as much as it can, up to the last b. Use .*? for a non-greedy match.",
-    "practicality": 8
   },
   {
     "id": "python-binary-search-bug",
@@ -200,6 +180,36 @@
     "practicality": 9
   },
   {
+    "id": "python-remove-negatives",
+    "title": "Removing negatives",
+    "prompt": "What is the main bug in this function, which should remove the negative numbers from a list?",
+    "code": "def remove_negatives(numbers: list[int]) -> list[int]:\n    for num in numbers:\n        if num < 0:\n            numbers.remove(num)\n    return numbers",
+    "options": ["It raises a RuntimeError because the list changes size mid-loop", "Items shift left after a removal, so it skips one and some negatives stay", "It returns None, because list.remove() gives back nothing", "It only removes the first negative, then stops"],
+    "answer": 1,
+    "explanation": "Removing an item shifts the rest of the list left, so the loop skips the item right after each removal. In [1, -2, -3, 4] the -3 follows a removed -2, so it is skipped and stays. It also changes the caller's list in place. Build a new list instead.\n\nremove_negatives([1, -2, -3, 4])         # => [1, -3, 4]  (-3 was skipped)\n[n for n in [1, -2, -3, 4] if n >= 0]    # => [1, 4]  (a comprehension builds a new list)",
+    "practicality": 9
+  },
+  {
+    "id": "python-property-read-only",
+    "title": "Property without a setter",
+    "prompt": "What happens when this runs?",
+    "code": "class Account:\n    def __init__(self):\n        self._balance = 0\n\n    @property\n    def balance(self):\n        return self._balance\n\na = Account()\na.balance = 50\nprint(a.balance)",
+    "options": ["It prints 50", "It prints 0", "AttributeError", "TypeError"],
+    "answer": 2,
+    "explanation": "A property with only a getter is read-only, so assigning to it raises AttributeError instead of changing anything. Add a setter when you want writes, for example to validate the value.\n\n@property\ndef balance(self):         # read:  a.balance\n    return self._balance\n\n@balance.setter\ndef balance(self, value):  # write: a.balance = 50\n    if value < 0:\n        raise ValueError('balance cannot be negative')\n    self._balance = value",
+    "practicality": 8
+  },
+  {
+    "id": "python-super-mro",
+    "title": "super() is not \"my parent\"",
+    "prompt": "What does this print?",
+    "code": "class A:\n    def hi(self):\n        return \"A\"\n\nclass B(A):\n    def hi(self):\n        return \"B\" + super().hi()\n\nclass C(A):\n    def hi(self):\n        return \"C\" + super().hi()\n\nclass D(B, C):\n    pass\n\nprint(D().hi())",
+    "options": ["BA", "BCA", "CBA", "B"],
+    "answer": 1,
+    "explanation": "super() means \"the next class in the method resolution order\", not \"my parent class\". D's order is D, B, C, A, so B's super().hi() calls C, and C then calls A.\n\nD.__mro__     # => D, B, C, A, object  (the order super() walks)\nD().hi()      # => 'BCA'  (B adds 'B', super() goes to C, C adds 'C', super() goes to A)",
+    "practicality": 7
+  },
+  {
     "id": "python-fcc-001",
     "prompt": "What does this print?",
     "code": "print(list(range(3, 6)))",
@@ -217,16 +227,6 @@
     "explanation": "strip() removes leading and trailing whitespace (or the characters you pass it). lstrip() and rstrip() do one end only.\n\n'  hi  '.strip()    # 'hi'\n'  hi  '.rstrip()   # '  hi'",
     "practicality": 8,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #2"
-  },
-  {
-    "id": "python-fcc-009",
-    "prompt": "What does this print?",
-    "code": "names = ['rahul', 'monica', 'george', 'ross', 'george', 'ross']\nprint(len(set(names)) - len(names))",
-    "options": ["2", "6", "0", "-2"],
-    "answer": 3,
-    "explanation": "A set keeps only unique items, so it is smaller than the list when there are repeats. Here the list has 6 names and the set has 4, so the difference is -2.\n\nlen(names)                     # => 6  (the list keeps every duplicate)\nlen(set(names))                # => 4  (rahul, monica, george, ross; the set drops repeats)\nlen(set(names)) - len(names)   # => -2  (4 - 6)",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #9"
   },
   {
     "id": "python-fcc-016",
@@ -314,15 +314,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #30"
   },
   {
-    "id": "python-fcc-031",
-    "prompt": "Which of the following outputs 'camp'?",
-    "options": ["print('freecodecamp'[-4:10])", "print('freecodecamp'[-4:])", "print('freecodecamp'[8:11])", "print('freecodecamp'[8::-1])"],
-    "answer": 1,
-    "explanation": "Here we use the negative index to start slicing at the 4th index from the end of the string.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #31"
-  },
-  {
     "id": "python-fcc-032",
     "prompt": "Which Type casting method lets users convert a specific data type into a required data type?",
     "options": ["Default Type Conversion", "Widening Type Conversion", "Explicit Type Conversion", "Implicit Type Conversion"],
@@ -330,15 +321,6 @@
     "explanation": "In Explicit Type Conversion, users convert the data type of an object to the required data type.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #32"
-  },
-  {
-    "id": "python-fcc-033",
-    "prompt": "Which one of these is not a Dunder method?",
-    "options": ["__len__", "__init__", "__func", "__add__"],
-    "answer": 2,
-    "explanation": "Dunder methods are names that are preceded and succeeded by double underscores, hence __func method is not a Dunder method.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #33"
   },
   {
     "id": "python-fcc-034",
@@ -369,15 +351,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #39"
   },
   {
-    "id": "python-fcc-043",
-    "prompt": "What logical operator returns True if both operands are True?",
-    "options": ["and", "or", "not", "list"],
-    "answer": 0,
-    "explanation": "The and operator returns True if both operands are True and False otherwise.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #43"
-  },
-  {
     "id": "python-fcc-058",
     "prompt": "What value does a function return by default if it doesn't have a return statement?",
     "options": ["0", "An empty string", "None", "An empty list"],
@@ -391,7 +364,7 @@
     "prompt": "String literals prefixed with 'f' or 'F' are commonly called...",
     "options": ["x-string", "strings-f", "p-string", "f-strings"],
     "answer": 3,
-    "explanation": "f-strings are string literals prefixed with 'f' and 'F' in Python.",
+    "explanation": "An f-string is a string with f in front. Anything inside {} is evaluated and put into the text, so you don't have to glue pieces together with + and str(). In a regular string, braces are just characters. (Python 3.6+)\n\nname = 'Ada'\nscore = 92.456\n'Hello, ' + name + '! Score: ' + str(round(score, 1))   # => 'Hello, Ada! Score: 92.5'  (regular string: join with + and str())\nf'Hello, {name}! Score: {score:.1f}'                    # => 'Hello, Ada! Score: 92.5'  (f-string: {} runs the code; :.1f means 1 decimal)\n'{name}'                                                # => '{name}'  (no f, so the braces stay as text)",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #70"
   },
@@ -468,15 +441,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #99"
   },
   {
-    "id": "python-fcc-100",
-    "prompt": "The values of a dictionary can be...",
-    "options": ["Neither will work", "only immutable", "only mutable", "Both Mutable and Immutable"],
-    "answer": 3,
-    "explanation": "The values of a Python dictionary can be either mutable or immutable. Both will work correctly.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #100"
-  },
-  {
     "id": "python-fcc-101",
     "prompt": "Are tuples mutable or immutable?",
     "options": ["Mutable", "Both Mutable and Immutable", "Neither Mutable or Immutable", "Immutable"],
@@ -493,15 +457,6 @@
     "explanation": "A RecursionError occurs when the interpreter detects that the maximum recursion depth is exceeded. This usually occurs when the recursive process never reaches the base case.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #103"
-  },
-  {
-    "id": "python-fcc-106",
-    "prompt": "Which one of these options is a valid variable name?",
-    "options": ["my_variable_59", "59my_variable", "my_variable59%", "my^_variable"],
-    "answer": 0,
-    "explanation": "Variable names in Python cannot start with a number, they must start with a letter or an underscore. They can only contain alphanumeric characters and underscores (A-Z, a-z, 0-9, and _).",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #106"
   },
   {
     "id": "python-fcc-115",
@@ -559,26 +514,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #124"
   },
   {
-    "id": "python-fcc-129",
-    "prompt": "What does this print?",
-    "code": "import math\n\nprint(math.pow(3, 4))",
-    "options": ["43", "81.0", "34", "27"],
-    "answer": 1,
-    "explanation": "3 raised to the power of 4 is 81, and by default math.pow() converts both its arguments to type float",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #129"
-  },
-  {
-    "id": "python-fcc-136",
-    "prompt": "What does this print?",
-    "code": "y = lambda x: x ** 2 + 7\nprint(y(3))",
-    "options": ["5", "24", "16", "11"],
-    "answer": 2,
-    "explanation": "y holds a function that takes x and returns x squared plus 7. y(3) runs the body with x = 3, and ** is evaluated before +, so 3 ** 2 is 9 and 9 + 7 is 16.\n\ny = lambda x: x ** 2 + 7   # y holds a function; nothing has run yet\ny(3)                       # => 16  (x = 3: 3 ** 2 = 9, then 9 + 7 = 16)\n\n3 ** (2 + 7)               # => 19683  (what you would get if + ran first)",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #136"
-  },
-  {
     "id": "python-fcc-137",
     "prompt": "Which statement makes sure a file opened with open() gets closed?",
     "options": ["pass", "await", "finally", "with"],
@@ -606,15 +541,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #141"
   },
   {
-    "id": "python-fcc-142",
-    "prompt": "Which of the following is a good way to input n space separated integers?",
-    "options": ["input().split()", "list(map(int, input().split()))", "list(mapping(int, input().split()))", "int(input())"],
-    "answer": 1,
-    "explanation": "The map() function is used to apply a function to each item in an iterable (like a Python list or dictionary).",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #142"
-  },
-  {
     "id": "python-fcc-146",
     "prompt": "What does this print?",
     "code": "print({'apple', 'orange', 'apple', 'pear', 'orange', 'banana'})",
@@ -635,20 +561,11 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #147"
   },
   {
-    "id": "python-fcc-157",
-    "prompt": "Which of the following statements is true about the random module?",
-    "options": ["The random library is primarily used for generating random strings.", "The random library can generate true random numbers based on hardware entropy.", "The random library cannot be used to generate random numbers within a specified range.", "The random library can only generate pseudo-random numbers."],
-    "answer": 3,
-    "explanation": "The random module in Python generates pseudo-random numbers, which are generated by mathematical algorithms and are not truly random but are sufficiently unpredictable for many purposes. To generate truly random numbers, you may need specialized hardware or external services, which are not provided by the random module.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #157"
-  },
-  {
     "id": "python-fcc-158",
-    "prompt": "Which of the following functions are known for posing security risks?",
+    "prompt": "Which of these functions is a security risk when it runs text a user typed in?",
     "options": ["quit()", "input()", "eval()", "print()"],
     "answer": 2,
-    "explanation": "If you use the eval() function to get input from an external source you don't know for sure if the code executed is malicious or not. This can pose a security risk to your codebase and it is recommended to avoid using the eval() function.",
+    "explanation": "eval() runs whatever text it is given as Python code, so if a user can type that text, they can make your program run any code they like. Never use it on input you don't control. If you only need to read a literal such as a list or dict, use ast.literal_eval(), which refuses anything that isn't plain data.\n\ntext = input()                 # a user types: __import__('os').getcwd()\neval(text)                     # => runs the call (an attacker could just as easily delete files)\n\nimport ast\nast.literal_eval(text)         # => ValueError: malformed node or string  (code is refused)\nast.literal_eval(\"[1, 2, 3]\")  # => [1, 2, 3]  (plain data is fine)",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #158"
   },
@@ -663,20 +580,11 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #159"
   },
   {
-    "id": "python-fcc-160",
-    "prompt": "Which of the following dunder methods defines the behavior of the addition operator + for objects of a class?",
-    "options": ["__sub__", "__add__", "__mul__", "__len__"],
-    "answer": 1,
-    "explanation": "Dunder methods (Double underscore) are special methods reserved in Python which affect's the behavior of the object and the interaction of the object with other objects.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #160"
-  },
-  {
     "id": "python-fcc-161",
     "prompt": "Which of the following statements about decorators is false?",
     "options": ["Decorators can be applied to classes as well as functions.", "Decorators are applied to a function at compile time.", "A decorator is a function that takes another function and extends its behavior without explicitly modifying it.", "Multiple decorators can be applied to a single function."],
     "answer": 1,
-    "explanation": "Decorators in Python are applied at runtime, not at compile time. When a decorated function is defined, the decorator is executed immediately, and the result replaces the original function definition in the namespace.",
+    "explanation": "A decorator is a function that takes a function and returns a replacement, so you can add behaviour such as caching, timing, logging or login checks without editing the function itself. The false statement is \"at compile time\": a decorator runs when the def statement runs, and the name is bound to whatever it returns.\n\n@lru_cache             # shorthand for: slow = lru_cache(slow)\ndef slow(n):           # lru_cache(slow) runs right here, when def executes\n    return n * n\n\nslow(4)                # => 16  (the result is cached, so the next slow(4) skips the work)",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #161"
   }

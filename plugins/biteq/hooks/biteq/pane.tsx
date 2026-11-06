@@ -43,7 +43,7 @@ export async function boot(io: Io, chosen: Question[]): Promise<void> {
 /**
  * The next question, mixed across the selected banks: a random bank that still has unseen
  * questions, then a random unseen question in it (picking the bank first keeps a small bank from
- * being drowned out by a big one). 30% of the time it's one you missed instead, and only missed
+ * being drowned out by a big one). 10% of the time it's one you missed instead, and only missed
  * ones once nothing is unseen. Null once every question has been answered and none is still
  * missed: the pane says so (finished) and offers to start over.
  */
@@ -53,7 +53,7 @@ function pick(s: Stats, cur: Question | null): Question | null {
   const unseen = questions.filter(q => !s.seen.includes(q.id))
   const from = notCur(unseen).length ? notCur(unseen) : unseen
   const missed = questions.filter(q => s.wrong.includes(q.id))
-  if (notCur(missed).length && (!from.length || Math.random() < 0.3)) return randomOf(notCur(missed))   // light spaced repetition
+  if (notCur(missed).length && (!from.length || Math.random() < 0.1)) return randomOf(notCur(missed))   // light spaced repetition
   if (!from.length) return missed.length ? randomOf(missed) : null
   const lang = randomOf([...new Set(from.map(q => q.lang))])
   return randomOf(from.filter(q => q.lang === lang))

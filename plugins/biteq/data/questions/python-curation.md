@@ -18,10 +18,11 @@ applied.
 The score barely separates them: 40 of the 109 removals scored 6 or higher (`python-fcc-019` scored 9). Judge the
 question, not the number.
 
-All 12 hand-written questions were kept (`python-mutable-default`, `-late-binding`, `-is-vs-eq`, `-dict-hash-collide`,
-`-slice-step`, `-generator-exhausted`, `-finally-return`, `-floor-div-negative`, `-list-multiply-alias`,
-`-mutate-while-iterating`, `-regex-greedy`, `-binary-search-bug`). They are the model: short real code, a trap people
-meet in practice, and an answer that changes how you'd write or review code.
+All 12 hand-written questions were kept in that pass (`python-mutable-default`, `-late-binding`, `-is-vs-eq`,
+`-dict-hash-collide`, `-slice-step`, `-generator-exhausted`, `-finally-return`, `-floor-div-negative`,
+`-list-multiply-alias`, `-mutate-while-iterating`, `-regex-greedy`, `-binary-search-bug`). `-list-multiply-alias` and
+`-regex-greedy` were removed in a later pass. They are the model: short real code, a trap people meet in practice, and
+an answer that changes how you'd write or review code.
 
 ## Why questions were removed
 
@@ -48,7 +49,7 @@ Exception: `103` (RecursionError) stayed, because that error is not the obvious 
 
 "Truthy" and "falsy" (`040`, `042`, `064`, `114`), attribute vs property (`051`), what `pass` is called (`120`),
 `dir()` (`133`), naming style (`096`), "which is not a built-in type or method" (`027`, `130`, `152`, `153`, `154`,
-`156`). Kept: `028`, `032`, `033`, `070`, `100`.
+`156`). Kept: `028`, `032`, `070`. (`033` and `100` were kept at first and removed in a later pass.)
 
 ### 4. Contrived or trivial output puzzles
 
@@ -86,7 +87,7 @@ used `math.pow` without importing `math`, so two options failed).
 
 ## Kept despite a low or borderline score
 
-`032` and `033` (3), `python-dict-hash-collide` (3, hand-written). A second pass could still look at `084`, `090`,
+`032` (3), `python-dict-hash-collide` (3, hand-written). A second pass could still look at `084`, `090`,
 `101`, `138` (mutability), `099` (indentation), `085` (`all()`), `001`, `002`, `115` and `161`.
 
 ## What the reviewer's edits asked for
@@ -94,7 +95,7 @@ used `math.pow` without importing `math`, so two options failed).
 - **One clear answer and a precise prompt.** `017` now asks for the last item "without removing it", because
   `pop()` also returns it. `132` was dropped for the same ambiguity (a slice copies, it doesn't reverse in place).
 - **Code that runs as written.** Show the imports it needs. Never name a variable after a built-in (`009` used
-  `list`; it is now `names`).
+  `list`; it was changed to `names`, and the question was removed later).
 - **Balanced options.** The right answer must not be the longest (`026`).
 - **Explanations are short.** One or two sentences of why, plus the fix when there is one. Add a commented snippet
   with `# =>` outputs only when the code explains it better than words (a shallow copy, `[::-1]`, `'%.3f'`); when

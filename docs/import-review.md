@@ -780,7 +780,7 @@ What is the time complexity of Kruskal's algorithm in terms of the number of edg
 
 ---
 
-## 4. Question reworded: ambiguous, outdated or false premise (22)
+## 4. Question reworded: ambiguous, outdated or false premise (23)
 
 The answer is the same idea; the question or options were fixed so it has one defensible answer.
 
@@ -916,6 +916,45 @@ print({'apple', 'orange', 'apple', 'pear', 'orange', 'banana'})
 - ▫️ A list of the 4 distinct strings, sorted
 
 > A set keeps one copy of each item, so the duplicates collapse to apple, orange, pear and banana. Sets are unordered: the printed order depends on string hashing and can change between runs.
+
+---
+
+### `python-fcc-158` (python-quiz.ts #158)
+
+- [ ] Checked by us
+
+*Why:* "Which ... are known" suggested several answers, but only eval() is right. The prompt now says the risk is text a user typed in, and the explanation gives an example and the safe alternative.
+
+*Explanation:* rewritten · *Practicality:* 7
+
+**Original**
+
+Which of the following functions are known for posing security risks?
+
+- ▫️ quit()
+- ▫️ input()
+- ✅ eval()
+- ▫️ print()
+
+> If you use the eval() function to get input from an external source you don't know for sure if the code executed is malicious or not. This can pose a security risk to your codebase and it is recommended to avoid using the eval() function.
+
+**Ours**
+
+Which of these functions is a security risk when it runs text a user typed in?
+
+- ▫️ quit()
+- ▫️ input()
+- ✅ eval()
+- ▫️ print()
+
+> eval() runs whatever text it is given as Python code, so if a user can type that text, they can make your program run any code they like. Never use it on input you don't control. If you only need to read a literal such as a list or dict, use ast.literal_eval(), which refuses anything that isn't plain data.
+>
+> text = input()                 # a user types: __import__('os').getcwd()
+> eval(text)                     # => runs the call (an attacker could just as easily delete files)
+>
+> import ast
+> ast.literal_eval(text)         # => ValueError: malformed node or string  (code is refused)
+> ast.literal_eval("[1, 2, 3]")  # => [1, 2, 3]  (plain data is fine)
 
 ---
 
@@ -1495,7 +1534,7 @@ Which type of cookie is deleted when the browser session ends?
 
 ---
 
-## 5. Explanation was wrong (answer unchanged) (8)
+## 5. Explanation was wrong (answer unchanged) (9)
 
 ### `python-fcc-017` (python-quiz.ts #17)
 
@@ -1536,6 +1575,44 @@ numbers = [1, 2, 3, 4, 5]
 > numbers[len(numbers) - 1]  # => 5  (the same item, with the index spelled out)
 > numbers[len(numbers)]      # => IndexError: list index out of range  (the last index is len - 1)
 > numbers.pop()              # => 5  (but numbers is now [1, 2, 3, 4])
+
+---
+
+### `python-fcc-070` (python-quiz.ts #70)
+
+- [ ] Checked by us
+
+*Why:* The explanation only repeated the question. It now says what an f-string is, why it is used, and how a regular string treats the same braces.
+
+*Explanation:* rewritten · *Practicality:* 6
+
+**Original**
+
+String literals prefixed with 'f' or 'F' are commonly called...
+
+- ▫️ x-string
+- ▫️ strings-f
+- ▫️ p-string
+- ✅ f-strings
+
+> f-strings are string literals prefixed with 'f' and 'F' in Python.
+
+**Ours**
+
+String literals prefixed with 'f' or 'F' are commonly called...
+
+- ▫️ x-string
+- ▫️ strings-f
+- ▫️ p-string
+- ✅ f-strings
+
+> An f-string is a string with f in front. Anything inside {} is evaluated and put into the text, so you don't have to glue pieces together with + and str(). In a regular string, braces are just characters. (Python 3.6+)
+>
+> name = 'Ada'
+> score = 92.456
+> 'Hello, ' + name + '! Score: ' + str(round(score, 1))   # => 'Hello, Ada! Score: 92.5'  (regular string: join with + and str())
+> f'Hello, {name}! Score: {score:.1f}'                    # => 'Hello, Ada! Score: 92.5'  (f-string: {} runs the code; :.1f means 1 decimal)
+> '{name}'                                                # => '{name}'  (no f, so the braces stay as text)
 
 ---
 
@@ -2572,7 +2649,7 @@ console.log('❤️' === '❤️');
 
 ---
 
-## 7. Wording or typos only (12)
+## 7. Wording or typos only (11)
 
 No change in meaning; listed so nothing is hidden.
 
@@ -2608,45 +2685,13 @@ Which statement makes sure a file opened with open() gets closed?
 
 ---
 
-### `python-fcc-157` (python-quiz.ts #157)
-
-- [ ] Checked by us
-
-*Why:* Dropped "Python".
-
-*Explanation:* unchanged (apart from formatting) · *Practicality:* 4
-
-**Original**
-
-Which of the following statements is true regarding the Python random library?
-
-- ✅ The random library can only generate pseudo-random numbers.
-- ▫️ The random library can generate true random numbers based on hardware entropy.
-- ▫️ The random library is primarily used for generating random strings.
-- ▫️ The random library cannot be used to generate random numbers within a specified range.
-
-> The random module in Python generates pseudo-random numbers, which are generated by mathematical algorithms and are not truly random but are sufficiently unpredictable for many purposes. To generate truly random numbers, you may need specialized hardware or external services, which are not provided by the random module.
-
-**Ours**
-
-Which of the following statements is true about the random module?
-
-- ▫️ The random library is primarily used for generating random strings.
-- ▫️ The random library can generate true random numbers based on hardware entropy.
-- ▫️ The random library cannot be used to generate random numbers within a specified range.
-- ✅ The random library can only generate pseudo-random numbers.
-
-> The random module in Python generates pseudo-random numbers, which are generated by mathematical algorithms and are not truly random but are sufficiently unpredictable for many purposes. To generate truly random numbers, you may need specialized hardware or external services, which are not provided by the random module.
-
----
-
 ### `python-fcc-161` (python-quiz.ts #161)
 
 - [ ] Checked by us
 
 *Why:* Dropped "Python".
 
-*Explanation:* unchanged (apart from formatting) · *Practicality:* 5
+*Explanation:* rewritten · *Practicality:* 5
 
 **Original**
 
@@ -2668,7 +2713,13 @@ Which of the following statements about decorators is false?
 - ▫️ A decorator is a function that takes another function and extends its behavior without explicitly modifying it.
 - ▫️ Multiple decorators can be applied to a single function.
 
-> Decorators in Python are applied at runtime, not at compile time. When a decorated function is defined, the decorator is executed immediately, and the result replaces the original function definition in the namespace.
+> A decorator is a function that takes a function and returns a replacement, so you can add behaviour such as caching, timing, logging or login checks without editing the function itself. The false statement is "at compile time": a decorator runs when the def statement runs, and the name is bound to whatever it returns.
+>
+> @lru_cache             # shorthand for: slow = lru_cache(slow)
+> def slow(n):           # lru_cache(slow) runs right here, when def executes
+>     return n * n
+>
+> slow(4)                # => 16  (the result is cached, so the next slow(4) skips the work)
 
 ---
 
