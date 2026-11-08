@@ -66,7 +66,7 @@
     "code": "Object.keys({ b: 1, 2: 1, a: 1, 1: 1 })",
     "options": ["[\"b\", \"2\", \"a\", \"1\"]", "[\"1\", \"2\", \"b\", \"a\"]", "[\"1\", \"2\", \"a\", \"b\"]", "[\"a\", \"b\", \"1\", \"2\"]"],
     "answer": 1,
-    "explanation": "Integer-like keys come first in ascending order. All other string keys follow in insertion order.",
+    "explanation": "Object.keys() returns an array of an object's own property names, as strings. Integer-like keys come first in ascending order. All other string keys follow in insertion order.",
     "practicality": 4
   },
   {
@@ -86,7 +86,7 @@
     "code": "const o = Object.freeze({ inner: { v: 1 } });\no.inner.v = 2;\nconsole.log(o.inner.v);",
     "options": ["1", "2", "TypeError", "undefined"],
     "answer": 1,
-    "explanation": "freeze is shallow: o.inner can't be reassigned, but the nested object can still be changed. You have to freeze each nested object as well.",
+    "explanation": "Object.freeze() stops an object's properties from being added, changed or removed. freeze is shallow: o.inner can't be reassigned, but the nested object can still be changed. You have to freeze each nested object as well.",
     "practicality": 6
   },
   {
@@ -323,7 +323,7 @@
     "code": "const obj = { 1: 'a', 2: 'b', 3: 'c' };\nconst set = new Set([1, 2, 3, 4, 5]);\n\nobj.hasOwnProperty('1');\nobj.hasOwnProperty(1);\nset.has('1');\nset.has(1);",
     "options": ["false true false true", "false true true true", "true true false true", "true true true true"],
     "answer": 2,
-    "explanation": "All object keys (excluding Symbols) are strings under the hood, even if you don't type it yourself as a string. This is why obj.hasOwnProperty('1') also returns true.\n\nIt doesn't work that way for a set. There is no '1' in our set: set.has('1') returns false. It has the numeric type 1, set.has(1) returns true.",
+    "explanation": "hasOwnProperty(key) checks whether an object has that key itself, and set.has(value) checks whether a set contains that value. All object keys (excluding Symbols) are strings under the hood, even if you don't type it yourself as a string. This is why obj.hasOwnProperty('1') also returns true.\n\nIt doesn't work that way for a set. There is no '1' in our set: set.has('1') returns false. It has the numeric type 1, set.has(1) returns true.",
     "practicality": 4,
     "source": "lydiahallie/javascript-questions #24"
   },
@@ -481,7 +481,7 @@
     "code": "[[0, 1], [2, 3]].reduce(\n  (acc, cur) => {\n    return acc.concat(cur);\n  },\n  [1, 2],\n);",
     "options": ["[0, 1, 2, 3, 1, 2]", "[6, 1, 2]", "[1, 2, 0, 1, 2, 3]", "[1, 2, 6]"],
     "answer": 2,
-    "explanation": "[1, 2] is our initial value. This is the value we start with, and the value of the very first acc. During the first round, acc is [1,2], and cur is [0, 1]. We concatenate them, which results in [1, 2, 0, 1].\n\nThen, [1, 2, 0, 1] is acc and [2, 3] is cur. We concatenate them, and get [1, 2, 0, 1, 2, 3]",
+    "explanation": "reduce() runs a callback on each item and passes along the result so far (acc). concat() joins arrays into a new one. [1, 2] is our initial value. This is the value we start with, and the value of the very first acc. During the first round, acc is [1,2], and cur is [0, 1]. We concatenate them, which results in [1, 2, 0, 1].\n\nThen, [1, 2, 0, 1] is acc and [2, 3] is cur. We concatenate them, and get [1, 2, 0, 1, 2, 3]",
     "practicality": 4,
     "source": "lydiahallie/javascript-questions #40"
   },
@@ -501,7 +501,7 @@
     "code": "setInterval(() => console.log('Hi'), 1000);",
     "options": ["a unique id", "the amount of milliseconds specified", "the passed function", "undefined"],
     "answer": 0,
-    "explanation": "It returns a unique id. This id can be used to clear that interval with the clearInterval() function.",
+    "explanation": "setInterval() runs a callback again and again, waiting the given time between runs. It returns a unique id. This id can be used to clear that interval with the clearInterval() function.",
     "practicality": 4,
     "source": "lydiahallie/javascript-questions #42"
   },
@@ -591,7 +591,7 @@
     "code": "function getInfo(member, year) {\n  member.name = 'Lydia';\n  year = '1998';\n}\n\nconst person = { name: 'Sarah' };\nconst birthYear = '1997';\n\ngetInfo(person, birthYear);\n\nconsole.log(person, birthYear);",
     "options": ["{ name: \"Lydia\" }, \"1997\"", "{ name: \"Sarah\" }, \"1998\"", "{ name: \"Lydia\" }, \"1998\"", "{ name: \"Sarah\" }, \"1997\""],
     "answer": 0,
-    "explanation": "JavaScript passes every argument by value, but the value of an object variable is a reference to the object. So member points at the same object as person, while year is a separate variable that starts as \"1997\".\n\nmember.name = 'Lydia'   // changes the shared object, so person changes\nyear = '1998'           // changes only the local year; birthYear stays \"1997\"\n\nmember = { name: 'Ada' }   // would only repoint member; person would stay the same",
+    "explanation": "member and person point to the same object, so changing a property through member changes person too. year is its own variable, so giving it a new value doesn't touch birthYear.\n\nmember.name = 'Lydia'   // changes the shared object, so person changes\nyear = '1998'           // changes only the local year; birthYear stays \"1997\"\n\nmember = { name: 'Ada' }   // would point member at a new object; person would stay the same",
     "practicality": 7,
     "source": "lydiahallie/javascript-questions #51"
   },
@@ -1191,7 +1191,7 @@
     "code": "const groceries = ['banana', 'apple', 'peanuts'];\n\nif (groceries.indexOf('banana')) {\n  console.log('We have to buy bananas!');\n} else {\n  console.log(`We don't have to buy bananas!`);\n}",
     "options": ["We have to buy bananas!", "We don't have to buy bananas", "undefined", "1"],
     "answer": 1,
-    "explanation": "We passed the condition groceries.indexOf(\"banana\") to the if-statement. groceries.indexOf(\"banana\") returns 0, which is a falsy value. Since the condition in the if-statement is falsy, the code in the else block runs, and We don't have to buy bananas! gets logged.",
+    "explanation": "indexOf() returns the position of the first match, or -1 if there is none. We passed the condition groceries.indexOf(\"banana\") to the if-statement. groceries.indexOf(\"banana\") returns 0, which is a falsy value. Since the condition in the if-statement is falsy, the code in the else block runs, and We don't have to buy bananas! gets logged.",
     "practicality": 7,
     "source": "lydiahallie/javascript-questions #120"
   },
@@ -1421,7 +1421,7 @@
     "code": "const user = {\n\temail: \"e@mail.com\",\n\tpassword: \"12345\"\n}\n\nconst updateUser = ({ email, password }) => {\n\tif (email) {\n\t\tObject.assign(user, { email })\n\t}\n\n\tif (password) {\n\t\tuser.password = password\n\t}\n\n\treturn user\n}\n\nconst updatedUser = updateUser({ email: \"new@email.com\" })\n\nconsole.log(updatedUser === user)",
     "options": ["false", "true", "TypeError", "ReferenceError"],
     "answer": 1,
-    "explanation": "The updateUser function updates the values of the email and password properties on user, if their values are passed to the function, after which the function returns the user object. The returned value of the updateUser function is the user object, which means that the value of updatedUser is a reference to the same user object that user points to. updatedUser === user equals true.",
+    "explanation": "Object.assign(target, source) copies the properties of source onto target and returns target. The updateUser function updates the values of the email and password properties on user, if their values are passed to the function, after which the function returns the user object. The returned value of the updateUser function is the user object, which means that the value of updatedUser is a reference to the same user object that user points to. updatedUser === user equals true.",
     "practicality": 6,
     "source": "lydiahallie/javascript-questions #148"
   },
@@ -1461,7 +1461,7 @@
     "code": "let x = 'Prakhar';\nconsole.log(x.substring(2, 5));",
     "options": ["aka", "akkkaha", "akaha", "akh"],
     "answer": 3,
-    "explanation": "The first parameter in the substring method represents the starting index for the string while the second parameter represents the ending index.",
+    "explanation": "substring(start, end) returns the part of the string from start up to, but not including, end. Positions start at 0, so 2, 3 and 4 give a, k and h.",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #1"
   },
@@ -1498,7 +1498,7 @@
     "code": "let word = 'Intelligent';\nword.slice(2, 5);",
     "options": ["tel", "ll", "Inigent", "tellig"],
     "answer": 0,
-    "explanation": "The slice() method returns a substring of the original string. The original string remains untouched.",
+    "explanation": "slice(start, end) returns the part of the string from start up to, but not including, end, and leaves the original untouched. Positions start at 0, so 2, 3 and 4 give t, e and l.",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #8"
   },
@@ -1535,7 +1535,7 @@
     "code": "12345.6789.toFixed()",
     "options": ["12345.6789", "12346", "Undefined. toFixed() must take parameters", "12345"],
     "answer": 1,
-    "explanation": "Parameters are optional. If not passed, it will round the given number, leaving with no fractional part",
+    "explanation": "toFixed(digits) rounds a number to that many decimal places and returns it as a string. digits is optional and defaults to 0, so 12345.6789 rounds to \"12346\".",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #12"
   },
@@ -1725,7 +1725,7 @@
     "prompt": "Which of the following methods returns a function?",
     "options": ["call", "bind", "apply", "None of given"],
     "answer": 1,
-    "explanation": "The bind function returns a new function with given arguments as the new function's 'this' keyword.",
+    "explanation": "bind() returns a new function with this fixed to the object you pass, and doesn't call the function. call and apply run the function straight away.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #39"
   },
@@ -1851,7 +1851,7 @@
     "prompt": "Which of the following is the default separator in the join() method?",
     "options": ["full-stop ('.')", "empty string ('')", "space (' ')", "comma (',')"],
     "answer": 3,
-    "explanation": "If a separator is omitted, the array elements are separated with a comma (',').",
+    "explanation": "join() combines an array's elements into one string, with a separator between them. If a separator is omitted, the array elements are separated with a comma (',').",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #55"
   },
@@ -2565,7 +2565,7 @@
     "code": "const arr = ['a', 'b', 'c', 'd', 'e'];\n// wanted: ['c', 'd', 'e']",
     "options": ["arr.remove(0, 1)", "arr.slice(2,5)", "arr.fill(c, d, e)", "arr.keys(c, d, e)"],
     "answer": 1,
-    "explanation": "The slice() method has two optional parameters which represent the starting and ending index for the array. This method returns a new shallow copy of the sliced array.",
+    "explanation": "slice(start, end) returns a new array from start up to, but not including, end, and leaves the original unchanged. Positions 2, 3 and 4 hold c, d and e.",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #140"
   },
@@ -2711,7 +2711,7 @@
     "prompt": "Which methods accept an iterable of promises and returns a single array of results?",
     "options": ["Promise.any() and Promise.all()", "Promise.resolve() and Promise.allSettled()", "Promise.all() and Promise.allSettled()", "Promise.reject() and Promise.reject()"],
     "answer": 2,
-    "explanation": "Promise.all() and Promise.allSettled() accept an iterable of promises and return a single array of results.",
+    "explanation": "Promise.all() and Promise.allSettled() both wait for a list of promises and give back one array of results. Promise.all() rejects as soon as one promise fails, while Promise.allSettled() waits for all of them and reports each as fulfilled or rejected.",
     "practicality": 8,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #167"
   },
@@ -2793,7 +2793,7 @@
     "prompt": "What does the forEach() method return?",
     "options": ["true", "null", "false", "undefined"],
     "answer": 3,
-    "explanation": "forEach() always returns undefined. It makes no difference whether the return keyword is used or not.",
+    "explanation": "forEach() runs a callback once for each element. forEach() always returns undefined. It makes no difference whether the return keyword is used or not.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site javascript-quiz #182"
   },

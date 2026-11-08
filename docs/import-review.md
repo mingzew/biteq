@@ -2016,12 +2016,12 @@ console.log(person, birthYear);
 - ▫️ { name: "Lydia" }, "1998"
 - ▫️ { name: "Sarah" }, "1997"
 
-> JavaScript passes every argument by value, but the value of an object variable is a reference to the object. So member points at the same object as person, while year is a separate variable that starts as "1997".
+> member and person point to the same object, so changing a property through member changes person too. year is its own variable, so giving it a new value doesn't touch birthYear.
 > 
 > member.name = 'Lydia'   // changes the shared object, so person changes
 > year = '1998'           // changes only the local year; birthYear stays "1997"
 > 
-> member = { name: 'Ada' }   // would only repoint member; person would stay the same
+> member = { name: 'Ada' }   // would point member at a new object; person would stay the same
 
 ---
 
@@ -3078,5 +3078,802 @@ Which of the following options is a web API that runs code asynchronously?
 - ✅ setTimeout()
 
 > The setTimeout() function is an asynchronous function that will not pause execution of other functions in the stack.
+
+---
+
+## 8. Explanation now says what the function does (19)
+
+The question depends on knowing a function, and the explanation didn't say what it does. Question text and options are unchanged.
+
+### `python-fcc-034` (freeCodeCamp/Developer_Quiz_Site python-quiz #34)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 6
+
+**Original**
+
+What do these return?
+
+```
+type(1)
+type((1,))
+```
+
+- ▫️ <class 'dict'>  <class 'list'>
+- ✅ <class 'int'>  <class 'tuple'>
+- ▫️ <class 'int'> <class 'int'>
+- ▫️ <class 'str'> <class 'int'>
+
+> type(1) will return <class 'int'> and type((1,)) will return <class 'tuple'>
+
+**Ours**
+
+What do these return?
+
+```
+type(1)
+type((1,))
+```
+
+- ▫️ <class 'dict'>  <class 'list'>
+- ✅ <class 'int'>  <class 'tuple'>
+- ▫️ <class 'int'> <class 'int'>
+- ▫️ <class 'str'> <class 'int'>
+
+> type() returns the class of a value. type(1) is <class 'int'>, and type((1,)) is <class 'tuple'> because the comma makes it a one-item tuple.
+
+---
+
+### `python-fcc-119` (freeCodeCamp/Developer_Quiz_Site python-quiz #119)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 5
+
+**Original**
+
+What does the partition() function do?
+
+- ▫️ Split the string at any occurrence of the given argument
+- ▫️ Splits the string at the first occurrence and returns a list
+- ✅ Splits the string at the first occurrence and returns a tuple
+- ▫️ Splits the string equally
+
+> The partition() method searches for a specified string, and splits the string into a tuple containing three elements.
+
+**Ours**
+
+What does the partition() function do?
+
+- ▫️ Split the string at any occurrence of the given argument
+- ▫️ Splits the string at the first occurrence and returns a list
+- ✅ Splits the string at the first occurrence and returns a tuple
+- ▫️ Splits the string equally
+
+> partition() finds the first occurrence of a separator and returns a tuple of three parts: the text before it, the separator, and the text after it.
+> 
+> 'a-b-c'.partition('-')   # => ('a', '-', 'b-c')
+
+---
+
+### `python-fcc-123` (freeCodeCamp/Developer_Quiz_Site python-quiz #123)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 8
+
+**Original**
+
+Which method is used to convert a list into a string with a suitable delimiter?
+
+- ✅ .join()
+- ▫️ .append()
+- ▫️ .pop()
+- ▫️ .extend()
+
+> You can use the .join string method to convert a list into a string
+
+**Ours**
+
+Which method is used to convert a list into a string with a suitable delimiter?
+
+- ✅ .join()
+- ▫️ .append()
+- ▫️ .pop()
+- ▫️ .extend()
+
+> separator.join(items) builds one string from a list of strings, with the separator between each item.
+> 
+> ', '.join(['a', 'b'])   # => 'a, b'
+
+---
+
+### `python-fcc-124` (freeCodeCamp/Developer_Quiz_Site python-quiz #124)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 7
+
+**Original**
+
+What is num_list after this runs?
+
+```
+num_list = (1, 2, 3, [1, 2, 3])
+num_list[3].extend([4, 5, 6])
+```
+
+- ▫️ (1, 2, 3, [1, 2, 3,],[ 4, 5, 6] )
+- ▫️ (1, 2, 3, [ 4, 5, 6])
+- ✅ (1, 2, 3, [1, 2, 3, 4, 5, 6])
+- ▫️ Error
+
+> List is mutable in nature so it's size changes
+
+**Ours**
+
+What is num_list after this runs?
+
+```
+num_list = (1, 2, 3, [1, 2, 3])
+num_list[3].extend([4, 5, 6])
+```
+
+- ▫️ (1, 2, 3, [1, 2, 3,],[ 4, 5, 6] )
+- ▫️ (1, 2, 3, [ 4, 5, 6])
+- ✅ (1, 2, 3, [1, 2, 3, 4, 5, 6])
+- ▫️ Error
+
+> list.extend(items) adds each item to the end of that list, changing it in place. A tuple can't change, but the list inside it can, so the tuple now shows the longer list.
+> 
+> num_list[3].extend([4, 5, 6])   # changes the list inside the tuple
+> num_list[3] = []               # would raise TypeError: the tuple's own slots can't change
+
+---
+
+### `python-fcc-028` (freeCodeCamp/Developer_Quiz_Site python-quiz #28)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 4
+
+**Original**
+
+Which of the following is not an attribute of the datetime.now() function?
+
+- ▫️ month
+- ▫️ year
+- ▫️ day
+- ✅ week
+
+> The attributes of the datetime.now() function are year, month, day, hour, minute, second and microsecond
+
+**Ours**
+
+Which of the following is not an attribute of the datetime.now() function?
+
+- ▫️ month
+- ▫️ year
+- ▫️ day
+- ✅ week
+
+> datetime.now() returns a datetime object for the current date and time. It has year, month, day, hour, minute, second and microsecond attributes, but no week.
+
+---
+
+### `python-fcc-039` (freeCodeCamp/Developer_Quiz_Site python-quiz #39)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 8
+
+**Original**
+
+How can you create an empty set?
+
+- ✅ set()
+- ▫️ {}
+- ▫️ ()
+- ▫️ dict()
+
+> You must call the set() function to create an empty set in Python.
+
+**Ours**
+
+How can you create an empty set?
+
+- ✅ set()
+- ▫️ {}
+- ▫️ ()
+- ▫️ dict()
+
+> set() builds a set, and with no arguments it builds an empty one. You can't use {} for this, because {} is an empty dict.
+
+---
+
+### `js-lydia-024` (lydiahallie/javascript-questions #24)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 4
+
+**Original**
+
+What's the output?
+
+```
+const obj = { 1: 'a', 2: 'b', 3: 'c' };
+const set = new Set([1, 2, 3, 4, 5]);
+
+obj.hasOwnProperty('1');
+obj.hasOwnProperty(1);
+set.has('1');
+set.has(1);
+```
+
+- ▫️ false true false true
+- ▫️ false true true true
+- ✅ true true false true
+- ▫️ true true true true
+
+> All object keys (excluding Symbols) are strings under the hood, even if you don't type it yourself as a string. This is why obj.hasOwnProperty('1') also returns true.
+> 
+> It doesn't work that way for a set. There is no '1' in our set: set.has('1') returns false. It has the numeric type 1, set.has(1) returns true.
+
+**Ours**
+
+What's the output?
+
+```
+const obj = { 1: 'a', 2: 'b', 3: 'c' };
+const set = new Set([1, 2, 3, 4, 5]);
+
+obj.hasOwnProperty('1');
+obj.hasOwnProperty(1);
+set.has('1');
+set.has(1);
+```
+
+- ▫️ false true false true
+- ▫️ false true true true
+- ✅ true true false true
+- ▫️ true true true true
+
+> hasOwnProperty(key) checks whether an object has that key itself, and set.has(value) checks whether a set contains that value. All object keys (excluding Symbols) are strings under the hood, even if you don't type it yourself as a string. This is why obj.hasOwnProperty('1') also returns true.
+> 
+> It doesn't work that way for a set. There is no '1' in our set: set.has('1') returns false. It has the numeric type 1, set.has(1) returns true.
+
+---
+
+### `js-lydia-040` (lydiahallie/javascript-questions #40)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 4
+
+**Original**
+
+What's the output?
+
+```
+[[0, 1], [2, 3]].reduce(
+  (acc, cur) => {
+    return acc.concat(cur);
+  },
+  [1, 2],
+);
+```
+
+- ▫️ [0, 1, 2, 3, 1, 2]
+- ▫️ [6, 1, 2]
+- ✅ [1, 2, 0, 1, 2, 3]
+- ▫️ [1, 2, 6]
+
+> [1, 2] is our initial value. This is the value we start with, and the value of the very first acc. During the first round, acc is [1,2], and cur is [0, 1]. We concatenate them, which results in [1, 2, 0, 1].
+> 
+> Then, [1, 2, 0, 1] is acc and [2, 3] is cur. We concatenate them, and get [1, 2, 0, 1, 2, 3]
+
+**Ours**
+
+What's the output?
+
+```
+[[0, 1], [2, 3]].reduce(
+  (acc, cur) => {
+    return acc.concat(cur);
+  },
+  [1, 2],
+);
+```
+
+- ▫️ [0, 1, 2, 3, 1, 2]
+- ▫️ [6, 1, 2]
+- ✅ [1, 2, 0, 1, 2, 3]
+- ▫️ [1, 2, 6]
+
+> reduce() runs a callback on each item and passes along the result so far (acc). concat() joins arrays into a new one. [1, 2] is our initial value. This is the value we start with, and the value of the very first acc. During the first round, acc is [1,2], and cur is [0, 1]. We concatenate them, which results in [1, 2, 0, 1].
+> 
+> Then, [1, 2, 0, 1] is acc and [2, 3] is cur. We concatenate them, and get [1, 2, 0, 1, 2, 3]
+
+---
+
+### `js-lydia-042` (lydiahallie/javascript-questions #42)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 4
+
+**Original**
+
+What does the setInterval method return in the browser?
+
+```
+setInterval(() => console.log('Hi'), 1000);
+```
+
+- ✅ a unique id
+- ▫️ the amount of milliseconds specified
+- ▫️ the passed function
+- ▫️ undefined
+
+> It returns a unique id. This id can be used to clear that interval with the clearInterval() function.
+
+**Ours**
+
+What does the setInterval method return in the browser?
+
+```
+setInterval(() => console.log('Hi'), 1000);
+```
+
+- ✅ a unique id
+- ▫️ the amount of milliseconds specified
+- ▫️ the passed function
+- ▫️ undefined
+
+> setInterval() runs a callback again and again, waiting the given time between runs. It returns a unique id. This id can be used to clear that interval with the clearInterval() function.
+
+---
+
+### `js-lydia-120` (lydiahallie/javascript-questions #120)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 7
+
+**Original**
+
+What's the output?
+
+```
+const groceries = ['banana', 'apple', 'peanuts'];
+
+if (groceries.indexOf('banana')) {
+  console.log('We have to buy bananas!');
+} else {
+  console.log(`We don't have to buy bananas!`);
+}
+```
+
+- ▫️ We have to buy bananas!
+- ✅ We don't have to buy bananas
+- ▫️ undefined
+- ▫️ 1
+
+> We passed the condition groceries.indexOf("banana") to the if-statement. groceries.indexOf("banana") returns 0, which is a falsy value. Since the condition in the if-statement is falsy, the code in the else block runs, and We don't have to buy bananas! gets logged.
+
+**Ours**
+
+What's the output?
+
+```
+const groceries = ['banana', 'apple', 'peanuts'];
+
+if (groceries.indexOf('banana')) {
+  console.log('We have to buy bananas!');
+} else {
+  console.log(`We don't have to buy bananas!`);
+}
+```
+
+- ▫️ We have to buy bananas!
+- ✅ We don't have to buy bananas
+- ▫️ undefined
+- ▫️ 1
+
+> indexOf() returns the position of the first match, or -1 if there is none. We passed the condition groceries.indexOf("banana") to the if-statement. groceries.indexOf("banana") returns 0, which is a falsy value. Since the condition in the if-statement is falsy, the code in the else block runs, and We don't have to buy bananas! gets logged.
+
+---
+
+### `js-lydia-148` (lydiahallie/javascript-questions #148)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 6
+
+**Original**
+
+What's the output?
+
+```
+const user = {
+	email: "e@mail.com",
+	password: "12345"
+}
+
+const updateUser = ({ email, password }) => {
+	if (email) {
+		Object.assign(user, { email })
+	}
+
+	if (password) {
+		user.password = password
+	}
+
+	return user
+}
+
+const updatedUser = updateUser({ email: "new@email.com" })
+
+console.log(updatedUser === user)
+```
+
+- ▫️ false
+- ✅ true
+- ▫️ TypeError
+- ▫️ ReferenceError
+
+> The updateUser function updates the values of the email and password properties on user, if their values are passed to the function, after which the function returns the user object. The returned value of the updateUser function is the user object, which means that the value of updatedUser is a reference to the same user object that user points to. updatedUser === user equals true.
+
+**Ours**
+
+What's the output?
+
+```
+const user = {
+	email: "e@mail.com",
+	password: "12345"
+}
+
+const updateUser = ({ email, password }) => {
+	if (email) {
+		Object.assign(user, { email })
+	}
+
+	if (password) {
+		user.password = password
+	}
+
+	return user
+}
+
+const updatedUser = updateUser({ email: "new@email.com" })
+
+console.log(updatedUser === user)
+```
+
+- ▫️ false
+- ✅ true
+- ▫️ TypeError
+- ▫️ ReferenceError
+
+> Object.assign(target, source) copies the properties of source onto target and returns target. The updateUser function updates the values of the email and password properties on user, if their values are passed to the function, after which the function returns the user object. The returned value of the updateUser function is the user object, which means that the value of updatedUser is a reference to the same user object that user points to. updatedUser === user equals true.
+
+---
+
+### `js-fcc-055` (freeCodeCamp/Developer_Quiz_Site javascript-quiz #55)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 6
+
+**Original**
+
+Which of the following is the default separator in the join() method?
+
+- ▫️ full-stop ('.')
+- ▫️ empty string ('')
+- ▫️ space (' ')
+- ✅ comma (',')
+
+> If a separator is omitted, the array elements are separated with a comma (',').
+
+**Ours**
+
+Which of the following is the default separator in the join() method?
+
+- ▫️ full-stop ('.')
+- ▫️ empty string ('')
+- ▫️ space (' ')
+- ✅ comma (',')
+
+> join() combines an array's elements into one string, with a separator between them. If a separator is omitted, the array elements are separated with a comma (',').
+
+---
+
+### `js-fcc-182` (freeCodeCamp/Developer_Quiz_Site javascript-quiz #182)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 6
+
+**Original**
+
+What does the forEach() method return?
+
+- ▫️ true
+- ▫️ null
+- ▫️ false
+- ✅ undefined
+
+> forEach() always returns undefined. It makes no difference whether the return keyword is used or not.
+
+**Ours**
+
+What does the forEach() method return?
+
+- ▫️ true
+- ▫️ null
+- ▫️ false
+- ✅ undefined
+
+> forEach() runs a callback once for each element. forEach() always returns undefined. It makes no difference whether the return keyword is used or not.
+
+---
+
+### `js-fcc-001` (freeCodeCamp/Developer_Quiz_Site javascript-quiz #1)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 7
+
+**Original**
+
+What does this log?
+
+```
+let x = 'Prakhar';
+console.log(x.substring(2, 5));
+```
+
+- ▫️ aka
+- ▫️ akkkaha
+- ▫️ akaha
+- ✅ akh
+
+> The first parameter in the substring method represents the starting index for the string while the second parameter represents the ending index.
+
+**Ours**
+
+What does this log?
+
+```
+let x = 'Prakhar';
+console.log(x.substring(2, 5));
+```
+
+- ▫️ aka
+- ▫️ akkkaha
+- ▫️ akaha
+- ✅ akh
+
+> substring(start, end) returns the part of the string from start up to, but not including, end. Positions start at 0, so 2, 3 and 4 give a, k and h.
+
+---
+
+### `js-fcc-008` (freeCodeCamp/Developer_Quiz_Site javascript-quiz #8)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 7
+
+**Original**
+
+What does this return?
+
+```
+let word = 'Intelligent';
+word.slice(2, 5);
+```
+
+- ✅ tel
+- ▫️ ll
+- ▫️ Inigent
+- ▫️ tellig
+
+> The slice() method returns a substring of the original string. The original string remains untouched.
+
+**Ours**
+
+What does this return?
+
+```
+let word = 'Intelligent';
+word.slice(2, 5);
+```
+
+- ✅ tel
+- ▫️ ll
+- ▫️ Inigent
+- ▫️ tellig
+
+> slice(start, end) returns the part of the string from start up to, but not including, end, and leaves the original untouched. Positions start at 0, so 2, 3 and 4 give t, e and l.
+
+---
+
+### `js-fcc-012` (freeCodeCamp/Developer_Quiz_Site javascript-quiz #12)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 6
+
+**Original**
+
+What does this return?
+
+```
+12345.6789.toFixed()
+```
+
+- ▫️ 12345.6789
+- ✅ 12346
+- ▫️ Undefined. toFixed() must take parameters
+- ▫️ 12345
+
+> Parameters are optional. If not passed, it will round the given number, leaving with no fractional part
+
+**Ours**
+
+What does this return?
+
+```
+12345.6789.toFixed()
+```
+
+- ▫️ 12345.6789
+- ✅ 12346
+- ▫️ Undefined. toFixed() must take parameters
+- ▫️ 12345
+
+> toFixed(digits) rounds a number to that many decimal places and returns it as a string. digits is optional and defaults to 0, so 12345.6789 rounds to "12346".
+
+---
+
+### `js-fcc-039` (freeCodeCamp/Developer_Quiz_Site javascript-quiz #39)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 6
+
+**Original**
+
+Which of the following methods returns a function?
+
+- ▫️ call
+- ✅ bind
+- ▫️ apply
+- ▫️ None of given
+
+> The bind function returns a new function with given arguments as the new function's 'this' keyword.
+
+**Ours**
+
+Which of the following methods returns a function?
+
+- ▫️ call
+- ✅ bind
+- ▫️ apply
+- ▫️ None of given
+
+> bind() returns a new function with this fixed to the object you pass, and doesn't call the function. call and apply run the function straight away.
+
+---
+
+### `js-fcc-140` (freeCodeCamp/Developer_Quiz_Site javascript-quiz #140)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 7
+
+**Original**
+
+Which call returns this?
+
+```
+const arr = ['a', 'b', 'c', 'd', 'e'];
+// wanted: ['c', 'd', 'e']
+```
+
+- ▫️ arr.remove(0, 1)
+- ✅ arr.slice(2,5)
+- ▫️ arr.fill(c, d, e)
+- ▫️ arr.keys(c, d, e)
+
+> The slice() method has two optional parameters which represent the starting and ending index for the array. This method returns a new shallow copy of the sliced array.
+
+**Ours**
+
+Which call returns this?
+
+```
+const arr = ['a', 'b', 'c', 'd', 'e'];
+// wanted: ['c', 'd', 'e']
+```
+
+- ▫️ arr.remove(0, 1)
+- ✅ arr.slice(2,5)
+- ▫️ arr.fill(c, d, e)
+- ▫️ arr.keys(c, d, e)
+
+> slice(start, end) returns a new array from start up to, but not including, end, and leaves the original unchanged. Positions 2, 3 and 4 hold c, d and e.
+
+---
+
+### `js-fcc-167` (freeCodeCamp/Developer_Quiz_Site javascript-quiz #167)
+
+- [ ] Checked by us
+
+*Why:* Added what the function does, because the question depends on knowing it.
+
+*Explanation:* rewritten · *Practicality:* 8
+
+**Original**
+
+Which methods accept an iterable of promises and returns a single array of results?
+
+- ▫️ Promise.any() and Promise.all()
+- ▫️ Promise.resolve() and Promise.allSettled()
+- ✅ Promise.all() and Promise.allSettled()
+- ▫️ Promise.reject() and Promise.reject()
+
+> Promise.all() and Promise.allSettled() accept an iterable of promises and return a single array of results.
+
+**Ours**
+
+Which methods accept an iterable of promises and returns a single array of results?
+
+- ▫️ Promise.any() and Promise.all()
+- ▫️ Promise.resolve() and Promise.allSettled()
+- ✅ Promise.all() and Promise.allSettled()
+- ▫️ Promise.reject() and Promise.reject()
+
+> Promise.all() and Promise.allSettled() both wait for a list of promises and give back one array of results. Promise.all() rejects as soon as one promise fails, while Promise.allSettled() waits for all of them and reports each as fulfilled or rejected.
 
 ---
