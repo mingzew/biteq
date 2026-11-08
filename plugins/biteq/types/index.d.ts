@@ -20,7 +20,11 @@ export type Stats = {
   streak: number
   best_streak: number
   waits: number
+  // AI waits (a prompt until the next one) with at least one answer while Claude worked: the key metric
   engaged_waits: number
+  // AI waits with at least one answer at any time, after Claude was done included. Never fewer than
+  // engaged_waits: the difference is the waits practised only once Claude was done
+  practised_waits: number
   seen: string[]
   wrong: string[]
   // every question ever answered: whether its first answer was right. Start over keeps it (only
@@ -41,6 +45,7 @@ declare module 'claude-code' {
       status: Status
       current: Current
       engaged: boolean
+      practised: boolean
       dismissed: boolean
       openReported: boolean
       stats: Stats
