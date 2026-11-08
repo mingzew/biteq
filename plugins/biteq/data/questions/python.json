@@ -26,7 +26,7 @@
     "code": "a = [1, 2]\nb = [1, 2]\nprint(a == b, a is b)",
     "options": ["True True", "True False", "False False", "False True"],
     "answer": 1,
-    "explanation": "== compares values. is compares identity, and these are two separate list objects.",
+    "explanation": "== asks whether two objects hold equal values. is asks whether they are the same object, and each list literal creates a new list.\n\na == b   # => True   same items\na is b   # => False  two separate lists\n\nc = a\nc is a   # => True   c is another name for the same list",
     "practicality": 8
   },
   {

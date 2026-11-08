@@ -18,26 +18,25 @@ otherwise inline; `ctrl+x tab` gives it the keyboard: the arrow keys walk the an
 answer, and a hint bar on the pane's bottom row names the rest: `n: skip · z: banks · q: close` before
 answering, `⏎ next · z: banks · q: close` after (Enter on the answered question moves on; `n` still does,
 unshown). Esc goes back to the prompt. Resting after Claude is done, the bar reads `n: serve next · s: always
-serve · z: banks · q: close`. Missed questions come back (30% of the time, and only those once nothing is
-unseen). Once every selected question is answered, and every missed one answered right since, the pane says
-"Congratulations! 38 of 47 in one shot." (the total only with several banks), lists each bank with how many of
-its questions you got right the first time you ever saw them (`✓ ruby  one-shot 35/44`, a perfect bank in
-the BiteQ colour) and says how to go on: "Press n to start over, or z to choose other banks." in the terminal,
-"Click Start over to go again, or Switch Q banks to choose other banks." in the desktop app; the bar reads
+serve · z: banks · q: close`. A bank's hand-picked questions (`data/top-stack.json`) are served first, in order. A skipped question comes back only after the rest of the bank, even in a new session. Missed questions come back (10% of the time, and only those once nothing is
+unseen). Once every question in the bank is answered, and every missed one answered right since, the pane says
+"Congratulations!", shows how many of
+the bank's questions you got right the first time you ever saw them (`✓ ruby  one-shot 35/44`, a perfect bank in
+the BiteQ colour) and says how to go on: "Press n to start over, or z to choose another bank." in the terminal,
+"Click Start over to go again, or Switch Q banks to choose another bank." in the desktop app; the bar reads
 `n: start over · z: banks · q: close`. In the desktop app, the pane's own X closes it.
 
-`z` (desktop: **Switch Q banks**) opens the bank screen at any time: one toggle per bank, `[x] js - 307 questions` (the small `bash`, `git`, `sql`
+`z` (desktop: **Switch Q banks**) opens the bank screen at any time: one row per bank, `(x) js - 307 questions` (the small `bash`, `git`, `sql`
 and `ts` banks aren't offered yet),
-`1`–`9` in the terminal (or the arrow keys and Enter). Each change is saved at once, and the last checked
-bank can't be unchecked. `z` (or **Done**) goes back: an unanswered question from a bank you unchecked is
+`1`–`9` in the terminal (or the arrow keys and Enter). You practise one bank at a time: picking one replaces the last and is saved at once. `z` (or **Done**) goes back: an unanswered question from the old bank is
 replaced; an answered one stays so you can read its explanation.
 Space and `;` can't be bound: Claude Code allows only a letter or digit as a hotkey. (The desktop app keeps its keys in the message box, so the pane shows no key
 hints there.)
 
 | Command | What it does |
 |---|---|
-| `/biteq [--lang a,b]` | Open the pane; `--lang` is validated and remembered (default `cs`). Only those banks are served, mixed: a random bank with unseen questions, then a random question in it. Once all are answered the pane offers Start over. Switching banks replaces an unanswered question from a bank no longer selected |
-| `/biteq langs` | List question banks and the selected languages |
+| `/biteq [--lang bank]` | Open the pane; `--lang` takes one bank, is validated and remembered (default `cs`). Only that bank is served: its top stack in order, then at random. Once all are answered the pane offers Start over. Switching banks replaces an unanswered question from the old bank |
+| `/biteq langs` | List question banks and the selected one |
 | `/biteq check` | Validate the question banks |
 | `/biteq stats` | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
 | `/biteq doctor` | Claude Code version, plugin path, store, status, debug log, questions |

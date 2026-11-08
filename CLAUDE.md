@@ -21,17 +21,18 @@ between Claude Code releases; the engine's own declarations are the authority (s
 - **When Claude isn't working, don't serve a new question** (unless the person opted out with "Always serve" or
   `/biteq pause off`). That covers Claude being done and a new session where Claude hasn't run yet: the pane opens
   resting ("Claude hasn't started yet. The next time Claude cooks, we will serve the question."). They can finish the question on screen; **Serve next question** serves one anyway.
-- **Questions are served as a mix of the selected banks only** (default `cs`, general CS). Unselected banks are
-  never served; once every selected question is answered the pane says so and offers **Start over** (SUP-15).
+- **One bank is practised at a time** (default `cs`, general CS), its top stack first. Other banks are
+  never served; once every question in it is answered the pane says so and offers **Start over** (SUP-15).
 - **CLI keys:** answers are arrow-selectable buttons with `a`-`d`; Next/Skip/Banks are a hint bar on the pane's
   bottom row (`n: skip · z: banks · q: close`, `⏎ next` after answering) and are never in the focus ring.
-- **Banks are switched in the pane** (`z`, any time): a screen of toggles, digits `1`-`9` in the CLI, saved as
-  they change, at least one kept checked. `z` again goes back to the quiz.
+- **Banks are switched in the pane** (`z`, any time): a screen where picking a bank replaces the last, digits `1`-`9` in the CLI, saved
+  as it changes. `z` again goes back to the quiz.
 - **Closing:** the CLI keeps `q: close` in its hint bar; the desktop pane has no Close button (its own X closes it).
 - **Desktop:** everything is clickable; action buttons are bracketed in the BiteQ colour, `[ Skip ]`, so they read as
   buttons; no key hints. The desktop app draws a Button's `label` string only: it ignores a Button's children,
   `hover` styles and any colour or background, so the orange brackets are Text beside the Button (a click on a
   bracket itself isn't a press). It takes clicks on the label only, so a frame drawn around a Button had a dead gap.
+  A native button centers a label that wraps, so a long answer is one Button per word (`wordButtons`).
 
 ## Layout
 
@@ -53,6 +54,7 @@ plugins/biteq/
 │   └── macos.ts             stubs
 ├── types/index.d.ts         session-state contract ($.state keys the pane draws from)
 ├── data/questions/*.json    one bank per language; see formatting-rules.md there
+├── data/top-stack.json      each bank's hand-picked questions, served first in that order
 └── tests/biteq.test.tsx     `claude plugin test`
 docs/flow.md                 step-by-step trace of a run through the code
 docs/lesson-plan.md          guided tour of the codebase
@@ -120,6 +122,8 @@ claude -p "/biteq check" --plugin-dir ./plugins/biteq < /dev/null   # real engin
 - **Verify every answer by running the code** (e.g. `ruby -e`) and make the correct option exactly what it
   prints. Prefer behaviour that is the same across current language versions.
 - Run `/biteq check` after editing.
+- **`data/top-stack.json` is hand-curated:** each bank's question ids, served first and in that order. Don't edit it
+  unless asked; `/biteq check` reports an id that isn't in that bank. See "Top stack" in `formatting-rules.md`.
 - **Importing from another source:** follow "Importing questions" in `formatting-rules.md`, and add every question
   you changed to `docs/import-review.md` with `- [ ] Checked by us` unticked. Only people tick those boxes.
 - **Every question has a `practicality` score (1-10);** how to score it is under "Practicality" in `formatting-rules.md`.

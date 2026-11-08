@@ -1847,7 +1847,7 @@ Do all objects have prototypes?
 
 ---
 
-## 6. lydiahallie questions brought to 4 options or otherwise edited (14)
+## 6. lydiahallie questions brought to 4 options or otherwise edited (15)
 
 The answers were right in the source; these show the options, prompt or explanation I changed.
 
@@ -1960,9 +1960,9 @@ console.log(3 + 4 + '5');
 
 - [ ] Checked by us
 
-*Why:* Explanation pointed at "question 46"; that pointer was removed.
+*Why:* Explanation pointed at "question 46"; that pointer was removed. Then rewrote it for the top stack: "passed by reference" is inaccurate, because JavaScript passes the reference by value.
 
-*Explanation:* edited (a pointer or link removed) · *Practicality:* 7
+*Explanation:* rewritten · *Practicality:* 7
 
 **Original**
 
@@ -2016,11 +2016,12 @@ console.log(person, birthYear);
 - ▫️ { name: "Lydia" }, "1998"
 - ▫️ { name: "Sarah" }, "1997"
 
-> Arguments are passed by value, unless their value is an object, then they're passed by reference. birthYear is passed by value, since it's a string, not an object. When we pass arguments by value, a copy of that value is created.
+> JavaScript passes every argument by value, but the value of an object variable is a reference to the object. So member points at the same object as person, while year is a separate variable that starts as "1997".
 > 
-> The variable birthYear has a reference to the value "1997". The argument year also has a reference to the value "1997", but it's not the same value as birthYear has a reference to. When we update the value of year by setting year equal to "1998", we are only updating the value of year. birthYear is still equal to "1997".
+> member.name = 'Lydia'   // changes the shared object, so person changes
+> year = '1998'           // changes only the local year; birthYear stays "1997"
 > 
-> The value of person is an object. The argument member has a (copied) reference to the same object. When we modify a property of the object member has a reference to, the value of person will also be modified, since they both have a reference to the same object. person's name property is now equal to the value "Lydia"
+> member = { name: 'Ada' }   // would only repoint member; person would stay the same
 
 ---
 
@@ -2296,9 +2297,9 @@ What's the output?
 
 - [ ] Checked by us
 
-*Why:* Had 5 options; dropped "TypeError".
+*Why:* Had 5 options; dropped "TypeError". Then rewrote the explanation for the top stack: "change all of them" implied several objects when there is one.
 
-*Explanation:* unchanged (apart from formatting) · *Practicality:* 7
+*Explanation:* rewritten · *Practicality:* 7
 
 **Original**
 
@@ -2345,11 +2346,13 @@ console.log(d.greeting);
 - ▫️ undefined
 - ▫️ ReferenceError
 
-> In JavaScript, all objects interact by reference when setting them equal to each other.
+> Assigning an object doesn't copy it. d = c makes d point at the same object as c, so there is one object with two names.
 > 
-> First, variable c holds a value to an object. Later, we assign d with the same reference that c has to the object.
+> d = c                  // one object, two names
+> c.greeting = 'Hello'   // changes that one object
+> d.greeting             // => 'Hello'
 > 
-> When you change one object, you change all of them.
+> d = { ...c }           // would make a separate copy, and d.greeting would stay 'Hey!'
 
 ---
 
@@ -2646,6 +2649,73 @@ console.log('❤️' === '❤️');
 - ▫️ TypeError
 
 > Under the hood, emojis are unicodes. The unicodes for the heart emoji is "U+2764 U+FE0F". These are always the same for the same emojis, so we're comparing two equal strings to each other, which returns true.
+
+---
+
+### `js-lydia-003` (lydiahallie/javascript-questions #3)
+
+- [ ] Checked by us
+
+*Why:* Rewrote the explanation for the top stack: shorter, and it says why each call gives its result. Question and options unchanged.
+
+*Explanation:* rewritten · *Practicality:* 6
+
+**Original**
+
+What's the output?
+
+```
+const shape = {
+  radius: 10,
+  diameter() {
+    return this.radius * 2;
+  },
+  perimeter: () => 2 * Math.PI * this.radius,
+};
+
+console.log(shape.diameter());
+console.log(shape.perimeter());
+```
+
+- ▫️ 20 and 62.83185307179586
+- ✅ 20 and NaN
+- ▫️ 20 and 63
+- ▫️ NaN and 63
+
+> Note that the value of diameter is a regular function, whereas the value of perimeter is an arrow function.
+> 
+> With arrow functions, the this keyword refers to its current surrounding scope, unlike regular functions! This means that when we call perimeter, it doesn't refer to the shape object, but to its surrounding scope (window for example).
+> 
+> Since there is no value radius in the scope of the arrow function, this.radius returns undefined which, when multiplied by 2 * Math.PI, results in NaN.
+
+**Ours**
+
+What's the output?
+
+```
+const shape = {
+  radius: 10,
+  diameter() {
+    return this.radius * 2;
+  },
+  perimeter: () => 2 * Math.PI * this.radius,
+};
+
+console.log(shape.diameter());
+console.log(shape.perimeter());
+```
+
+- ▫️ 20 and 62.83185307179586
+- ✅ 20 and NaN
+- ▫️ 20 and 63
+- ▫️ NaN and 63
+
+> diameter is a regular method, so calling shape.diameter() sets this to shape. perimeter is an arrow function, which has no this of its own: it uses the this of the code around it, and that isn't shape.
+> 
+> shape.diameter()   // this is shape: 10 * 2 => 20
+> shape.perimeter()  // this.radius is undefined: 2 * Math.PI * undefined => NaN
+> 
+> perimeter() { return 2 * Math.PI * this.radius; }   // as a regular method it would return 62.83185307179586
 
 ---
 

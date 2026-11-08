@@ -6,7 +6,7 @@
     "code": "i = 1\nwhile i < n:\n    for j in range(n):\n        work()\n    i *= 2",
     "options": ["O(n)", "O(n log n)", "O(n²)", "O(log n)"],
     "answer": 1,
-    "explanation": "The outer loop runs log₂ n times because i doubles each time. Each pass does n work, giving O(n log n).",
+    "explanation": "Multiply how many times each loop runs. i doubles each pass, so it reaches n after log₂ n passes, and each pass runs the inner loop n times.\n\nn = 16\ni = 1, 2, 4, 8   # 4 passes, which is log₂ 16\n16 work() calls per pass   # 4 * 16 = 64, not 16 * 16\n\ni += 1   # would make n passes instead, and O(n²)",
     "practicality": 5
   },
   {

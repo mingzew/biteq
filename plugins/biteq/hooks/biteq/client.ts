@@ -40,18 +40,20 @@ export type ClientTraits = {
   focusOnWait: boolean
   /** The pane offers its own close: a Close button, or the CLI hint bar's q: close. The desktop pane's X does that. */
   closeButton: boolean
+  /** A wrapped Button label comes out centered, so a long answer is drawn as one Button per word. */
+  wordButtons: boolean
 }
 
 export const TRAITS: Record<Client, ClientTraits> = {
   [Client.ClaudeCli]: {
     hotkeys: true, hintBar: true, enterMovesOn: true, dimsWhenUnfocused: true, bracketActions: false,
     showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: false,
-    closeButton: true,
+    closeButton: true, wordButtons: false,
   },
   [Client.ClaudeDesktop]: {
     hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,
     showsTitle: false, optionSeparator: ':', alignStart: true, autoFocus: true, clientModule: true, focusOnWait: true,
-    closeButton: false,
+    closeButton: false, wordButtons: true,
   },
 }
 
@@ -62,7 +64,7 @@ export const TRAITS: Record<Client, ClientTraits> = {
 export const FALLBACK: ClientTraits = {
   hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,
   showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: false,
-  closeButton: true,
+  closeButton: true, wordButtons: false,
 }
 
 const BY_SURFACE: Record<string, Client> = Object.fromEntries(Object.values(Client).map(c => [c, c]))

@@ -1,9 +1,9 @@
-// biteq commands: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset [--all] | start | stop
+// biteq commands: /biteq [pane] [--lang bank] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset [--all] | start | stop
 //
 // `/biteq` alone opens the pane. `signal` is the path every status takes: register.ts hands
 // engine events to claude.parse, and the status goes to store.setStatus, then pane.onStatus.
 import type { Status } from '../../types'
-import { getDebug, getLangs, getPauseWhenDone, setDebug, setLangs, setPauseWhenDone } from './config'
+import { getDebug, getLang, getPauseWhenDone, setDebug, setLang, setPauseWhenDone } from './config'
 import { enabled as debugEnabled } from './debug'
 import type { Io } from './io'
 import { boot as bootPane, onStatus, open as openPane } from './pane'
@@ -12,8 +12,8 @@ import { CONFIG, STATS, eventsLog, setStatus } from './store'
 
 export const COMMAND = {
   name: 'biteq',
-  description: 'biteq quiz pane: /biteq [--lang a,b] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset',
-  argumentHint: '[pane|langs|check|stats|doctor|pause|debug|reset] [--lang a,b]',
+  description: 'biteq quiz pane: /biteq [--lang bank] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset',
+  argumentHint: '[pane|langs|check|stats|doctor|pause|debug|reset] [--lang bank]',
 }
 
 /** Record a status and let the pane react (count the wait, serve a question, flash). */
@@ -40,39 +40,33 @@ export function typedArgs(text: string): string | null {
 
 async function cmdPane(io: Io, lang: string | undefined, focus: boolean): Promise<string> {
   const available = await languageCounts(io)
-  let langs: string[]
-  if (lang !== undefined) {
-    langs = lang.split(',').map(l => l.trim()).filter(Boolean)
-    const unknown = langs.filter(l => !(l in available))
-    if (unknown.length) {
-      return `biteq: unknown language ${unknown.join(', ')} (available: ${Object.keys(available).sort().join(', ')})`
-    }
-  } else {
-    langs = await getLangs(io)
+  const bank = lang ?? await getLang(io)
+  if (bank.includes(',')) return 'biteq: pick one bank at a time, like /biteq --lang js.'
+  if (lang !== undefined && !(bank in available)) {
+    return `biteq: unknown language ${bank} (available: ${Object.keys(available).sort().join(', ')})`
   }
-  // Only the selected banks are served, mixed; the others never are, even once these run out
-  const questions = await loadQuestions(io, langs)
+  // Only this bank is served; the others never are, even once it runs out
+  const questions = await loadQuestions(io, [bank])
   if (!questions.length) {
     const counts = Object.entries(available).sort().map(([k, v]) => `${k} ${v}`).join(', ')
-    return `biteq: no questions in ${langs.join(', ')}. Counts: ${counts}. Pick others with /biteq --lang a,b.`
+    return `biteq: no questions in ${bank}. Counts: ${counts}. Pick another with /biteq --lang <bank>.`
   }
-  if (lang !== undefined) await setLangs(io, langs)   // remembered for the next session
+  if (lang !== undefined) await setLang(io, bank)   // remembered for the next session
   await bootPane(io, questions)
   const placed = await openPane(io, focus)
   if (!placed) return 'biteq: the pane will show up once this window is wide enough.'
   const how = (await io.traits()).hotkeys
     ? 'ctrl+x tab gives the pane the keyboard: a-d answer, n next, z banks, q close.'
     : 'click an answer, then Next.'
-  const mix = langs.filter(l => available[l]).map(l => `${l} ${available[l]}`).join(', ')
-  return `biteq: serving ${mix} (${questions.length} questions). ${how}`
+  return `biteq: serving ${bank} (${questions.length} questions). ${how}`
 }
 
 async function cmdLangs(io: Io): Promise<string> {
-  const chosen = await getLangs(io)
+  const chosen = await getLang(io)
   const counts = await languageCounts(io)
-  // the selected banks first (the only ones served), then the rest A-Z
-  return languageOrder(chosen, Object.keys(counts))
-    .map(lang => `${lang.padEnd(8)} ${String(counts[lang]).padStart(3)} questions${chosen.includes(lang) ? '   <- selected' : ''}`)
+  // the selected bank first (the only one served), then the rest A-Z
+  return languageOrder([chosen], Object.keys(counts))
+    .map(lang => `${lang.padEnd(8)} ${String(counts[lang]).padStart(3)} questions${lang === chosen ? '   <- selected' : ''}`)
     .join('\n')
 }
 
@@ -131,7 +125,7 @@ async function cmdDoctor(io: Io): Promise<string> {
     `status        ${await io.get('status')}`,
     `debug log     ${(await debugEnabled(io)) ? await eventsLog(io) : 'off (/biteq debug)'}`,
     `questions     ${total} (${Object.entries(counts).sort().map(([k, n]) => `${k} ${n}`).join(', ')})`,
-    `selected      ${(await getLangs(io)).join(',')}`,
+    `selected      ${await getLang(io)}`,
     `when done     ${(await getPauseWhenDone(io)) ? 'pause (no new question until Claude works again)' : 'keep serving'}`,
   ].join('\n')
 }
@@ -150,7 +144,7 @@ async function cmdReset(io: Io, all: boolean): Promise<string> {
         removed.push(path.split('/').pop() ?? path)
       }
     }
-    await bootPane(io, await loadQuestions(io, await getLangs(io)))
+    await bootPane(io, await loadQuestions(io, [await getLang(io)]))
   }
   return `removed: ${removed.join(', ')}`
 }
@@ -196,6 +190,6 @@ export async function run(io: Io, args: string): Promise<string> {
     case 'start': await signal(io, 'thinking'); return 'biteq: marked thinking'
     case 'stop': await signal(io, 'done'); return 'biteq: marked done'
     default:
-      return 'usage: /biteq [pane] [--lang a,b] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset [--all] | start | stop'
+      return 'usage: /biteq [pane] [--lang bank] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset [--all] | start | stop'
   }
 }

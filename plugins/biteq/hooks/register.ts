@@ -60,7 +60,7 @@ const practised = atom({ plugin: 'biteq', key: 'practised' } as const, false)
 const dismissed = atom({ plugin: 'biteq', key: 'dismissed' } as const, false)
 const openReported = atom({ plugin: 'biteq', key: 'openReported' } as const, false)
 const stats = atom({ plugin: 'biteq', key: 'stats' } as const, DEFAULT_STATS)
-const picker = atom({ plugin: 'biteq', key: 'picker' } as const, { open: false, selected: [] })
+const picker = atom({ plugin: 'biteq', key: 'picker' } as const, { open: false, selected: '' })
 
 function io($: EngineInterface): Io {
   const it: Io = {
