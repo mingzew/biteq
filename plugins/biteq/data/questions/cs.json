@@ -50,15 +50,6 @@
     "practicality": 7
   },
   {
-    "id": "cs-fcc-001",
-    "prompt": "In terms of Big-O complexity, what is the time complexity for lookups in a binary tree index?",
-    "options": ["O(log n)", "O(n)", "O(n log n)", "O(1)"],
-    "answer": 0,
-    "explanation": "This is because a binary tree index allows for efficient searching by halving the search space at each step.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #1"
-  },
-  {
     "id": "cs-fcc-003",
     "prompt": "What is the base case in a recursive function?",
     "options": ["The initial input value to the recursive function", "The condition under which the recursive function starts calling itself", "The condition under which the recursive function stops calling itself", "The maximum number of times the recursive function can call itself"],
@@ -68,24 +59,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #3"
   },
   {
-    "id": "cs-fcc-005",
-    "prompt": "What is the average time complexity of an element insertion in a hash table?",
-    "options": ["O(1)", "O(logn)", "O(n)", "O(n^2)"],
-    "answer": 0,
-    "explanation": "The average time complexity of an element insertion in a hash table is O(1). Unlike arrays, hash tables use a hashing function to generate a unique key or index for each element, ensuring constant time for element insertion.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #5"
-  },
-  {
-    "id": "cs-fcc-008",
-    "prompt": "Which data structure does Dijkstra's shortest-path algorithm use to pick the next closest vertex?",
-    "options": ["Priority Queue", "Hash set", "String", "Stack"],
-    "answer": 0,
-    "explanation": "Dijkstra's algorithm, which is used to find the shortest path in a graph, typically employs a priority queue to efficiently select the next vertex with the smallest distance.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #8"
-  },
-  {
     "id": "cs-fcc-016",
     "prompt": "A stable sort keeps items that compare equal in their original order. Which of these sorting algorithms is stable?",
     "options": ["Merge Sort", "Selection sort", "Heap Sort", "Quick Sort"],
@@ -93,24 +66,6 @@
     "explanation": "Merge sort is stable: when two items compare equal, the merge step takes the one from the left half first, so they keep their original order.\n\nSort [(\"Bo\", 30), (\"Al\", 25), (\"Cy\", 30)] by age:\nstable:     Al 25, Bo 30, Cy 30   # Bo stays before Cy\nnot stable: Al 25, Cy 30, Bo 30   # allowed for quick, heap or selection sort\n\nStability matters when you sort by one key after another, e.g. by name and then by age. Python's sorted() and JavaScript's Array.prototype.sort are stable.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #16"
-  },
-  {
-    "id": "cs-fcc-017",
-    "prompt": "Which of the following sorting algorithms has the same best-case and worst-case time complexities?",
-    "options": ["Insertion Sort", "Bubble Sort", "Quick Sort", "Merge Sort"],
-    "answer": 3,
-    "explanation": "Merge sort has a time complexity of O(nlogn) in all cases - best, average and worst.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #17"
-  },
-  {
-    "id": "cs-fcc-026",
-    "prompt": "The Traveling Salesman Problem: given cities and the distance between each pair, find the shortest tour, a route that visits every city exactly once and returns to the start. Which is true of finding that shortest tour?",
-    "options": ["It is an NP-Hard problem.", "It is an NP-Complete problem.", "It is a P problem.", "It is an NP problem."],
-    "answer": 0,
-    "explanation": "NP-hard means at least as hard as every problem in NP: no known algorithm solves it in polynomial time, and finding one would solve all of NP. Checking every tour of n cities takes about n! steps.\n\nFinding the shortest tour is NP-hard. It isn't NP-complete, because you can't check quickly that a given tour is the shortest. The yes/no version (\"is there a tour shorter than k?\") is in NP and is NP-complete.\n\nIn practice, route planners use heuristics and approximations that find a good tour, not a provably shortest one.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #26"
   },
   {
     "id": "cs-fcc-028",
@@ -159,33 +114,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #43"
   },
   {
-    "id": "cs-fcc-044",
-    "prompt": "Which algorithm utilizes a pivot value to sort?",
-    "options": ["Quick Sort", "Insertion Sort", "Merge Sort", "Bubble Sort"],
-    "answer": 0,
-    "explanation": "Quick sort works by selecting one element (called “the pivot”) and finding the index where the pivot should end up in the sorted array.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #44"
-  },
-  {
-    "id": "cs-fcc-051",
-    "prompt": "What is the worst case time complexity for accessing an element in a BST(Binary Search Tree)?",
-    "options": ["O(logn)", "O(n*n)", "O(n*logn)", "O(n)"],
-    "answer": 3,
-    "explanation": "The worst case time complexity would be O(n) because we might need to visit all of the nodes.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #51"
-  },
-  {
-    "id": "cs-fcc-056",
-    "prompt": "Which of the following is a Divide and Conquer algorithm?",
-    "options": ["Heap Sort", "Selection Sort", "Bubble Sort", "Merge Sort"],
-    "answer": 3,
-    "explanation": "Merge Sort recursively splits the array into smaller arrays, sorts those arrays and merges them into one sorted array.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #56"
-  },
-  {
     "id": "cs-fcc-057",
     "prompt": "Which is true of a fixed-size array, like a plain array in C or Java?",
     "options": ["It can only be one-dimensional", "Insertion and deletion of elements has a time complexity of O(1)", "Size of an array can not be changed once initialized", "A single array can contain data of different data types"],
@@ -220,24 +148,6 @@
     "explanation": "Abstraction, encapsulation, inheritance, and polymorphism are software design principles to help you write clean object-oriented code.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #127"
-  },
-  {
-    "id": "cs-fcc-132",
-    "prompt": "What is the best case time complexity for the merge sort algorithm?",
-    "options": ["O(n^2)", "O(log(n))", "O(n*log(n))", "O(2^n)"],
-    "answer": 2,
-    "explanation": "Merge sort is a divide and conquer algorithm that has a best case time complexity of O(n*log n)",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #132"
-  },
-  {
-    "id": "cs-fcc-133",
-    "prompt": "What is the advantage of using linked lists over arrays?",
-    "options": ["Random accessing elements is easier in linked lists than arrays", "Linked lists helps in faster insertions and deletions than arrays", "Memory usage in linked lists is less than arrays", "Reverse traversal is possible in singly linked lists"],
-    "answer": 1,
-    "explanation": "Linked lists have quicker insertions and deletions than arrays because there is no need to shift all other elements with lists.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #133"
   },
   {
     "id": "cs-fcc-134",
@@ -278,15 +188,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #151"
   },
   {
-    "id": "cs-fcc-152",
-    "prompt": "What's the Big O notation of an algorithm that increases the running time linearly with the input size?",
-    "options": ["O(n)", "O(log n)", "O(1)", "O(n^2)"],
-    "answer": 0,
-    "explanation": "The letter n represents the input size, and the big O represents the increase of the running time.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #152"
-  },
-  {
     "id": "cs-fcc-156",
     "prompt": "Which data structure is used to implement an auto-complete feature?",
     "options": ["Trie", "Stack", "Linked List", "Tree"],
@@ -296,15 +197,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #156"
   },
   {
-    "id": "cs-fcc-161",
-    "prompt": "What is a data structure that consists of nodes, where each node has data and a reference to the next node in the sequence?",
-    "options": ["Vector", "Linked List", "Heap", "Stack"],
-    "answer": 1,
-    "explanation": "A Linked List contains nodes and each node has data and a reference to next node so that it can have access to the data of its next node and we can get the information of all nodes by iterating the node until it reaches nullptr.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #161"
-  },
-  {
     "id": "cs-fcc-168",
     "prompt": "What is the purpose of dynamic programming in algorithm design?",
     "options": ["To optimize code for parallel processing.", "To balance load in distributed systems.", "To solve problems by breaking them into smaller subproblems and storing their solutions to avoid redundant calculations.", "To reduce the time complexity of algorithms through loop unrolling."],
@@ -312,24 +204,6 @@
     "explanation": "Dynamic programming is a technique used to solve problems by breaking them into smaller subproblems and storing their solutions, reducing redundant calculations and improving efficiency.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #168"
-  },
-  {
-    "id": "cs-fcc-170",
-    "prompt": "What is the use of a priority queue?",
-    "options": ["A priority queue manages elements based on priority, ensuring higher priority items are processed first.", "It's a fixed-size queue.", "It's a queue that organizes elements by their value.", "It only accepts elements of the same type."],
-    "answer": 0,
-    "explanation": "A priority queue is essential in scenarios where certain tasks need to be handled in order of importance or urgency.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #170"
-  },
-  {
-    "id": "cs-fcc-172",
-    "prompt": "What is a hash table in computer science?",
-    "options": ["A hash table is primarily used for sorting data.", "A hash table is limited to a fixed size and cannot grow dynamically.", "A hash table is a data structure that only stores keys, not values.", "A hash table stores key-value pairs, using a hash function to enable fast data retrieval."],
-    "answer": 3,
-    "explanation": "Hash tables are widely used in computer science for implementing associative arrays, databases, and various applications that require fast data access.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #172"
   },
   {
     "id": "cs-fcc-179",

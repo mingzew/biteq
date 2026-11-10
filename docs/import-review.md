@@ -252,70 +252,6 @@ How do you add two classes to an element at once?
 
 I replaced that option (or narrowed the prompt) so exactly one answer is right.
 
-### `cs-fcc-008` (general-cs-quiz.ts #8)
-
-- [ ] Checked by us
-
-*Why:* A heap is how a priority queue is usually implemented, so "Heap" was also right.
-
-*Explanation:* unchanged (apart from formatting) · *Practicality:* 5
-
-**Original**
-
-In a graph, which data structure is best suited for finding the shortest path between two vertices?
-
-- ✅ Priority Queue
-- ▫️ Stack
-- ▫️ String
-- ▫️ Heap
-
-> Dijkstra's algorithm, which is used to find the shortest path in a graph, typically employs a priority queue to efficiently select the next vertex with the smallest distance.
-
-**Ours**
-
-Which data structure does Dijkstra's shortest-path algorithm use to pick the next closest vertex?
-
-- ✅ Priority Queue
-- ▫️ Hash set
-- ▫️ String
-- ▫️ Stack
-
-> Dijkstra's algorithm, which is used to find the shortest path in a graph, typically employs a priority queue to efficiently select the next vertex with the smallest distance.
-
----
-
-### `cs-fcc-017` (general-cs-quiz.ts #17)
-
-- [ ] Checked by us
-
-*Why:* Selection sort is also O(n^2) in its best and worst case.
-
-*Explanation:* unchanged (apart from formatting) · *Practicality:* 5
-
-**Original**
-
-Which of the following sorting algorithms has the same best-case and worst-case time complexities?
-
-- ✅ Merge Sort
-- ▫️ Bubble Sort
-- ▫️ Quick Sort
-- ▫️ Selection sort
-
-> Merge sort has a time complexity of O(nlogn) in all cases - best, average and worst.
-
-**Ours**
-
-Which of the following sorting algorithms has the same best-case and worst-case time complexities?
-
-- ▫️ Insertion Sort
-- ▫️ Bubble Sort
-- ▫️ Quick Sort
-- ✅ Merge Sort
-
-> Merge sort has a time complexity of O(nlogn) in all cases - best, average and worst.
-
----
-
 ### `cs-fcc-022` (general-cs-quiz.ts #22)
 
 - [ ] Checked by us
@@ -345,38 +281,6 @@ Which problems are solved using Bellman Ford's Algorithm?
 - ✅ Single Source Shortest Path
 
 > Bellman-Ford finds single-source shortest paths and, unlike Dijkstra's, works with negative edge weights. It can also detect negative cycles.
-
----
-
-### `cs-fcc-026` (general-cs-quiz.ts #26)
-
-- [ ] Checked by us
-
-*Why:* The decision version of TSP is NP-complete, so both NP-hard and NP-complete could be right. The prompt now says the optimization version.
-
-*Explanation:* rewritten · *Practicality:* 3
-
-**Original**
-
-Which of the following statements is true for the Traveling salesman problem?
-
-- ✅ It is an NP-Hard problem.
-- ▫️ It is an NP-Complete problem.
-- ▫️ It is an NP problem.
-- ▫️ It is a P problem.
-
-> Traveling salesman problem is an NP-Hard problem.
-
-**Ours**
-
-Which is true of the optimization version of the Traveling Salesman Problem (find the shortest tour)?
-
-- ✅ It is an NP-Hard problem.
-- ▫️ It is an NP-Complete problem.
-- ▫️ It is a P problem.
-- ▫️ It is an NP problem.
-
-> Finding the shortest tour is NP-hard. The decision version ("is there a tour shorter than k?") is NP-complete.
 
 ---
 

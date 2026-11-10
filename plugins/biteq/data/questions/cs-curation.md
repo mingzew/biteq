@@ -85,7 +85,6 @@ When two questions test the same idea, the weaker one went, even if its practica
 
 - LIFO stack: `cs-fcc-055` removed, `cs-fcc-181` kept. Push: `cs-fcc-046` removed.
 - Stack vs queue: `cs-fcc-173` removed (6) next to the kept LIFO/FIFO questions.
-- O(n log n) sorts: `cs-fcc-045` removed, `cs-fcc-132` kept.
 
 ### 7. Joke or giveaway options
 
