@@ -26,7 +26,7 @@
     "code": "cache = LRUCache(capacity=2)\ncache.put(\"a\", 1)\ncache.put(\"b\", 2)\ncache.get(\"a\")      # \"a\" becomes the most recently used\ncache.put(\"c\", 3)   # full: evicts \"b\", the least recently used",
     "options": ["Hash map + min-heap", "Hash map + doubly linked list", "Sorted array + binary search", "Two stacks"],
     "answer": 1,
-    "explanation": "A hash map from key to node finds any entry in O(1). A doubly linked list keeps the entries in order of use: on get or put, unlink the node and move it to the front in O(1); when full, drop the node at the back in O(1).\n\nget(key):  node = map[key]; move node to front; return node.value\nput(key):  add/move node to front; if over capacity, remove the back node and its map entry\n\nA min-heap would make every access O(log n), and a sorted array needs O(n) shifts to reorder.",
+    "explanation": "Core problem: get and put must both be O(1), and the cache must always know which key was used least recently.\n\nFix: a hash map plus a doubly linked list.\n1. The hash map finds any entry in O(1).\n2. The list keeps entries in order of use, most recent at the front. A node can be unlinked and moved to the front in O(1), and the node at the back is always the one to evict.\n\nlist, front -> back:\nput(\"a\", 1)    # a\nput(\"b\", 2)    # b, a\nget(\"a\")       # a, b      a moves to the front\nput(\"c\", 3)    # c, a      full: b, at the back, is evicted\n\nThe other options:\n  hash map + min-heap: every access must update the heap, which costs O(log n)\n  sorted array + binary search: finding is O(log n), and keeping the order needs O(n) shifts\n  two stacks: no way to reach an arbitrary key in O(1)",
     "practicality": 6
   },
   {
@@ -63,7 +63,7 @@
     "prompt": "A stable sort keeps items that compare equal in their original order. Which of these sorting algorithms is stable?",
     "options": ["Merge Sort", "Selection sort", "Heap Sort", "Quick Sort"],
     "answer": 0,
-    "explanation": "Merge sort is stable: when two items compare equal, the merge step takes the one from the left half first, so they keep their original order.\n\nSort [(\"Bo\", 30), (\"Al\", 25), (\"Cy\", 30)] by age:\nstable:     Al 25, Bo 30, Cy 30   # Bo stays before Cy\nnot stable: Al 25, Cy 30, Bo 30   # allowed for quick, heap or selection sort\n\nStability matters when you sort by one key after another, e.g. by name and then by age. Python's sorted() and JavaScript's Array.prototype.sort are stable.",
+    "explanation": "Core problem: a stable sort keeps items that compare equal in their original order.\n\nSort [(\"Bo\", 30), (\"Al\", 25), (\"Cy\", 30)] by age:\nstable:     Al 25, Bo 30, Cy 30   # Bo stays before Cy\nnot stable: Al 25, Cy 30, Bo 30   # equal items are allowed to swap\n\nMerge sort is stable: when two items compare equal, the merge step takes the one from the left half first.\n\nThe other options are not stable in their usual form: selection sort swaps items across long distances, heap sort moves items around the heap, and quicksort swaps while partitioning, so equal items can change places.\n\nStability matters when you sort by one key after another, e.g. by name and then by age. Python's sorted() and JavaScript's Array.prototype.sort are stable.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #16"
   },
@@ -72,7 +72,7 @@
     "prompt": "What is SOLID?",
     "options": ["A database consistency model, like ACID", "Five principles of object-oriented design", "Four principles of functional programming", "A naming convention for classes and files"],
     "answer": 1,
-    "explanation": "SOLID is an acronym for five object-oriented design principles that keep code easy to change:\n\nS  Single responsibility: a class has one reason to change.\nO  Open/closed: open for extension, closed for modification; add behaviour without editing working code.\nL  Liskov substitution: a subclass can stand in anywhere its parent is used.\nI  Interface segregation: several small interfaces beat one large one clients only partly use.\nD  Dependency inversion: depend on abstractions (an interface), not concrete classes.\n\nACID (atomicity, consistency, isolation, durability) is the database one.",
+    "explanation": "SOLID is five object-oriented design principles that keep code easy to change:\n\nS  Single responsibility: a class has one reason to change.\nO  Open/closed: open for extension, closed for modification; add behaviour without editing working code.\nL  Liskov substitution: a subclass can stand in anywhere its parent is used.\nI  Interface segregation: several small interfaces beat one large one clients only partly use.\nD  Dependency inversion: depend on abstractions (an interface), not concrete classes.\n\nThe other options:\n  a database consistency model: that is ACID (atomicity, consistency, isolation, durability)\n  principles of functional programming: SOLID is about classes and interfaces\n  a naming convention: nothing in it is about names",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #28"
   },
@@ -81,7 +81,7 @@
     "prompt": "What is the term for when data is being pushed onto a full stack?",
     "options": ["Empty collection", "Stack Overflow", "Garbage Collection", "Underflow"],
     "answer": 1,
-    "explanation": "Stack Overflow happens when there is an attempt to push data on an already full stack.",
+    "explanation": "A stack with a fixed size can run out of room. Pushing onto a full stack is a stack overflow. Popping from an empty stack is the opposite, an underflow.\n\ncapacity 3:   push A, push B, push C   # full\npush D                                  # overflow: nowhere to put it\npop, pop, pop                           # empty\npop                                     # underflow: nothing to remove\n\nThe call stack overflows the same way, which is what infinite recursion causes.\n\nThe other options: garbage collection reclaims unused memory and has nothing to do with stacks, and \"empty collection\" describes a state, not an error.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #34"
   },
@@ -90,7 +90,7 @@
     "prompt": "Which of the following is the most correct statement?",
     "options": ["All undirected graphs have topological ordering", "A cyclic graph also has topological ordering.", "Topological sort is just an another name for BFS", "Topological sort is possible only for a Directed Acyclic Graph"],
     "answer": 3,
-    "explanation": "A topological ordering lists a directed graph's nodes so every edge points forward: if A -> B, A comes before B. Build steps and course prerequisites are the classic uses.\n\nshirt -> tie -> jacket, shirt -> belt   # one valid order: shirt, belt, tie, jacket\nA -> B -> C -> A                       # a cycle: whichever comes first, some edge points backwards\n\nSo an ordering exists exactly when the graph is directed and has no cycles (a DAG). Undirected edges have no direction to respect. It's computed with DFS or Kahn's algorithm, not BFS order alone.",
+    "explanation": "Core problem: a topological ordering lists a directed graph's nodes so every edge points forward (if A -> B, A comes before B). A cycle makes that impossible.\n\nshirt -> tie -> jacket, shirt -> belt   # one valid order: shirt, belt, tie, jacket\nA -> B -> C -> A                       # a cycle: whichever comes first, some edge points backwards\n\nSo an ordering exists exactly when the graph is directed and has no cycles (a DAG).\n\nThe other options:\n  undirected graphs: their edges have no direction to respect\n  cyclic graphs: a cycle always has an edge pointing backwards\n  \"a name for BFS\": it is computed with DFS or Kahn's algorithm, not BFS alone\n\nBuild steps and course prerequisites are the classic uses.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #39",
     "comment": "improve the topological ordering in explanation."
@@ -100,7 +100,7 @@
     "prompt": "Between merge sort and quicksort, which guarantees O(n log n) even in the worst case?",
     "options": ["Both", "Merge sort", "Neither", "Quicksort"],
     "answer": 1,
-    "explanation": "Merge sort is O(n log n) in every case. Quicksort is O(n log n) on average and usually faster in practice, but O(n^2) in the worst case (consistently bad pivots).",
+    "explanation": "Core problem: quicksort's speed depends on its pivot, and merge sort's does not.\n\nmerge sort:             always splits in half, then merges   # log n levels of n work each = O(n log n), every time\nquicksort, good pivot:  splits roughly in half               # O(n log n)\nquicksort, worst pivot: the pivot is always the smallest or largest item, so each split leaves n - 1 items on one side\n                        # n levels of about n work each = O(n²)\n\nA first-element pivot on an already sorted list does this.\n\nQuicksort is still common because it is often faster in practice and works in place, and random or median pivots make the worst case very unlikely.\n\nThe other options: \"both\" is wrong because quicksort can degrade to O(n²), and \"neither\" is wrong because merge sort does guarantee it.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #42"
   },
@@ -109,7 +109,7 @@
     "prompt": "What data structure does a binary search tree degenerate to if it isn't balanced properly?",
     "options": ["Linked List", "Set", "Queue", "Dictionary"],
     "answer": 0,
-    "explanation": "A binary search tree degenerates to a linked list if it is not balanced properly. It is balanced if the height of the left and right subtrees of any node differ by at most one.",
+    "explanation": "A BST keeps smaller values on the left and larger on the right, so a lookup follows one branch per level. Insert values that are already in order and each new one goes to the same side, so the tree becomes a chain.\n\ninsert 1, 2, 3, 4:\n1\n  2\n    3\n      4        # each node has one child: this is a linked list\n\nbalanced tree of n nodes:  about log n levels to reach a value\ndegenerate tree:           up to n levels, so a lookup is O(n)\n\nThe other options: a set, a queue and a dictionary are different structures, and the tree doesn't turn into any of them. Self-balancing trees (AVL, red-black) rotate nodes to prevent this.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #43"
   },
@@ -118,7 +118,7 @@
     "prompt": "Which is true of a fixed-size array, like a plain array in C or Java?",
     "options": ["It can only be one-dimensional", "Insertion and deletion of elements has a time complexity of O(1)", "Size of an array can not be changed once initialized", "A single array can contain data of different data types"],
     "answer": 2,
-    "explanation": "A fixed-size array is one contiguous block of memory sized when it is created. To grow it you allocate a bigger array and copy everything across (which is what dynamic arrays like ArrayList or Python lists do for you).\n\nWhy not O(1) insert and delete? Reading arr[i] is O(1), but inserting or deleting in the middle means shifting every later element one slot:\n\n[a, b, c, d, _]  insert x at index 1\n[a, x, b, c, d]  b, c and d each moved right: O(n)\n\nOnly changing the last element is O(1). Fast insert and delete in the middle (given the node) is what a linked list offers.",
+    "explanation": "A fixed-size array is one contiguous block of memory, so its size can't change. To grow it you allocate a bigger array and copy everything across.\n\nThe other options:\n  one-dimensional only: arrays can have more dimensions\n  O(1) insert and delete: only at the end; in the middle every later element shifts, O(n)\n  different data types: a typed array holds one type",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #57"
   },
@@ -127,7 +127,7 @@
     "prompt": "How many bits make up a byte?",
     "options": ["16 bits", "8 bits", "12 bits", "32 bits"],
     "answer": 1,
-    "explanation": "There are 8 bits in a byte",
+    "explanation": "A bit is a single 0 or 1. A byte is 8 bits, which gives 2^8 = 256 possible values (0 to 255).\n\n1 bit     -> 0 or 1                  # 2 values\n8 bits    -> 00000000 to 11111111    # 256 values: one byte\n1 byte    -> one ASCII character, or one number from 0 to 255\n\nThe other sizes are real, but they are other units: 16 bits is 2 bytes and 32 bits is 4 bytes.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #68"
   },
@@ -136,7 +136,7 @@
     "prompt": "Which data structure is used for the implementation of a recursive algorithm?",
     "options": ["Linked list", "Stack", "Queue", "Tree"],
     "answer": 1,
-    "explanation": "In recursion, the nested function that is called later returns the value first, which is in the same nature as that of a stack (Last In First Out).",
+    "explanation": "Each call waits for the call it made to finish, so the most recent call returns first: last in, first out. That is a stack, and the language keeps one for you, the call stack.\n\nfactorial(3)           # waits for factorial(2)\n  factorial(2)         # waits for factorial(1)\n    factorial(1)       # returns 1 first\ncall stack, top first: factorial(1), factorial(2), factorial(3)\n\nThis is why infinite recursion ends in a stack overflow.\n\nThe other options: a queue would resume the oldest call first, which is the wrong order. A linked list and a tree don't have this last-in-first-out order built in.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #122"
   },
@@ -145,7 +145,7 @@
     "prompt": "What are the four pillars of Object-oriented programming?",
     "options": ["Objects, Methods, Properties and Fields.", "Abstraction, Encapsulation, Inheritance, and Polymorphism.", "Declaration, Modeling, Evaluation and Implementation.", "Immutability, Purity, Transparency and State."],
     "answer": 1,
-    "explanation": "Abstraction, encapsulation, inheritance, and polymorphism are software design principles to help you write clean object-oriented code.",
+    "explanation": "Abstraction:   expose what something does, hide how           # you call car.start(), not the engine code\nEncapsulation: keep an object's data private behind methods   # a balance changes only via deposit() and withdraw()\nInheritance:   a class reuses and extends another             # Dog extends Animal\nPolymorphism:  different classes answer the same call        # shape.area() works for Circle and Square\n\nThe other options:\n  objects, methods, properties and fields: the parts a class is made of, not principles\n  declaration, modeling, evaluation and implementation: not a real set\n  immutability, purity, transparency and state: ideas from functional programming",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #127"
   },
@@ -154,7 +154,7 @@
     "prompt": "Which sorting algorithm is best when data is nearly sorted?",
     "options": ["Heap Sort", "Merge Sort", "Selection Sort", "Insertion Sort"],
     "answer": 3,
-    "explanation": "Insertion sort does about n comparisons when each element is already near its place, so it runs in close to O(n) on nearly sorted data. Selection sort is O(n^2) regardless.",
+    "explanation": "Insertion sort takes each item and slides it left past larger items until it fits. On nearly sorted data each item moves only a step or two, so the total work is close to n.\n\n[1, 2, 4, 3, 5, 6]\n3 slides left past 4     # 1 move\nevery other item stays   # 0 moves\nabout n comparisons      # O(n)\n\nOn a reversed list every item slides all the way to the front: about n²/2 moves, O(n²).\n\nThe other options:\n  selection sort: always scans the rest for the minimum, O(n²) whatever the order\n  heap sort and merge sort: O(n log n) every time, so the order doesn't help",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #134"
   },
@@ -192,7 +192,7 @@
     "prompt": "Which data structure is used to implement an auto-complete feature?",
     "options": ["Trie", "Stack", "Linked List", "Tree"],
     "answer": 0,
-    "explanation": "A Trie is a tree based data structure where each node stores a character performing efficient search operations on them",
+    "explanation": "A trie stores words one letter per level, so words with the same start share the same path. Typing a prefix walks down that path, and everything below it is a completion.\n\nc\n  a              # typing \"ca\" lands here\n    r            # car\n    t            # cat\n\nThe cost depends on the length of the prefix, not on how many words are stored.\n\nThe other options: a stack and a linked list have no notion of prefixes. A tree is the general idea, and a trie is the specific tree built for this.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #156"
   },
@@ -397,7 +397,7 @@
     "code": "[1, 3, 2, 7, 4]",
     "options": ["It is not a valid heap, because it is not sorted","It is a valid heap, and reading it left to right gives sorted order","It is a valid heap, and the second smallest value is always at index 1","It is a valid min-heap, but not sorted: only each parent is smaller than its children"],
     "answer": 3,
-    "explanation": "A heap only promises one thing: every parent is no bigger than its children. The two children of a node have no order between them, so 3 can sit before 2. Here the second smallest value is 2, at index 2, not index 1.\n\n        1\n      /   \\\n     3     2        # siblings: no order between them\n    / \\\n   7   4\n\nThe smallest is always at the root, but nothing else is in order. To get sorted values you pop repeatedly (1, 2, 3, 4, 7), which is how heap sort works. A binary search tree is different: there, left < node < right.",
+    "explanation": "Core problem: a heap promises only that every parent is no bigger than its children. It does not sort the array.\n\n        1\n      /   \\\n     3     2        # siblings: no order between them\n    / \\\n   7   4\n\nThe other options:\n  not valid because it isn't sorted: a heap doesn't need to be sorted\n  sorted left to right: 3 comes before 2\n  second smallest always at index 1: here it is 2, at index 2\n\nTo get sorted values you pop repeatedly (1, 2, 3, 4, 7), which is how heap sort works.",
     "practicality": 6
   },
   {
