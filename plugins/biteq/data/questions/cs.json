@@ -77,15 +77,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #5"
   },
   {
-    "id": "cs-fcc-007",
-    "prompt": "Which sorting algorithm has an average time complexity of O(nlogn)?",
-    "options": ["Insertion sort", "Selection sort", "Bubble sort", "Quick sort"],
-    "answer": 3,
-    "explanation": "Quick sort has an average time complexity of O(nlogn), making it efficient for sorting large datasets.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #7"
-  },
-  {
     "id": "cs-fcc-008",
     "prompt": "Which data structure does Dijkstra's shortest-path algorithm use to pick the next closest vertex?",
     "options": ["Priority Queue", "Hash set", "String", "Stack"],
@@ -120,15 +111,6 @@
     "explanation": "NP-hard means at least as hard as every problem in NP: no known algorithm solves it in polynomial time, and finding one would solve all of NP. Checking every tour of n cities takes about n! steps.\n\nFinding the shortest tour is NP-hard. It isn't NP-complete, because you can't check quickly that a given tour is the shortest. The yes/no version (\"is there a tour shorter than k?\") is in NP and is NP-complete.\n\nIn practice, route planners use heuristics and approximations that find a good tour, not a provably shortest one.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #26"
-  },
-  {
-    "id": "cs-fcc-027",
-    "prompt": "Which of the following algorithms can be used for the shortest path problem for an unweighted graph?",
-    "options": ["Linear Search", "Breadth First Search", "Ternary Search", "Binary Search"],
-    "answer": 1,
-    "explanation": "Breadth First Search can be used for the shortest path problem for an unweighted graph.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #27"
   },
   {
     "id": "cs-fcc-028",
@@ -284,15 +266,6 @@
     "explanation": "Each call makes two more calls until n reaches 1, so the calls form a binary tree n levels deep: 1 + 2 + 4 + ... + 2^(n-1) = 2^n - 1 calls.\n\nf(3)                      # 1 call\n├── f(2)                  # 2 calls\n│   ├── f(1)  f(1)        # 4 calls\n└── f(2) ...\n\nIn general a recursion that branches b times and goes d deep makes about b^d calls. Computing f(n - 1) once and doubling it (return 2 * f(n - 1)) makes it O(n); naive Fibonacci has the same blow-up.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #139"
-  },
-  {
-    "id": "cs-fcc-140",
-    "prompt": "What is the worst case time complexity for binary and linear search?",
-    "options": ["binary search is O(n) and linear search is O(logn)", "binary search is O(n) and linear search is O(n)", "binary search is O(logn) and linear search is O(logn)", "binary search is O(logn) and linear search is O(n)"],
-    "answer": 3,
-    "explanation": "The worst case time complexity for linear search O(n) because we have to iterate through n elements. The worst case time complexity for binary search is O(logn) because it is a divide and conquer algorithm.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #140"
   },
   {
     "id": "cs-fizzbuzz-order",
@@ -461,7 +434,7 @@
     "prompt": "A recursive resolver with an empty cache looks up `www.example.com`. Which sequence of servers does it ask, and in what order?",
     "options": ["The example.com server, then the .com server, then a root server","A .com server, then a root server, then the example.com server","A root server, which knows every domain and returns the IP directly","A root server, then a .com server, then the example.com server"],
     "answer": 3,
-    "explanation": "The resolver starts at the top and gets pointed one level down at each step. A root server doesn't know the IP, only who runs .com. The .com server doesn't know it either, only who runs example.com. Only that last server, the domain's authoritative server, returns the real answer.\n\nroot server         -> \"ask the .com servers\" (a.gtld-servers.net ...)    # a referral, not an answer\n.com server         -> \"ask hera.ns.cloudflare.com ...\" for example.com   # another referral\nexample.com server  -> www.example.com A 172.66.147.243                  # the actual answer\n\nOnce cached, later lookups skip the top levels: the resolver keeps each referral for its own TTL, so a warm cache goes straight to the example.com server, or answers locally.",
+    "explanation": "Core problem: no single server knows the answer. Each one only points the resolver one level down.\n\nroot server         -> \"ask the .com servers\"            # a referral, not an answer\n.com server         -> \"ask the example.com servers\"     # another referral\nexample.com server  -> www.example.com A 172.66.147.243  # the actual answer, from the authoritative server\n\nWith a warm cache the resolver skips the top steps, because it keeps each referral for its own TTL.",
     "practicality": 5
   },
   {
@@ -477,11 +450,11 @@
   {
     "id": "cs-feed-fanout-celebrity",
     "title": "Celebrity fan-out",
-    "prompt": "A user with 20 million followers posts on a fan-out-on-write system, and the write queues back up. What is the best fix? Fan-out-on-write copies each new post into every follower's stored feed when it is published. Fan-out-on-read builds a feed from the accounts you follow when it is opened.",
+    "prompt": "A user with 20 million followers posts on a fan-out-on-write system (each new post is copied into every follower's stored feed when it is published), and the write queues back up. What is the best fix?",
     "code": "normal user posts (300 followers)   -> 300 feed writes\ncelebrity posts (20M followers)     -> 20,000,000 feed writes",
     "options": ["Keep fan-out-on-write for everyone and add more queue partitions","Switch every user to fan-out-on-read, building each feed when it is opened","Keep fan-out-on-write for normal accounts, and merge huge accounts' posts into the feed at read time","Publish one global feed to a CDN and personalize it on the client"],
     "answer": 2,
-    "explanation": "A post's write cost is the author's follower count, while a feed's read cost is only the number of accounts the reader follows. Fan-out-on-write keeps reads cheap, but one celebrity post becomes 20 million writes. So skip the fan-out for the few huge accounts and keep it for everyone else. Each time a feed is loaded, merge the reader's stored feed with the latest posts from the huge accounts they follow. The celebrity's post is never copied into each follower's feed.\n\nnormal user posts (300 followers)   -> 300 writes        # fan-out-on-write, cheap\ncelebrity posts (20M followers)     -> 1 write           # stored once, in their own post list\nreader opens feed                   -> 1 feed lookup + latest posts of a handful of followed celebrities, merged by time\n                                                         # repeated on every load, but a reader follows few huge accounts\n\nThe other options fail for specific reasons:\n  more partitions\n    # spreads the 20M writes out but does not shrink them; the cost still grows with followers\n  fan-out-on-read for everyone\n    # feeds are opened far more often than people post, and every open queries and merges hundreds of accounts\n  one global feed on a CDN\n    # a feed differs per reader, so one shared copy cannot hold it",
+    "explanation": "Core problem: a post's write cost grows with the author's follower count, so one celebrity post becomes 20 million writes.\n\nFix: a hybrid.\n1. Normal accounts: fan-out-on-write as before, so reads stay cheap.\n2. Huge accounts: no fan-out. The post is stored once, in their own post list.\n3. When a feed is opened: take the reader's stored feed and merge in the latest posts from the huge accounts they follow.\n\nnormal user posts (300 followers)   -> 300 writes   # fan-out-on-write, cheap\ncelebrity posts (20M followers)     -> 1 write      # stored once, not copied to followers\nreader opens feed                   -> 1 feed lookup + the latest posts of a few followed celebrities, merged by time\n\nThe other options:\n  more partitions: spreads the 20M writes out, but doesn't shrink them\n  fan-out-on-read for everyone: feeds are opened far more often than people post, and every open queries and merges hundreds of accounts\n  one global feed on a CDN: a feed differs per reader, so one shared copy can't hold it",
     "practicality": 5
   },
   {

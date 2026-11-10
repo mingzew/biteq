@@ -85,8 +85,7 @@ When two questions test the same idea, the weaker one went, even if its practica
 
 - LIFO stack: `cs-fcc-055` removed, `cs-fcc-181` kept. Push: `cs-fcc-046` removed.
 - Stack vs queue: `cs-fcc-173` removed (6) next to the kept LIFO/FIFO questions.
-- Binary search: `cs-fcc-171` removed (7), `cs-fcc-140` kept (binary vs linear worst case).
-- O(n log n) sorts: `cs-fcc-045` removed, `cs-fcc-007` and `cs-fcc-132` kept.
+- O(n log n) sorts: `cs-fcc-045` removed, `cs-fcc-132` kept.
 
 ### 7. Joke or giveaway options
 
@@ -103,7 +102,7 @@ long, serious-sounding option is obviously right (pattern 2):
 | Id | Practicality | Likely reason |
 |---|---|---|
 | `cs-fcc-058` first-class functions | 7 | definition; the concept is better tested with code in a language bank |
-| `cs-fcc-171` binary search | 7 | duplicate of `cs-fcc-140`; definition-style |
+| `cs-fcc-171` binary search | 7 | definition-style |
 | `cs-fcc-012` call by value | 6 | definition; better as a code question in a language bank |
 | `cs-fcc-173` stack vs queue | 6 | duplicate of the kept LIFO/FIFO questions |
 | `cs-fcc-038` Dijkstra needs non-negative weights | 5 | named-algorithm fact |
