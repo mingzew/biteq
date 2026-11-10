@@ -3,10 +3,10 @@
     "id": "cs-bigo-doubling",
     "title": "Complexity",
     "prompt": "What is the time complexity?",
-    "code": "i = 1\nwhile i < n:\n    for j in range(n):\n        work()\n    i *= 2",
+    "code": "i = 1\nwhile i < n:\n    for j in range(n):\n        work()  # O(1)\n    i *= 2",
     "options": ["O(n)", "O(n log n)", "O(n²)", "O(log n)"],
     "answer": 1,
-    "explanation": "Multiply how many times each loop runs. i doubles each pass, so it reaches n after log₂ n passes, and each pass runs the inner loop n times.\n\nn = 16\ni = 1, 2, 4, 8   # 4 passes, which is log₂ 16\n16 work() calls per pass   # 4 * 16 = 64, not 16 * 16\n\ni += 1   # would make n passes instead, and O(n²)",
+    "explanation": "Inner loop: runs n times on every pass.\nOuter loop: i doubles (1, 2, 4, ...), so it reaches n after log₂ n passes, not n.\n\nQuick recap on logs:\nlog₂ n means how many times you double 1 to reach n,\nor halve n to get down to 1.\nLogs grow slowly: even n = 1,000,000 is only about 20 passes.\n\nn = 8, one row per pass of the outer loop, one * per work() call:\n\npass 1  i = 1   ********\npass 2  i = 2   ********\npass 3  i = 4   ********\nstop    i = 8   (8 < 8 is false)\n\n3 rows * 8 stars = 24 work() calls\n3 = log₂ 8 and 8 = n, so the 24 is n log₂ n: O(n log n)\n\nThe other options:\n  O(n²): needs the outer loop to run n times, as with i += 1 instead of i *= 2\n  O(n): needs only one loop\n  O(log n): counts the outer loop and ignores the inner one",
     "practicality": 5
   },
   {
@@ -93,15 +93,6 @@
     "explanation": "Dijkstra's algorithm, which is used to find the shortest path in a graph, typically employs a priority queue to efficiently select the next vertex with the smallest distance.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #8"
-  },
-  {
-    "id": "cs-fcc-009",
-    "prompt": "What is the time complexity of inserting an element into a linked list at the beginning?",
-    "options": ["O(1)", "O(log n)", "O(n)", "O(n2)"],
-    "answer": 0,
-    "explanation": "The time complexity involved to insert a node at the head of the linked list as well as to append at the tail is O(1).",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #9"
   },
   {
     "id": "cs-fcc-016",
@@ -438,10 +429,10 @@
     "id": "cs-cache-aside-stale-write",
     "title": "Stale write after DEL",
     "prompt": "Thread A updates the row, then deletes `product:99` from the cache. Slow thread B read the old row before the update and fills the cache after the delete. The cache now serves old data. What consistently stops this?",
-    "code": "B: read product 99 from DB       # sees version 7\nA: UPDATE product 99             # now version 8\nA: DEL product:99\nB: SET product:99 = version 7    # stale data is back in the cache",
-    "options": ["Shorten the TTL so stale entries expire sooner","Delete the key a second time after a short delay","Store a version with each entry and reject a cache write older than what is already there","Read from a database replica so reads never see old data"],
+    "code": "B: read product 99 from DB       # sees version 7\nA: UPDATE product 99             # now version 8\nA: DEL product:99                # the key is now empty\nB: SET product:99 = version 7    # stale data is back in the cache",
+    "options": ["Shorten the TTL so stale entries expire sooner","Delete the key a second time after a short delay","Replace the delete with a versioned marker; reject writes with an older version","Read from a database replica so reads never see old data"],
     "answer": 2,
-    "explanation": "A plain DEL leaves nothing to compare against, so B's late SET wins. Give every entry a version from the database and make the cache fill conditional: write only if the incoming version is newer than what is stored.\n\nA: UPDATE product 99 -> version 8\nA: SET product:99 = tombstone v8   # instead of DEL, so a version exists to compare against\nB: SET product:99 = old data v7    # compare-and-set sees 7 < 8 and rejects it\nB: next read misses and refills from the database at v8\n\nIn Redis, do the compare and the SET in one Lua script, or the check itself can race.\n\nThe other options only narrow the window:\n  delete again after a delay\n    # a mitigation, not a fix: it works only if B finishes before the second delete,\n    # and a slower B (a GC pause, a slow query) still writes stale data afterwards\n  shorter TTL\n    # the stale entry still lives until it expires\n  read replicas\n    # replicas lag the primary, so B reads old data more often, not less",
+    "explanation": "Core problem: DEL leaves nothing to compare against.\n\nFix in two parts:\n1. Replace DEL with a tombstone: a soft-delete marker that keeps the database version after the data is gone.\n2. Make every cache fill conditional: write only if the incoming version is newer than what is stored, as one atomic step.\n\nwith DEL:\nA: DEL product:99                  # key is empty: nothing to compare against\nB: SET product:99 = old data v7    # accepted: stale data is back\n\nwith a tombstone:\nA: SET product:99 = tombstone v8   # the version stays after the data is gone\nB: SET product:99 = old data v7    # compare-and-set sees 7 < 8 and rejects it\nnext read: sees the tombstone, misses, refills from the database at v8\n\nGive the tombstone a TTL longer than your slowest read, or a late write can slip in once it expires.\n\nThe other options only mitigate the problem by narrowing the window:\n  delete again after a delay: fails if B is slower than the delay\n  shorter TTL: the stale entry lives until it expires\n  read replicas: replicas lag the primary, so B reads old data more often",
     "practicality": 6
   },
   {
@@ -461,7 +452,7 @@
     "code": "10:00  a resolver caches www.example.com = 203.0.113.10 (TTL 24h)\n12:00  you lower the TTL to 60s\n13:00  you switch the record to 198.51.100.20\n13:05  that resolver still answers 203.0.113.10",
     "options": ["Browsers cache DNS answers for 24h whatever the TTL says","DNS changes spread outward from the root servers, which takes up to 24h","A resolver that already cached the old record keeps it until its old 24h TTL runs out","Your authoritative server keeps serving the old IP until its own cache expires"],
     "answer": 2,
-    "explanation": "Updating the TTL does not push it to resolvers that already cached the record. They still hold the old copy with the old 24h countdown, and they won't see the 60s value until it runs out. A TTL is a countdown that starts when a resolver fetches the record, using the TTL it was given at that moment, so lowering a TTL only helps once the old TTL has expired everywhere. Lower it at least one full old TTL before the migration.\n\n10:00  cached with TTL 24h          # expires tomorrow 10:00, whatever you change now\n12:00  you lower the TTL to 60s     # applies only to answers fetched from now on\n13:00  you switch the IP            # that resolver still holds the old one\n10:00 next day: its copy expires    # 21 hours after cutover; one cached at 11:59 would hold it until 11:59 next day, 23h after\n\nCommon wrong ideas:\n  authoritative servers\n    # they answer from the zone and don't cache it, so they switch the moment you change it\n  the plan\n    # lower the TTL 24h ahead, migrate, then raise it again once the new IP is stable",
+    "explanation": "Core problem:\n1. A resolver's countdown starts as soon as it fetches the record, using the TTL it was given then.\n2. Changes to the TTL do NOT push to resolvers that already cached the record. They keep the old 24h countdown and won't see the new value until it runs out.\n\nFix: lower the TTL at least one full old TTL (24h) before the migration.\n\n10:00  cached with TTL 24h          # expires tomorrow 10:00\n12:00  you lower the TTL to 60s     # applies only to answers fetched from now on\n13:00  you switch the IP            # that resolver still holds the old one\n10:00 next day: its copy expires    # 21 hours after cutover; one cached at 11:59 would hold it until 11:59 next day, 23h after\n\nThe other options:\n  browsers cache DNS for 24h: browsers keep answers for about a minute, not 24h\n  changes spread from the root servers: nothing is pushed; each resolver refetches only when its own copy expires\n  the authoritative server keeps the old IP: this server has the new IP immediately. It never keeps the old record, because this is where you made the IP change. The old IP is stuck at resolvers that cached it",
     "practicality": 8
   },
   {
@@ -478,9 +469,9 @@
     "title": "Retrying a timed-out POST",
     "prompt": "A client times out on `POST /charge` and can't tell whether the server processed it. `GET`, `PUT` and `DELETE` can be retried automatically, but a retried `POST` could charge the customer twice. What makes the retry safe?",
     "code": "POST /charge\n{ \"amount\": 4200, \"card\": \"tok_123\" }\n-> no response (timeout)",
-    "options": ["Retry with exponential backoff and jitter","Put a fresh request ID on each attempt and log it on the server","Send Cache-Control: no-store so the retry always reaches the server","Send an Idempotency-Key created once per charge and reused on every retry; the server stores the first result and replays it"],
+    "options": ["Retry with exponential backoff and jitter","Put a fresh request ID on each attempt and log it on the server","Before retrying, look for an existing charge with the same amount and card, and skip the retry if one exists","Send one Idempotency-Key per charge, reused on every retry; the server replays the first result"],
     "answer": 3,
-    "explanation": "A timeout doesn't tell you whether the charge ran, so retrying a non-idempotent POST blindly can create it twice. GET, HEAD, PUT, DELETE and OPTIONS are idempotent by spec, so clients and proxies may retry them. POST is not. An Idempotency-Key makes it behave like one: the client creates the key once per charge and sends the same key on every retry, and the server stores the key with the first outcome and returns that stored result when it sees the key again.\n\nattempt 1: POST /charge  Idempotency-Key: k-81f3   # server charges, stores k-81f3 -> 201 ch_1; reply is lost\nattempt 2: POST /charge  Idempotency-Key: k-81f3   # server finds k-81f3, returns 201 ch_1; no second charge\nattempt 3 with a new key                           # looks like a new charge, so it charges again\n\nBackoff only spaces retries out and doesn't stop duplicates. A fresh request ID per attempt is good for tracing, but the server can't tell the attempts are the same charge.",
+    "explanation": "Core problem: after a timeout you can't tell whether the charge ran, and POST is not idempotent, so a blind retry can charge twice.\n\nFix: an Idempotency-Key. The client creates one key per charge and sends it on every retry. The server stores the key with the first result and replays that result when it sees the key again.\n\nattempt 1: POST /charge  Idempotency-Key: k-81f3   # server charges, stores k-81f3 -> 201 ch_1; reply is lost\nattempt 2: POST /charge  Idempotency-Key: k-81f3   # server finds k-81f3, returns 201 ch_1; no second charge\nattempt 3 with a new key                           # looks like a new charge, so it charges again\n\nThe other options:\n  backoff and jitter: spaces retries out, but doesn't stop duplicates\n  a fresh request ID per attempt: good for tracing, but the server can't tell the attempts are the same charge\n  matching on amount and card: two real purchases of the same amount look identical, and the check can race with the charge",
     "practicality": 9
   },
   {
@@ -497,10 +488,10 @@
     "id": "cs-n-plus-one",
     "title": "One query per row",
     "prompt": "This page shows 50 posts with their authors. It is slow. How many queries run, and what is the fix?",
-    "code": "posts = query(\"SELECT id, title, author_id FROM posts LIMIT 50\")\nfor post in posts:\n    author = query(\"SELECT name FROM users WHERE id = ?\", post.author_id)\n    print(post.title, author.name)",
+    "code": "posts = query(\"SELECT id, title, author_id FROM posts LIMIT 50\")\nfor post in posts:\n    author = query(\"SELECT name FROM authors WHERE id = ?\", post.author_id)\n    print(post.title, author.name)",
     "options": ["50 queries; add an index on author_id","51 queries; raise the connection pool size so they run in parallel","51 queries; fetch all the authors in one query, with a join or WHERE id IN (...)","51 queries; show 10 posts per page instead of 50"],
     "answer": 2,
-    "explanation": "The loop runs a query for every post, on top of the one that fetched the posts: 1 + 50 = 51 round trips. Each query is fast, but the round trips add up, and the count grows with the page size. Fetch all the authors in one query, then match them to the posts in memory, or use a join. ORMs hide this: a lazily loaded relation looks like a plain attribute but runs a query.\n\nSELECT id, title, author_id FROM posts LIMIT 50    # 1 query\nSELECT name FROM users WHERE id = 7                # post 1's author\nSELECT name FROM users WHERE id = 3                # post 2's author ... 50 times\n\nfixed:\nSELECT id, title, author_id FROM posts LIMIT 50\nSELECT id, name FROM users WHERE id IN (7, 3, ...)    # 2 queries in total\n\nThe other fixes leave the problem in place:\n  an index\n    # each lookup is faster, but there are still 50 of them\n  a bigger pool\n    # they run in parallel, but it is still 51 queries\n  fewer posts per page\n    # 11 queries instead of 51, and the same shape",
+    "explanation": "This is an N+1 problem: one query for the posts\n\nSELECT id, title, author_id FROM posts LIMIT 50\n\nand one more per post for its author, because the query sits inside the loop\n\nfor post in posts:                                       # 50 posts, so 50 iterations\n    SELECT name FROM authors WHERE id = post.author_id   # runs once per iteration\n\nWe already have the author id on each post, but we are looking for the author's name, and that is a separate lookup: 1 + 50 = 51 queries.\n\nFix: fetch all the authors in one query, with a join or WHERE id IN (...), and match them to the posts in memory:\n\nSELECT id, title, author_id FROM posts LIMIT 50\nSELECT id, name FROM authors WHERE id IN (7, 3, ...)    # 2 queries in total\n\nThe other fixes leave the problem in place:\n  an index\n    # each lookup is faster, but there are still 50 of them\n  a bigger pool\n    # they run in parallel, but it is still 51 queries\n  fewer posts per page\n    # 11 queries instead of 51, and the same shape",
     "practicality": 8
   },
   {
@@ -520,7 +511,7 @@
     "code": "key = Point(1, 2)\ntable[key] = \"a\"\nkey.x = 5\ntable.get(key)\ntable.get(Point(1, 2))",
     "options": ["\"a\" and \"a\"","\"a\" and not found","not found and \"a\"","not found and not found"],
     "answer": 3,
-    "explanation": "The table filed the entry in a slot chosen by the hash of the key at insert time, and it stores a reference to your object, not a copy. Changing key.x doesn't move the entry, but it does change the stored key. Both lookups then fail, for different reasons.\n\ntable[key] = \"a\"          # hash(1, 2) picks slot H1; the entry holds a reference to key\nkey.x = 5                 # the stored key is now (5, 2), but the entry stays in slot H1\ntable.get(key)            # hash(5, 2) picks a different slot H2: nothing there\ntable.get(Point(1, 2))    # hash(1, 2) picks slot H1: found, but the stored key is now (5, 2), which does not equal (1, 2)\n\nSo the first lookup goes to the wrong slot, and the second goes to the right slot but the key no longer matches. Even a fresh Point(5, 2) fails, because it hashes to H2. The entry is still in the table, and it only turns up if you iterate over it.\n\nUse immutable values as keys, or never change the fields that feed the hash once a key is in a table.",
+    "explanation": "A hash table does two steps for every lookup:\n1. Find the slot: it hashes the key to pick one.\n2. Compare keys: it compares the key stored in that slot with the key you passed in.\n\nThe core problem is that the table keeps a reference to your key, NOT a copy, and that reference is stored together with the value as one entry. So changing key.x changes the stored key, but does NOT move the entry to a new slot. Both lookups then fail, at different steps.\n\ntable[key] = \"a\"          # hash(1, 2) picks slot H1; the entry in H1 is (reference to key, \"a\")\nkey.x = 5                 # the key inside the entry now reads (5, 2), but the entry stays in H1\ntable.get(key)            # step 1: hash(5, 2) picks slot H2, which is empty: not found\ntable.get(Point(1, 2))    # step 1: hash(1, 2) picks H1, found the right slot. BUT step 2: the key in H1 is now (5, 2), which does not equal (1, 2): not found\n\nThe first lookup fails at step 1 (wrong slot). The second fails at step 2 (right slot, but the key does not match). Even a fresh Point(5, 2) fails, because it hashes to H2.\n\nUse immutable values as keys, or never change the fields that feed the hash once a key is in a table.",
     "practicality": 8
   },
   {
@@ -574,8 +565,8 @@
   {
     "id": "cs-offset-deep-pages",
     "title": "Deep pages",
-    "prompt": "An API lists orders 20 at a time, sorted by the indexed `id`. Page 1 returns in 2 ms. How does the page at offset 1,000,000 compare, and why?",
-    "code": "SELECT * FROM orders ORDER BY id LIMIT 20 OFFSET 1000000",
+    "prompt": "An API lists orders 20 per page, sorted by the indexed `id`. The orders table has 50 million rows. A client requests page 1, which takes 2 ms. Then it requests a deep page by skipping the first 1,000,000 rows with an offset. How long does the deep page take compared with page 1, and why?",
+    "code": "# page 1\nGET /orders?limit=20&offset=0          # 2 ms\n\n# a page deep in the list: skips the first 1,000,000 rows\nGET /orders?limit=20&offset=1000000\n\n# the query the server runs for the deep page\nSELECT * FROM orders ORDER BY id LIMIT 20 OFFSET 1000000",
     "options": ["Much slower: the database still walks past the first 1,000,000 rows and throws them away","About the same: the index jumps straight to row 1,000,000","Slightly slower, because the larger number takes longer to parse","Faster: fewer rows are left after the offset"],
     "answer": 0,
     "explanation": "OFFSET n doesn't jump to row n. The database has to count its way past n rows to find where the page starts, so the cost grows with how deep you go: page 1 reads 20 rows, but the page at offset 1,000,000 reads 1,000,020 rows and returns only the last 20. The fix is keyset pagination: remember the last id you returned and ask for the rows after it, which uses the index to start at the right place.\n\npage 1:              LIMIT 20 OFFSET 0         # reads 20 rows\noffset 1,000,000:    LIMIT 20 OFFSET 1000000   # reads 1,000,020 rows, throws away a million\n\nkeyset:\nSELECT * FROM orders WHERE id > 1000000 ORDER BY id LIMIT 20    # starts at the right place: same cost on every page\n\nThe trade-off: keyset pagination can't jump straight to \"page 37\", only to the next and previous pages, and it needs a unique, ordered column to key on.",
