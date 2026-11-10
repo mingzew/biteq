@@ -22,21 +22,21 @@ const LETTERS = 'abcd'
 const RESTING = `${AGENT} is done, go review. The next time ${AGENT} cooks, we will serve the question.`
 // a new session, before Claude has run: nothing to review yet
 const IDLE = `${AGENT} hasn't started yet. The next time ${AGENT} cooks, we will serve the question.`
-const BANKS = 'Choose the banks to practise. They are served mixed, and saved as you go.'
+const BANKS = 'Choose the bank to practise. It is saved as you pick.'
 const CONGRATS = 'Congratulations!'
-const FINISHED = "You've cleared every question in your banks:"
-const ONE_SHOT = (n: number, of: number) => `${n} of ${of} in one shot.`
+const FINISHED = "You've cleared every question in this bank:"
 // how to go on, in the client's own terms: its hotkeys where it has them, its buttons where it doesn't
 const AGAIN = (hotkeys: boolean) => (hotkeys
-  ? 'Press n to start over, or z to choose other banks.'
-  : 'Click Start over to go again, or Switch Q banks to choose other banks.')
-// the remembered banks have no questions (one was removed or emptied): the bank screen fixes it
+  ? 'Press n to start over, or z to choose another bank.'
+  : 'Click Start over to go again, or Switch Q banks to choose another bank.')
+// the remembered bank has no questions (it was removed or emptied): the bank screen fixes it
 const EMPTY = (hotkeys: boolean) => (hotkeys
-  ? 'No questions in the selected banks. Press z to choose other banks.'
-  : 'No questions in the selected banks. Click Switch Q banks to choose other banks.')
+  ? 'No questions in this bank. Press z to choose another.'
+  : 'No questions in this bank. Click Switch Q banks to choose another.')
 
 export const keys = {
   answer: (q: Question, idx: number) => `answer:${idx}:${q.id}`,
+  word: (key: string, n: number) => `${key}~${n}`,   // one word of a long answer; press() reads it as the answer
   next: (q: Question | null) => `next:${q?.id ?? ''}`,
   skip: (q: Question) => `skip:${q.id}`,
   close: 'close',
@@ -44,7 +44,7 @@ export const keys = {
   always: 'always',   // while resting: keep serving after Claude is done, remembered
   restart: 'restart', // every selected question answered: serve them again
   banks: 'banks',     // z: open the bank screen, or go back to the quiz
-  bank: (lang: string, on: boolean) => `bank:${on ? 'on' : 'off'}:${lang}`,   // check/uncheck a bank
+  bank: (lang: string) => `bank:${lang}`,   // practise this bank
 }
 
 /**
@@ -60,7 +60,7 @@ function hintBar(v: PaneView, el: QuizElements, traits: ClientTraits, onPress: (
   // q: close, where the client wants it (the CLI); the desktop pane's own X closes it
   const close = traits.closeButton ? [hint(keys.close, 'close', 'q')] : []
   if (v.picking) {
-    const row = [<Text key="toggle" dimColor>⏎ toggle</Text>, hint(keys.banks, 'done', 'z'), ...close]
+    const row = [<Text key="select" dimColor>⏎ select</Text>, hint(keys.banks, 'done', 'z'), ...close]
     return row.flatMap((item, i) => (i === 0 ? [item] : [<Text key={`sep-${i}`} dimColor> · </Text>, item]))
   }
   const items =
@@ -89,8 +89,8 @@ export function isHintKey(key: string): boolean {
 export type PaneView = {
   // Claude isn't working and the pane rests, no question until it does: 'done' once it has run, 'idle' before
   resting: false | 'done' | 'idle'
-  finished: boolean   // every question in the selected banks is answered: offer to start over
-  // the selected banks that have questions; oneShot: how many were right the first time
+  finished: boolean   // every question in the selected bank is answered: offer to start over
+  // the selected bank, if it has questions; oneShot: how many were right the first time
   banks: { lang: string; count: number; oneShot: number }[]
   picking: { lang: string; count: number; on: boolean }[] | null   // the bank screen's rows, while it shows
   bank: number
@@ -106,6 +106,10 @@ export type PaneView = {
 type QuizProps = PaneView & { traits: ClientTraits }
 
 type QuizElements = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
+type AnswerProps = { hotkey?: string; plain: true; dimColor?: boolean; autoFocus?: true }
+
+// An answer this short fits on one line in any pane the desktop app docks, so it stays one Button
+const WHOLE_LABEL = 24
 
 export function drawQuiz(
   v: PaneView,
@@ -140,6 +144,26 @@ export function drawQuiz(
       </Box>
     )
   }
+  // One answer. The desktop app draws a native button, which centers a label that wraps and has no setting to
+  // left-align it. So a label that could wrap is one Button per word in a wrapping row: no piece is long enough to
+  // center, the lines fill from the left, and any word presses the answer. The space is a no-break space inside the
+  // label, because a gap between Buttons wouldn't take clicks and a plain trailing space collapses.
+  const answerButton = (k: string, prefix: string, opt: string, props: AnswerProps) => {
+    const press = () => onPress(k)
+    if (!traits.wordButtons || `${prefix}${opt}`.length <= WHOLE_LABEL) {
+      return <Button key={k} label={`${prefix}${opt}`} {...props} onPress={press} />
+    }
+    const [first = '', ...rest] = opt.split(' ').filter(Boolean)
+    const words = [`${prefix}${first}`, ...rest]
+    return (
+      <Box key={`row:${k}`} flexWrap="wrap">
+        {words.map((word, n) => (
+          <Button key={n ? keys.word(k, n) : k} label={n < words.length - 1 ? `${word} ` : word}
+            {...props} autoFocus={n ? undefined : props.autoFocus} onPress={press} />
+        ))}
+      </Box>
+    )
+  }
   // The high side uses the BiteQ colour, bold, and dims only while the pane is unfocused. At 0–0 the line stays dim.
   // A correct answer raises best to match streak, so the two are equal while the user is on their record.
   const mark = (n: number, other: number) =>
@@ -164,22 +188,16 @@ export function drawQuiz(
           <Text dimColor={dim}>{BANKS}</Text>
           <Box flexDirection="column" alignItems={align}>
             {v.picking.map((b, i) => (
-              // keyed by the state a press sets, so the key changes with each toggle
-              <Button key={keys.bank(b.lang, !b.on)} label={`${b.on ? '[x]' : '[ ]'} ${b.lang} - ${b.count} ${b.count === 1 ? 'question' : 'questions'}`}
+              // ( ) rather than [ ]: one choice, not a list of checkboxes
+              <Button key={keys.bank(b.lang)} label={`${b.on ? '(x)' : '( )'} ${b.lang} - ${b.count} ${b.count === 1 ? 'question' : 'questions'}`}
                 hotkey={key(i < 9 ? String(i + 1) : '')} plain dimColor={dim} autoFocus={i === 0 ? ring : undefined}
-                onPress={() => onPress(keys.bank(b.lang, !b.on))} />
+                onPress={() => onPress(keys.bank(b.lang))} />
             ))}
           </Box>
         </Box>
       ) : q === null && v.finished ? (
         <Box flexDirection="column" gap={1} alignItems={align}>
-          <Box>
-            <Text bold color={TITLE_COLOR} dimColor={dim}>{CONGRATS}</Text>
-            {/* the total only with several banks: with one it would repeat that bank's line */}
-            {v.banks.length > 1 && (
-              <Text dimColor={dim}> {ONE_SHOT(v.banks.reduce((a, b) => a + b.oneShot, 0), v.banks.reduce((a, b) => a + b.count, 0))}</Text>
-            )}
-          </Box>
+          <Text bold color={TITLE_COLOR} dimColor={dim}>{CONGRATS}</Text>
           <Box flexDirection="column">
             <Text dimColor={dim}>{FINISHED}</Text>
             {v.banks.map(b => (
@@ -220,17 +238,15 @@ export function drawQuiz(
           {q.code ? <Text color="cyan" dimColor={dim}>{q.code}</Text> : null}
           <Box flexDirection="column" alignItems={align}>
             {q.options.map((opt, i) => {
-              const lettered = `${LETTERS[i]}${traits.optionSeparator} ${opt}`
+              const letter = `${LETTERS[i]}${traits.optionSeparator} `
               if (p === null) {
                 // A `plain` Button with a hotkey already paints it as "a: "; don't also prefix "a)".
-                return <Button key={keys.answer(q, i)} label={traits.hotkeys ? opt : lettered} hotkey={key(LETTERS[i] ?? '')} plain dimColor={dim} autoFocus={i === 0 ? ring : undefined} onPress={() => onPress(keys.answer(q, i))} />
+                return answerButton(keys.answer(q, i), traits.hotkeys ? '' : letter, opt, { hotkey: key(LETTERS[i] ?? ''), plain: true, dimColor: dim, autoFocus: i === 0 ? ring : undefined })
               }
               const right = i === q.answer
               const mine = i === p
               const markOpt = right ? '✓ ' : mine ? '✗ ' : '  '
-              return (
-                <Button key={keys.answer(q, i)} label={`${markOpt}${lettered}`} plain dimColor={dim || (!right && !mine)} onPress={() => onPress(keys.answer(q, i))} />
-              )
+              return answerButton(keys.answer(q, i), `${markOpt}${letter}`, opt, { plain: true, dimColor: dim || (!right && !mine) })
             })}
           </Box>
           {p !== null && (

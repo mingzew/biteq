@@ -10,7 +10,7 @@ import { STATS, loadJson, saveJson } from './store'
 
 export const DEFAULT_STATS: Stats = {
   answered: 0, correct: 0, streak: 0, best_streak: 0,
-  waits: 0, engaged_waits: 0, practised_waits: 0, seen: [], wrong: [], one_shot: {}, by_lang: {},
+  waits: 0, engaged_waits: 0, practised_waits: 0, seen: [], wrong: [], skipped: [], one_shot: {}, by_lang: {},
 }
 
 const REQUIRED = ['id', 'prompt', 'options', 'answer', 'explanation', 'practicality'] as const
@@ -30,6 +30,24 @@ export async function saveStats(io: Io, change: (s: Stats) => Stats): Promise<St
 
 export function questionsDir(io: Io): string {
   return `${io.pluginRoot}/data/questions`
+}
+
+/** data/top-stack.json: for each bank, the ids to serve first, in order. Outside data/questions: every file there is a bank. */
+export type TopStack = Record<string, string[]>
+
+function topStackPath(io: Io): string {
+  return `${io.pluginRoot}/data/top-stack.json`
+}
+
+/** The hand-picked serving order. Missing or broken: no stack, the quiz still works (/biteq check reports it). */
+export async function loadTopStack(io: Io): Promise<TopStack> {
+  try {
+    const raw = JSON.parse(await io.read(topStackPath(io))) as unknown
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+    return Object.fromEntries(Object.entries(raw).filter(([, ids]) => Array.isArray(ids))) as TopStack
+  } catch {
+    return {}
+  }
 }
 
 /** The bank files, sorted, as { lang, path }. */
@@ -74,6 +92,32 @@ export async function loadQuestions(io: Io, langs: string[]): Promise<Question[]
   return out
 }
 
+/** Every id in top-stack.json must be a question of that bank, listed once. `ids`: question id -> its bank file. */
+async function validateTopStack(io: Io, ids: Record<string, string>): Promise<string[]> {
+  const name = 'top-stack.json'
+  let raw: unknown
+  try {
+    raw = JSON.parse(await io.read(topStackPath(io)))
+  } catch (e) {
+    return [`${name}: invalid JSON (${e instanceof Error ? e.message : e})`]
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [`${name}: top level must be an object of bank -> ids`]
+  const errors: string[] = []
+  for (const [lang, list] of Object.entries(raw)) {
+    if (!Array.isArray(list)) {
+      errors.push(`${name}: ${lang} must be a list of question ids`)
+      continue
+    }
+    const listed = new Set<string>()
+    for (const id of list.map(String)) {
+      if (ids[id] !== `${lang}.json`) errors.push(`${name}: ${id} is not a question in ${lang}.json`)
+      if (listed.has(id)) errors.push(`${name}: ${id} is listed twice in ${lang}`)
+      listed.add(id)
+    }
+  }
+  return errors
+}
+
 /** Returns { summary, errors } for the whole question directory. */
 export async function validate(io: Io): Promise<{ summary: string; errors: string[] }> {
   const errors: string[] = []
@@ -111,6 +155,7 @@ export async function validate(io: Io): Promise<{ summary: string; errors: strin
       }
     })
   }
+  errors.push(...await validateTopStack(io, ids))
   const total = Object.values(counts).reduce((a, b) => a + b, 0)
   const list = Object.entries(counts).sort().map(([k, v]) => `${k} ${v}`).join(', ')
   return { summary: `${total} questions in ${Object.keys(counts).length} banks: ${list}`, errors }

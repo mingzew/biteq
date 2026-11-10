@@ -246,7 +246,7 @@
     "code": "s = \"ab\"\np s.gsub!(/x/, \"y\")",
     "options": ["\"ab\"", "false", "\"xy\"", "nil"],
     "answer": 3,
-    "explanation": "gsub! returns nil when it changes nothing — not the original string.\n\ns = \"ab\"\ns.gsub!(/x/, \"y\")  # => nil  (no match)\n# s is still \"ab\"\n\ns.gsub!(/a/, \"z\")  # => \"zb\" when it does change\n\nChaining s.gsub!(...).upcase blows up on nil. Use gsub (no bang) or check the return.",
+    "explanation": "gsub! replaces every match of a pattern in the string itself, changing that string. gsub! returns nil when it changes nothing — not the original string.\n\ns = \"ab\"\ns.gsub!(/x/, \"y\")  # => nil  (no match)\n# s is still \"ab\"\n\ns.gsub!(/a/, \"z\")  # => \"zb\" when it does change\n\nChaining s.gsub!(...).upcase blows up on nil. Use gsub (no bang) or check the return.",
     "practicality": 7
   },
   {
@@ -276,7 +276,7 @@
     "code": "a = \"x\".freeze\np [a.dup.frozen?, a.clone.frozen?]",
     "options": ["[true, false]", "[true, true]", "[false, false]", "[false, true]"],
     "answer": 3,
-    "explanation": "clone copies freeze (and singleton methods). dup does not.\n\na = \"x\".freeze\na.dup.frozen?    # => false  — a thawed copy\na.clone.frozen?  # => true   — still frozen\n\nBoth return a new object, never a itself.",
+    "explanation": "freeze makes an object unchangeable, and frozen? checks whether it is. dup and clone both make a copy. clone copies freeze (and singleton methods). dup does not.\n\na = \"x\".freeze\na.dup.frozen?    # => false  — a thawed copy\na.clone.frozen?  # => true   — still frozen\n\nBoth return a new object, never a itself.",
     "practicality": 3
   },
   {
@@ -286,7 +286,7 @@
     "code": "p nil.to_i",
     "options": ["nil", "0", "NoMethodError", "NaN"],
     "answer": 1,
-    "explanation": "nil.to_i is 0, not an error. Empty string is the same:\n\nnil.to_i  # => 0\n\"\".to_i   # => 0\n\"9\".to_i  # => 9\n\nSilent 0 from a missing value is a common bug. Check for nil instead of converting it.",
+    "explanation": "to_i converts a value to an Integer. nil.to_i is 0, not an error. Empty string is the same:\n\nnil.to_i  # => 0\n\"\".to_i   # => 0\n\"9\".to_i  # => 9\n\nSilent 0 from a missing value is a common bug. Check for nil instead of converting it.",
     "practicality": 5
   },
   {
@@ -316,7 +316,7 @@
     "code": "User.find_by(id: 0)",
     "options": ["nil", "ActiveRecord::RecordNotFound", "[]", "false"],
     "answer": 0,
-    "explanation": "find_by returns nil when nothing matches. find raises.\n\nUser.find_by(id: 0)  # => nil\nUser.find(0)         # => ActiveRecord::RecordNotFound\n\nfind_by! is the bang version of find_by (also raises).",
+    "explanation": "find_by looks up the first record that matches the conditions you give it, and find looks a record up by id. find_by returns nil when nothing matches. find raises.\n\nUser.find_by(id: 0)  # => nil\nUser.find(0)         # => ActiveRecord::RecordNotFound\n\nfind_by! is the bang version of find_by (also raises).",
     "practicality": 9
   },
   {
@@ -326,7 +326,7 @@
     "code": "class User < ApplicationRecord\n  validates :name, presence: true\nend\n\nUser.new.save!",
     "options": ["returns false", "returns true", "ActiveRecord::RecordInvalid", "saves a user with name nil"],
     "answer": 2,
-    "explanation": "save returns false on a failed validation. save! raises.\n\nUser.new.save   # => false\nUser.new.save!  # => ActiveRecord::RecordInvalid\n\ncreate! / update! follow the same bang rule.",
+    "explanation": "save runs the validations and, if they pass, writes the record to the database. save returns false on a failed validation. save! raises.\n\nUser.new.save   # => false\nUser.new.save!  # => ActiveRecord::RecordInvalid\n\ncreate! / update! follow the same bang rule.",
     "practicality": 9
   },
   {
@@ -346,7 +346,7 @@
     "code": "User.where(admin: true)",
     "options": ["an Array of Users", "an ActiveRecord::Relation", "a User or nil", "a SQL string"],
     "answer": 1,
-    "explanation": "where is lazy. It returns a relation, not a loaded array, and does not hit the database yet.\n\nUser.where(admin: true)  # ActiveRecord::Relation\n# SQL runs on .to_a, .each, .count, .first, ...\n\nUser.find_by(admin: true)  # one User or nil, queries now",
+    "explanation": "where builds a query for the rows that match its conditions. where is lazy. It returns a relation, not a loaded array, and does not hit the database yet.\n\nUser.where(admin: true)  # ActiveRecord::Relation\n# SQL runs on .to_a, .each, .count, .first, ...\n\nUser.find_by(admin: true)  # one User or nil, queries now",
     "practicality": 8
   },
   {
@@ -366,7 +366,7 @@
     "code": "user.update_column(:name, \"Ada\")",
     "options": ["saves, validates, sends email", "raises if invalid", "returns false if invalid", "saves, skips validations and callbacks"],
     "answer": 3,
-    "explanation": "update_column writes SQL and skips the ActiveRecord lifecycle.\n\nuser.update(name: \"Ada\")         # validations, callbacks, updated_at\nuser.update_column(:name, \"Ada\") # SQL only — no validations, no after_save, no email\n\nupdate_all on a relation is the same idea for many rows.",
+    "explanation": "update_column changes one column of one record, straight in the database. update_column writes SQL and skips the ActiveRecord lifecycle.\n\nuser.update(name: \"Ada\")         # validations, callbacks, updated_at\nuser.update_column(:name, \"Ada\") # SQL only — no validations, no after_save, no email\n\nupdate_all on a relation is the same idea for many rows.",
     "practicality": 8
   },
   {
@@ -386,7 +386,7 @@
     "code": "X = :outer\nclass C\n  X = :inner\nend\n\np C.class_eval { X }",
     "options": ["NameError", ":inner", ":outer", ":inner then :outer"],
     "answer": 2,
-    "explanation": "A block passed to class_eval is lexical. X is the outer X, not C's.\n\nC.class_eval { X }  # => :outer  — the block closes over the outer scope\nC.class_eval \"X\"    # => :inner  — a string is evaluated inside C\n\nself is C either way. Constants in a block are not.",
+    "explanation": "class_eval runs code with self set to the class, like reopening it. A block passed to class_eval is lexical. X is the outer X, not C's.\n\nC.class_eval { X }  # => :outer  — the block closes over the outer scope\nC.class_eval \"X\"    # => :inner  — a string is evaluated inside C\n\nself is C either way. Constants in a block are not.",
     "practicality": 2
   },
   {
@@ -406,7 +406,7 @@
     "code": "create_table :users do |t|\n  t.string :name\nend\n\nclass User < ApplicationRecord\n  validates :name, presence: true\nend\n\nUser.insert_all([{ name: nil }])",
     "options": ["Active Record", "Nobody (it inserts)", "Action Controller", "The database"],
     "answer": 1,
-    "explanation": "insert_all writes SQL and skips Active Record validations and callbacks.\n\nUser.new.save!                 # AR: RecordInvalid, no INSERT\nUser.insert_all([{ name: nil }])  # INSERT ... — validates never runs\n\nThe database only stops it if the column is NOT NULL. validates does not add that. No constraint, the row goes in.",
+    "explanation": "insert_all adds many rows with a single SQL statement. insert_all writes SQL and skips Active Record validations and callbacks.\n\nUser.new.save!                 # AR: RecordInvalid, no INSERT\nUser.insert_all([{ name: nil }])  # INSERT ... — validates never runs\n\nThe database only stops it if the column is NOT NULL. validates does not add that. No constraint, the row goes in.",
     "practicality": 7
   },
   {
@@ -426,7 +426,7 @@
     "code": "post = Post.includes(:comments)\n           .where(comments: { approved: true })\n           .find(1)\n\np post.comments.size",
     "options": ["3", "1", "0", "NoMethodError"],
     "answer": 1,
-    "explanation": "A where on the included table turns includes into a JOIN (eager_load). Only matching comments get loaded, and post.comments is now that filtered set.\n\nPost.includes(:comments).where(comments: { approved: true })\n# one JOINed query — post.comments has 1 record, not 3\n\npost.comments.size    # => 1  (already loaded, uses the array)\npost.comments.count   # => 3  (COUNT query, ignores the preload)\npost.comments.reload.size  # => 3\n\nTo filter posts but keep all comments: Post.where(id: Comment.where(approved: true).select(:post_id)).includes(:comments)",
+    "explanation": "includes loads a record's associations ahead of time, so reading them later doesn't run a query for each one. A where on the included table turns includes into a JOIN (eager_load). Only matching comments get loaded, and post.comments is now that filtered set.\n\nPost.includes(:comments).where(comments: { approved: true })\n# one JOINed query — post.comments has 1 record, not 3\n\npost.comments.size    # => 1  (already loaded, uses the array)\npost.comments.count   # => 3  (COUNT query, ignores the preload)\npost.comments.reload.size  # => 3\n\nTo filter posts but keep all comments: Post.where(id: Comment.where(approved: true).select(:post_id)).includes(:comments)",
     "practicality": 8
   },
   {

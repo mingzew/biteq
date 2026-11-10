@@ -31,11 +31,11 @@ app's Code tab, and the VS Code / Cursor extension.
   "Claude is done, go review" until Claude works again. **Serve next question** serves one anyway; **Always serve**
   turns this off for good (remembered; `/biteq pause on` turns it back on). A new session opens the pane resting
   too ("Claude hasn't started yet…") until you prompt Claude.
-- Questions are a mix of the banks you select (default `cs`, general CS questions, so anyone can start right
-  away). Only those banks are served. Missed questions come back later (light spaced repetition), and once
+- You practise one bank at a time (default `cs`, general CS questions, so anyone can start right
+  away). Only that bank is served. Missed questions come back later (light spaced repetition), and once
   nothing is unseen they come back until you get them right. Then the pane congratulates you, says how many
   you got right in one shot (the first time you ever saw them) for each bank, and offers **Start over** (`n` in
-  the terminal) or other banks (`z`).
+  the terminal) or another bank (`z`).
 - Stats are shared by every Claude Code session. `/biteq stats` tracks the key metric: how many AI waits (a
   prompt until the next one) you practised in while Claude worked. It also counts the waits you practised in
   at any time, after Claude was done included, and how many of those were only after. For each bank it also shows your correct answers (re-asks included) and how many of
@@ -67,8 +67,8 @@ Code tab, or the Claude Code extension in VS Code or Cursor.
    hint bar at the bottom names the rest: `n: skip · z: banks · q: close` before you answer, `⏎ next · z: banks ·
    q: close` after (Enter moves on; `n` still does too, though the bar no longer shows it). In the desktop app,
    the pane's own X closes it.
-4. To change what you practise, press `z` (desktop: **Switch Q banks**) at any time. Check or uncheck banks with `1`–`9`
-   or the arrow keys and Enter; each change is saved at once. `z` (or **Done**) goes back to the quiz.
+4. To change what you practise, press `z` (desktop: **Switch Q banks**) at any time. Pick one bank with `1`–`9`
+   or the arrow keys and Enter; it's saved at once. `z` (or **Done**) goes back to the quiz.
 
 Cursor's own chat agent is a different harness and doesn't run Claude Code plugins.
 
@@ -76,7 +76,7 @@ Cursor's own chat agent is a different harness and doesn't run Claude Code plugi
 
 | Command | What it does |
 |---|---|
-| `/biteq [--lang a,b]` | Open the pane; `--lang` picks the banks to serve, mixed, and is remembered (default `cs`). In the pane, `z` does the same |
+| `/biteq [--lang bank]` | Open the pane; `--lang` picks the one bank to serve and is remembered (default `cs`). In the pane, `z` does the same |
 | `/biteq langs` | List question banks, the selected ones first |
 | `/biteq check` | Validate the question banks |
 | `/biteq stats` | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |

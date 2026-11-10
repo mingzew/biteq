@@ -26,7 +26,7 @@
     "code": "a = [1, 2]\nb = [1, 2]\nprint(a == b, a is b)",
     "options": ["True True", "True False", "False False", "False True"],
     "answer": 1,
-    "explanation": "== compares values. is compares identity, and these are two separate list objects.",
+    "explanation": "== asks whether two objects hold equal values. is asks whether they are the same object, and each list literal creates a new list.\n\na == b   # => True   same items\na is b   # => False  two separate lists\n\nc = a\nc is a   # => True   c is another name for the same list",
     "practicality": 8
   },
   {
@@ -86,7 +86,7 @@
     "code": "nums = [1, 2, 2, 3]\nfor n in nums:\n    if n == 2:\n        nums.remove(n)\nprint(nums)",
     "options": ["[1, 3]", "[1, 2, 3]", "RuntimeError", "[1, 2, 2, 3]"],
     "answer": 1,
-    "explanation": "Removing the first 2 shifts the list left, so the iterator skips the second 2. Lists don't raise an error here (dicts do). Build a new list instead.",
+    "explanation": "list.remove(x) deletes the first item equal to x. Removing the first 2 shifts the list left, so the iterator skips the second 2. Lists don't raise an error here (dicts do). Build a new list instead.",
     "practicality": 9
   },
   {
@@ -146,7 +146,7 @@
     "code": "names = ['a', 'b', 'c']\nscores = [90, 80]\nprint(list(zip(names, scores)))",
     "options": ["[('a', 90), ('b', 80), ('c', None)]", "ValueError", "[('a', 90), ('b', 80)]", "[('a', 90), ('b', 80), ('c',)]"],
     "answer": 2,
-    "explanation": "zip() stops when the shortest input runs out, so the extra items in the longer list are dropped without any error. Use itertools.zip_longest() to keep them.",
+    "explanation": "zip() pairs up items from several lists by position: first with first, second with second. zip() stops when the shortest input runs out, so the extra items in the longer list are dropped without any error. Use itertools.zip_longest() to keep them.",
     "practicality": 8
   },
   {
@@ -156,7 +156,7 @@
     "code": "import json\nprint(json.loads(json.dumps({1: 'a'})))",
     "options": ["{1: 'a'}", "{'1': 'a'}", "TypeError", "[[1, 'a']]"],
     "answer": 1,
-    "explanation": "JSON object keys are always strings, so json.dumps() writes the key 1 as \"1\", and loading it back gives the string. Convert the keys yourself if you need ints.",
+    "explanation": "json.dumps() turns a Python value into JSON text, and json.loads() turns JSON text back into a Python value. JSON object keys are always strings, so json.dumps() writes the key 1 as \"1\", and loading it back gives the string. Convert the keys yourself if you need ints.",
     "practicality": 8
   },
   {
@@ -186,7 +186,7 @@
     "code": "def remove_negatives(numbers: list[int]) -> list[int]:\n    for num in numbers:\n        if num < 0:\n            numbers.remove(num)\n    return numbers",
     "options": ["It raises a RuntimeError because the list changes size mid-loop", "Items shift left after a removal, so it skips one and some negatives stay", "It returns None, because list.remove() gives back nothing", "It only removes the first negative, then stops"],
     "answer": 1,
-    "explanation": "Removing an item shifts the rest of the list left, so the loop skips the item right after each removal. In [1, -2, -3, 4] the -3 follows a removed -2, so it is skipped and stays. It also changes the caller's list in place. Build a new list instead.\n\nremove_negatives([1, -2, -3, 4])         # => [1, -3, 4]  (-3 was skipped)\n[n for n in [1, -2, -3, 4] if n >= 0]    # => [1, 4]  (a comprehension builds a new list)",
+    "explanation": "list.remove(x) deletes the first item equal to x. Removing an item shifts the rest of the list left, so the loop skips the item right after each removal. In [1, -2, -3, 4] the -3 follows a removed -2, so it is skipped and stays. It also changes the caller's list in place. Build a new list instead.\n\nremove_negatives([1, -2, -3, 4])         # => [1, -3, 4]  (-3 was skipped)\n[n for n in [1, -2, -3, 4] if n >= 0]    # => [1, 4]  (a comprehension builds a new list)",
     "practicality": 9
   },
   {
@@ -196,7 +196,7 @@
     "code": "class Account:\n    def __init__(self):\n        self._balance = 0\n\n    @property\n    def balance(self):\n        return self._balance\n\na = Account()\na.balance = 50\nprint(a.balance)",
     "options": ["It prints 50", "It prints 0", "AttributeError", "TypeError"],
     "answer": 2,
-    "explanation": "A property with only a getter is read-only, so assigning to it raises AttributeError instead of changing anything. Add a setter when you want writes, for example to validate the value.\n\n@property\ndef balance(self):         # read:  a.balance\n    return self._balance\n\n@balance.setter\ndef balance(self, value):  # write: a.balance = 50\n    if value < 0:\n        raise ValueError('balance cannot be negative')\n    self._balance = value",
+    "explanation": "@property makes a method readable like an attribute, so a.balance calls it without parentheses. A property with only a getter is read-only, so assigning to it raises AttributeError instead of changing anything. Add a setter when you want writes, for example to validate the value.\n\n@property\ndef balance(self):         # read:  a.balance\n    return self._balance\n\n@balance.setter\ndef balance(self, value):  # write: a.balance = 50\n    if value < 0:\n        raise ValueError('balance cannot be negative')\n    self._balance = value",
     "practicality": 8
   },
   {
@@ -289,7 +289,7 @@
     "prompt": "Which of the following is not an attribute of the datetime.now() function?",
     "options": ["month", "year", "day", "week"],
     "answer": 3,
-    "explanation": "The attributes of the datetime.now() function are year, month, day, hour, minute, second and microsecond",
+    "explanation": "datetime.now() returns a datetime object for the current date and time. It has year, month, day, hour, minute, second and microsecond attributes, but no week.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #28"
   },
@@ -328,7 +328,7 @@
     "code": "type(1)\ntype((1,))",
     "options": ["<class 'dict'>  <class 'list'>", "<class 'int'>  <class 'tuple'>", "<class 'int'> <class 'int'>", "<class 'str'> <class 'int'>"],
     "answer": 1,
-    "explanation": "type(1) will return <class 'int'> and type((1,)) will return <class 'tuple'>",
+    "explanation": "type() returns the class of a value. type(1) is <class 'int'>, and type((1,)) is <class 'tuple'> because the comma makes it a one-item tuple.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #34"
   },
@@ -346,7 +346,7 @@
     "prompt": "How can you create an empty set?",
     "options": ["set()", "{}", "()", "dict()"],
     "answer": 0,
-    "explanation": "You must call the set() function to create an empty set in Python.",
+    "explanation": "set() builds a set, and with no arguments it builds an empty one. You can't use {} for this, because {} is an empty dict.",
     "practicality": 8,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #39"
   },
@@ -481,7 +481,7 @@
     "prompt": "What does the partition() function do?",
     "options": ["Split the string at any occurrence of the given argument", "Splits the string at the first occurrence and returns a list", "Splits the string at the first occurrence and returns a tuple", "Splits the string equally"],
     "answer": 2,
-    "explanation": "The partition() method searches for a specified string, and splits the string into a tuple containing three elements.",
+    "explanation": "partition() finds the first occurrence of a separator and returns a tuple of three parts: the text before it, the separator, and the text after it.\n\n'a-b-c'.partition('-')   # => ('a', '-', 'b-c')",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #119"
   },
@@ -499,7 +499,7 @@
     "prompt": "Which method is used to convert a list into a string with a suitable delimiter?",
     "options": [".join()", ".append()", ".pop()", ".extend()"],
     "answer": 0,
-    "explanation": "You can use the .join string method to convert a list into a string",
+    "explanation": "separator.join(items) builds one string from a list of strings, with the separator between each item.\n\n', '.join(['a', 'b'])   # => 'a, b'",
     "practicality": 8,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #123"
   },
@@ -509,7 +509,7 @@
     "code": "num_list = (1, 2, 3, [1, 2, 3])\nnum_list[3].extend([4, 5, 6])",
     "options": ["(1, 2, 3, [1, 2, 3,],[ 4, 5, 6] )", "(1, 2, 3, [ 4, 5, 6])", "(1, 2, 3, [1, 2, 3, 4, 5, 6])", "Error"],
     "answer": 2,
-    "explanation": "List is mutable in nature so it's size changes",
+    "explanation": "list.extend(items) adds each item to the end of that list, changing it in place. A tuple can't change, but the list inside it can, so the tuple now shows the longer list.\n\nnum_list[3].extend([4, 5, 6])   # changes the list inside the tuple\nnum_list[3] = []               # would raise TypeError: the tuple's own slots can't change",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #124"
   },

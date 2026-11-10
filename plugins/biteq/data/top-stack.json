@@ -1,0 +1,60 @@
+{
+  "cs": [
+    "cs-fizzbuzz-order",
+    "cs-list-remove-while-looping",
+    "cs-n-plus-one",
+    "cs-in-list",
+    "cs-array-remove-front",
+    "cs-hash-mutable-key",
+    "cs-recursion-two-calls",
+    "cs-offset-deep-pages",
+    "cs-race-counter",
+    "cs-cache-aside-stale-write",
+    "cs-dns-ttl-lowered-late",
+    "cs-bigo-doubling"
+  ],
+  "js": [
+    "js-event-loop-order",
+    "js-lydia-078",
+    "js-lydia-006",
+    "js-async-foreach",
+    "js-lydia-003",
+    "js-lydia-051",
+    "js-lydia-050",
+    "js-lydia-065",
+    "js-lydia-045",
+    "js-default-sort",
+    "js-lydia-012",
+    "js-lydia-064",
+    "js-lydia-102",
+    "js-lydia-016"
+  ],
+  "python": [
+    "python-mutate-while-iterating",
+    "python-mutable-default",
+    "python-shallow-copy",
+    "python-super-mro",
+    "python-generator-exhausted",
+    "python-class-attr-shared",
+    "python-binary-search-bug",
+    "python-late-binding",
+    "python-unbound-local",
+    "python-sort-returns-none",
+    "python-json-int-keys",
+    "python-is-vs-eq"
+  ],
+  "ruby": [
+    "ruby-block-return",
+    "ruby-array-new-shared",
+    "ruby-rails-includes-where-filter",
+    "ruby-string-shovel-alias",
+    "ruby-hash-default-shared",
+    "ruby-lambda-return",
+    "ruby-rails-redirect-ivar",
+    "ruby-float-sum-vs-add",
+    "ruby-rails-after-save-rollback",
+    "ruby-super-empty",
+    "ruby-nested-hash-nil",
+    "ruby-rails-update-column"
+  ]
+}

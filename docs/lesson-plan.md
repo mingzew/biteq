@@ -240,8 +240,8 @@ two arguments say *no explicit language* and *do not take the keyboard*.
 files, and reads each one to count its questions. The filename minus `.json` is the language name —
 there is no language registry anywhere, the directory *is* the registry.
 
-**Decide which languages.** No `--lang` was passed, so it calls `config.getLangs(io)`, which reads
-the store's `config` key and falls back to `DEFAULT_LANGS = ['cs']`. If `--lang` *had* been
+**Decide which languages.** No `--lang` was passed, so it calls `config.getLang(io)`, which reads
+the store's `config` key and falls back to `DEFAULT_LANG = 'cs'`. If `--lang` *had* been
 given, it would be validated against the counts first, and a bad name returns an error string
 without touching anything.
 
@@ -458,8 +458,8 @@ A key is stable in a way a handler is not. `answer:1:python-03` means the same t
 so acting on it works no matter which drawing the click came from.
 
 That is why the keys carry structure. `keys` at `quiz-client.tsx:36-46` builds them:
-`answer:<idx>:<qid>`, `next:<qid>`, `skip:<qid>`, the bank screen's `bank:on:<lang>` /
-`bank:off:<lang>`, and bare ones such as `close`, `serve`, `restart` and `banks`. `press` at
+`answer:<idx>:<qid>`, `next:<qid>`, `skip:<qid>`, the bank screen's `bank:<lang>`,
+and bare ones such as `close`, `serve`, `restart` and `banks`. `press` at
 `pane.tsx:271-289` splits on `:`, reads the action, and rejoins the rest as the question id —
 rejoining matters because an id could itself contain a colon.
 
@@ -532,8 +532,8 @@ flowchart TB
   U -->|no| R3["null: the pane says every question<br/>is cleared and offers Start over"]
 ```
 
-`next` at `pane.tsx:84-95` handles the Next and Skip buttons — they are the same operation, just
-drawn at different times. It begins with the same staleness check as `answer`: if the question
+`next` handles the Next and Skip buttons — they are the same operation, just
+drawn at different times, except that a Skip of an unanswered question is saved in `stats.skipped`. It begins with the same staleness check as `answer`: if the question
 currently on screen is not the one this button was drawn for, someone already moved on and this
 press does nothing. Two fast clicks advance one question. If Claude is done, it rests instead of
 advancing (step 14).
@@ -547,14 +547,12 @@ await io.set('current', c => (c.question?.id === from?.id ? { question: q, picke
 
 If anything changed between picking and writing, the write is a no-op. Belt and braces, but cheap.
 
-`pick` is the selection policy. Only the selected banks are loaded, so it only ever serves those.
-It excludes the current question so you never get the same one twice in a row (unless it's the
-last one left, as after a Skip). Then, **30% of the time**, if you have any wrong answers on
-record, it serves one of those — light spaced repetition. Otherwise it picks a random bank that
-still has unseen questions, then a random unseen question in it: choosing the bank first keeps a
-5-question bank from being drowned out by a 44-question one. Once everything has been seen it serves
+`pick` is the selection policy. Only the selected bank is loaded, so it only ever serves that one.
+The bank's top stack comes first, in list order, passing over answered and skipped questions. Then, **10% of the
+time**, if you have any wrong answers on record, it serves one of those — light spaced repetition.
+Otherwise it picks a random unseen question that wasn't skipped, and then the skipped ones, oldest skip first. Once everything has been seen it serves
 only missed questions, until each is answered right; then it returns null, and the pane says every
-question in those banks is cleared, with each bank's one-shot score.
+question in the bank is cleared, with its one-shot score.
 
 **Start over** (`restart`) is the only place `seen` is emptied, and only for the selected banks'
 ids, so the other banks keep their progress. It goes through `saveStats` like every other stats

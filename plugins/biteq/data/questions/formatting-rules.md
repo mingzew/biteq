@@ -13,6 +13,24 @@ One JSON file per language: `ruby.json`, `python.json`, `bash.json`, …
 
 Each file is a JSON **array** of question objects.
 
+## Top stack
+
+`../top-stack.json` lists, per bank, the question ids to serve first, in order:
+
+```json
+{
+  "js": ["js-default-sort", "js-async-foreach"],
+  "cs": []
+}
+```
+
+- Each bank goes down its own list before anything else in that bank, and before missed questions come back.
+- Questions already answered are passed over. **Start over** runs the list again.
+- Skip moves down the list, and it's saved, so it lasts across rests and new sessions. Skipped questions come back after the rest of the bank, oldest skip first.
+- Questions not on the list follow in the usual random mix. An empty list changes nothing.
+- It lives outside this directory because every `.json` here is loaded as a bank.
+- `/biteq check` reports an id that isn't in that bank, or is listed twice. Open a new session to pick up an edit.
+
 ## Question object
 
 ```json

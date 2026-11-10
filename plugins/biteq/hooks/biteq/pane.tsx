@@ -10,25 +10,28 @@ import type { Question, Stats, Status } from '../../types'
 import type { ClientTraits } from './client'
 import { drawQuiz, keys, type PaneView } from './draw'
 import type { Io } from './io'
-import { getLangs, getPauseWhenDone, setLangs, setPauseWhenDone } from './config'
-import { languageCounts, languageOrder, loadQuestions, loadStats, saveStats } from './quiz'
+import { getLang, getPauseWhenDone, setLang, setPauseWhenDone } from './config'
+import { languageCounts, languageOrder, loadQuestions, loadStats, loadTopStack, saveStats, type TopStack } from './quiz'
 import { reportAnswer } from './telemetry'
 
 export type { PaneView } from './draw'
 
-// Every question in the selected banks (no others are served); set by boot, which runs again
+// Every question in the selected bank (no others are served); set by boot, which runs again
 // on every reload
 let questions: Question[] = []
 // The bank screen's rows: every bank with questions and its count, in the order shown (the
-// selection when it opened first, then A-Z, held still while it's open); set by banks()
+// selected one when it opened first, then A-Z, held still while it's open); set by banks()
 let shown: { lang: string; count: number }[] = []
+// data/top-stack.json: each bank's hand-picked questions, served first and in that order; set by boot
+let topStack: TopStack = {}
 
 export async function boot(io: Io, chosen: Question[]): Promise<void> {
   questions = chosen
+  topStack = await loadTopStack(io)
   const saved = await loadStats(io)
   await io.set('stats', () => saved)
-  // The banks changed (/biteq --lang): an unanswered question from a bank no longer selected goes
-  // (open() serves one from the new banks). An answered one stays so its explanation can be read.
+  // The bank changed (/biteq --lang): an unanswered question from the old bank goes
+  // (open() serves one from the new bank). An answered one stays so its explanation can be read.
   const ids = new Set(chosen.map(q => q.id))
   await io.set('current', c => (c.question && c.picked === null && !ids.has(c.question.id) ? { question: null, picked: null } : c))
 }
@@ -41,25 +44,40 @@ export async function boot(io: Io, chosen: Question[]): Promise<void> {
 // questions. The one write that redraws the pane comes first; stats are saved after.
 
 /**
- * The next question, mixed across the selected banks: a random bank that still has unseen
- * questions, then a random unseen question in it (picking the bank first keeps a small bank from
- * being drowned out by a big one). 10% of the time it's one you missed instead, and only missed
+ * The next question. First the top stack (stacked()). Then a random unseen question in the bank, then
+ * the skipped ones, oldest skip first. 10% of the time it's one you missed instead, and only missed
  * ones once nothing is unseen. Null once every question has been answered and none is still
  * missed: the pane says so (finished) and offers to start over.
  */
 function pick(s: Stats, cur: Question | null): Question | null {
-  // the question on screen (skipped, or just missed) comes back only when it's the last one left
-  const notCur = (qs: Question[]) => qs.filter(q => q.id !== cur?.id)
+  const top = stacked(s)
+  if (top) return top
   const unseen = questions.filter(q => !s.seen.includes(q.id))
-  const from = notCur(unseen).length ? notCur(unseen) : unseen
+  const skipped = s.skipped.flatMap(id => unseen.filter(q => q.id === id))
+  const next = randomOf(unseen.filter(q => !s.skipped.includes(q.id))) ?? skipped[0] ?? null
+  // a missed question just answered wrong comes back only when it's the last one left
   const missed = questions.filter(q => s.wrong.includes(q.id))
-  if (notCur(missed).length && (!from.length || Math.random() < 0.1)) return randomOf(notCur(missed))   // light spaced repetition
-  if (!from.length) return missed.length ? randomOf(missed) : null
-  const lang = randomOf([...new Set(from.map(q => q.lang))])
-  return randomOf(from.filter(q => q.lang === lang))
+  const others = missed.filter(q => q.id !== cur?.id)
+  if (others.length && (!next || Math.random() < 0.1)) return randomOf(others)   // light spaced repetition
+  return next ?? randomOf(missed)
 }
 
-/** Every selected question has been answered, and every missed one answered right since. */
+/**
+ * The next question from the bank's top stack, in list order, or null once it has none left. Answered
+ * and skipped questions are passed over, so Skip moves down the list.
+ */
+function stacked(s: Stats): Question | null {
+  const ids = topStack[questions[0]?.lang ?? ''] ?? []
+  const left = ids.filter(id => !s.seen.includes(id) && !s.skipped.includes(id))
+  return left.flatMap(id => questions.filter(q => q.id === id))[0] ?? null
+}
+
+/** `id` goes to the back of the skipped ones (a question skipped again waits behind the others). */
+function withSkip(s: Stats, id: string): Stats {
+  return { ...s, skipped: [...s.skipped.filter(x => x !== id), id] }
+}
+
+/** Every question in the bank has been answered, and every missed one answered right since. */
 function finished(s: Stats): boolean {
   return questions.length > 0 && questions.every(q => s.seen.includes(q.id) && !s.wrong.includes(q.id))
 }
@@ -80,19 +98,26 @@ async function freshStats(io: Io): Promise<Stats> {
   return s
 }
 
-/** Next / Skip / Practice now: move on from `qid` ('' when no question was on screen). */
-export async function next(io: Io, qid: string): Promise<void> {
+/**
+ * Next / Skip / Practice now: move on from `qid` ('' when no question was on screen). `skip`: remember it
+ * (saved after the redraw); a Skip from an old drawing of a question since answered isn't one.
+ */
+export async function next(io: Io, qid: string, skip = false): Promise<void> {
   const c = await io.get('current')
   if ((c.question?.id ?? '') !== qid) return   // already moved on
+  const skipping = skip && c.question !== null && c.picked === null
   if (c.question !== null && (await resting(io))) {
     // Claude is done: no next question until it works again (onStatus serves it then)
     await io.set('current', now => (now.question?.id === qid ? { question: null, picked: null } : now))
     // The option that held the ring is gone, and the engine would move it to a neighbour, sometimes
     // "always serve": an Enter there would switch pausing off. Put it on "serve next question" instead.
     await io.focus(keys.serve)
+    if (skipping) await saveStats(io, s => withSkip(s, qid))
     return
   }
-  await advance(io, c.question, await freshStats(io))
+  const s = await freshStats(io)
+  await advance(io, c.question, skipping ? withSkip(s, qid) : s)
+  if (skipping) await saveStats(io, st => withSkip(st, qid))
   const now = (await io.get('current')).question
   if (now) await io.focus(keys.answer(now, 0))
 }
@@ -121,13 +146,13 @@ export async function always(io: Io): Promise<void> {
 }
 
 /**
- * "Start over" once every selected question is answered: forget which of them were seen (other
+ * "Start over" once every question in the bank is answered: forget which of them were seen (other
  * banks keep their progress) and serve one, unless Claude is done and the pane is resting.
  */
 export async function restart(io: Io): Promise<void> {
   if ((await io.get('current')).question !== null) return   // already serving
   const ids = new Set(questions.map(q => q.id))
-  const s = await saveStats(io, st => ({ ...st, seen: st.seen.filter(id => !ids.has(id)) }))
+  const s = await saveStats(io, st => ({ ...st, seen: st.seen.filter(id => !ids.has(id)), skipped: st.skipped.filter(id => !ids.has(id)) }))
   await io.set('stats', () => s)
   if (await resting(io)) return
   await advance(io, null, s)
@@ -138,8 +163,8 @@ export async function restart(io: Io): Promise<void> {
 // ---------------------------------------------------------------- the bank screen
 //
 // z opens it at any time, over whatever is on screen; z (or Done) goes back. Each bank is a
-// toggle Button whose key names the state it sets (`bank:on:cs`), so a click from an old drawing
-// can't undo the one before it. Every toggle is saved at once; the last bank can't be unchecked.
+// Button whose key names it (`bank:cs`), so a click from an old drawing just picks the same bank
+// again. One bank is practised at a time: picking one replaces the last, and is saved at once.
 
 // Banks too small to be worth choosing yet: kept in data/questions, not offered on the bank screen.
 // Take one off the list once it has enough questions.
@@ -149,35 +174,32 @@ const HIDDEN_BANKS = ['bash', 'git', 'sql', 'ts']
 export async function banks(io: Io): Promise<void> {
   if ((await io.get('picker')).open) return leaveBanks(io)
   const counts = await languageCounts(io)
-  const langs = await getLangs(io)
-  const order = languageOrder(langs, Object.keys(counts)).filter(l => counts[l] && !HIDDEN_BANKS.includes(l))
+  const lang = await getLang(io)
+  const order = languageOrder([lang], Object.keys(counts)).filter(l => counts[l] && !HIDDEN_BANKS.includes(l))
   shown = order.map(lang => ({ lang, count: counts[lang] ?? 0 }))
-  const selected = langs.filter(l => counts[l])
-  await io.set('picker', () => ({ open: true, selected }))
+  await io.set('picker', () => ({ open: true, selected: counts[lang] ? lang : '' }))
   const first = shown[0]
-  if (first) await io.focus(keys.bank(first.lang, !selected.includes(first.lang)))
+  if (first) await io.focus(keys.bank(first.lang))
 }
 
-/** Check (`on`) or uncheck a bank on the bank screen, and serve from the new selection. */
-export async function setBank(io: Io, lang: string, on: boolean): Promise<void> {
+/** Pick the bank to practise on the bank screen, and serve from it. */
+export async function setBank(io: Io, lang: string): Promise<void> {
   let changed = false as boolean   // set inside the write
   await io.set('picker', p => {
-    if (!p.open || !shown.some(b => b.lang === lang) || p.selected.includes(lang) === on) return p
-    const selected = on ? [...p.selected, lang] : p.selected.filter(l => l !== lang)
-    if (!selected.length) return p   // keep at least one bank
+    if (!p.open || !shown.some(b => b.lang === lang) || p.selected === lang) return p
     changed = true
-    return { ...p, selected }
+    return { ...p, selected: lang }
   })
   if (!changed) return
-  // the latest selection, in case another toggle landed meanwhile
+  // the latest pick, in case another landed meanwhile
   const selected = (await io.get('picker')).selected
-  await setLangs(io, selected)
-  questions = await loadQuestions(io, selected)
-  await io.focus(keys.bank(lang, !on))
+  await setLang(io, selected)
+  questions = await loadQuestions(io, [selected])
+  await io.focus(keys.bank(selected))
 }
 
 /**
- * Back to the quiz. An unanswered question from a bank no longer checked is replaced (as is
+ * Back to the quiz. An unanswered question from a bank no longer selected is replaced (as is
  * the empty screen once every question was answered), unless Claude is done and the pane rests.
  * The question is settled under the bank screen, then one write shows it.
  */
@@ -225,6 +247,7 @@ export async function answer(io: Io, qid: string, idx: number): Promise<void> {
       best_streak: Math.max(s.best_streak, streak),
       by_lang: { ...s.by_lang, [q.lang]: [c + (ok ? 1 : 0), n + 1] },
       seen: s.seen.includes(q.id) ? s.seen : [...s.seen, q.id],
+      skipped: s.skipped.filter(id => id !== q.id),
       wrong: ok ? s.wrong.filter(id => id !== q.id) : s.wrong.includes(q.id) ? s.wrong : [...s.wrong, q.id],
       // only the first answer ever counts; one seen before one_shot existed never does
       one_shot: q.id in s.one_shot ? s.one_shot : { ...s.one_shot, [q.id]: ok && !s.seen.includes(q.id) },
@@ -288,10 +311,11 @@ export async function close(io: Io): Promise<void> {
  * previous drawing's: the engine then finds no handler ("ui_press not handled") and the click
  * is lost. Acting on the key instead works for any drawing.
  */
-export async function press(io: Io, key: string): Promise<void> {
+export async function press(io: Io, pressed: string): Promise<void> {
+  const key = pressed.replace(/~\d+$/, '')   // any word of a long answer (keys.word) is that answer
   const [action = '', ...rest] = key.split(':')
   if (action === 'banks') return banks(io)
-  if (action === 'bank') return setBank(io, rest.slice(1).join(':'), rest[0] === 'on')
+  if (action === 'bank') return setBank(io, rest.join(':'))
   // a click from the quiz's last drawing while the bank screen shows: the quiz isn't on screen
   if (action !== 'close' && (await io.get('picker')).open) return
   if (action === 'answer') {
@@ -301,7 +325,7 @@ export async function press(io: Io, key: string): Promise<void> {
     if (c.question?.id === qid && c.picked !== null && (await io.traits()).enterMovesOn) await next(io, qid)
     else await answer(io, qid, Number(rest[0]))
   }
-  else if (action === 'next' || action === 'skip') await next(io, rest.join(':'))
+  else if (action === 'next' || action === 'skip') await next(io, rest.join(':'), action === 'skip')
   else if (action === 'serve') await serve(io)
   else if (action === 'restart') await restart(io)
   else if (action === 'always') await always(io)
@@ -327,7 +351,7 @@ export async function view(io: Io): Promise<PaneView> {
       const inBank = questions.filter(q => q.lang === lang)
       return { lang, count: inBank.length, oneShot: inBank.filter(q => stats.one_shot[q.id]).length }
     }),
-    picking: p.open ? shown.map(b => ({ ...b, on: p.selected.includes(b.lang) })) : null,
+    picking: p.open ? shown.map(b => ({ ...b, on: p.selected === b.lang })) : null,
     bank: questions.length,
     question,
     picked,

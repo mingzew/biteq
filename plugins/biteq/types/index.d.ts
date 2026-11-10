@@ -27,6 +27,8 @@ export type Stats = {
   practised_waits: number
   seen: string[]
   wrong: string[]
+  // skipped and not answered since, oldest skip first. Saved, so a skip outlasts a rest and a new session
+  skipped: string[]
   // every question ever answered: whether its first answer was right. Start over keeps it (only
   // reset --all clears it), so a repeat can't count
   one_shot: Record<string, boolean>
@@ -36,8 +38,8 @@ export type Stats = {
 // The question on screen and the option picked for it: one value, so a change is one redraw
 export type Current = { question: Question | null; picked: number | null }
 
-// The bank screen (z): whether it's showing, and the banks checked on it (saved as they change)
-export type Picker = { open: boolean; selected: string[] }
+// The bank screen (z): whether it's showing, and the one bank picked on it (saved as it changes)
+export type Picker = { open: boolean; selected: string }
 
 declare module 'claude-code' {
   interface PluginState {
