@@ -41,6 +41,14 @@ async function loadTitle($: EngineInterface): Promise<void> {
   } catch { /* no manifest or no version: plain "biteq" */ }
 }
 
+// Claude Code runs on Windows, read once when the session starts: a ui.render hook draws synchronously, and
+// traitsOf needs it to swap in marks a Windows console font has (client.ts WINDOWS_GLYPHS). The engine has
+// no OS call; Windows sets OS for every process.
+let windows = false
+async function loadWindows($: EngineInterface): Promise<void> {
+  windows = (await $.env.get('OS')) === 'Windows_NT'
+}
+
 // The key the plugin's own $.ui.focus is moving the ring to, while that call runs. Its ui.focus hook lets
 // that one move onto "serve next" (pane.next, when the pane rests), without depending on how the engine
 // marks a plugin's own move.
@@ -114,7 +122,7 @@ function io($: EngineInterface): Io {
       finally { ownFocus = null }
     },
     client: async () => toClient(await $.session.surface()),
-    traits: async () => traitsOf(toClient(await $.session.surface())),
+    traits: async () => traitsOf(toClient(await $.session.surface()), windows),
     version: async () => (await $.session.version()).version,
     sessionId: () => $.session.id(),
     httpPost: async (url, body) => {
@@ -153,6 +161,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register(COMMAND)
     await loadTitle($)
+    await loadWindows($)
     await boot(io($))
     return next(e)
   })
@@ -199,7 +208,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const quiz = await view(io($))
     const el = $.ui.resolve(e)
-    const traits = traitsOf(toClient(e.surface))
+    const traits = traitsOf(toClient(e.surface), windows)
     // Desktop: a Client keeps the quiz on the drawing thread. Plugin redraws
     // remount the pane webview, and the next click only focuses it. Its props
     // are the quiz and the client's traits alone, so a focus change does not redraw that webview.
@@ -219,7 +228,7 @@ export const register: Register = on => {
     clientOk = false
     if (next.called) return next(e)
     const quiz = await view(io($))
-    const traits = traitsOf(toClient(e.surface))
+    const traits = traitsOf(toClient(e.surface), windows)
     return render(traits.dimsWhenUnfocused ? { ...quiz, focused: e.props.isFocused } : quiz, $.ui.resolve(e), traits, fillRows(e.props))
   })
 
@@ -228,7 +237,7 @@ export const register: Register = on => {
     const key = data && typeof data === 'object' && 'key' in data ? String((data as { key: unknown }).key) : ''
     if (!key) return {}
     await press(io($), key)
-    return { props: { ...(await view(io($))), traits: traitsOf(toClient(e.surface)) } }
+    return { props: { ...(await view(io($))), traits: traitsOf(toClient(e.surface), windows) } }
   })
 
   on('ui.fault', async ($, e, next) => {
@@ -246,7 +255,7 @@ export const register: Register = on => {
     const target = e.element ?? (e as { key?: string }).key
     const person = (e as { origin?: { kind?: string } }).origin?.kind === 'person'
     const ownServe = target === keys.serve && ownFocus === keys.serve && !person
-    if (e.requestId === PANE && target && isHintKey(target) && !ownServe && traitsOf(toClient(await $.session.surface())).hintBar) {
+    if (e.requestId === PANE && target && isHintKey(target) && !ownServe && traitsOf(toClient(await $.session.surface()), windows).hintBar) {
       return { deny: 'hint bar: pressed by its hotkey' }
     }
     return next(e)

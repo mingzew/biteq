@@ -49,8 +49,8 @@ export const keys = {
 
 /**
  * The terminal's hint bar for what's on screen, as one flat row: `plain` hotkey buttons draw as
- * "n: skip", with " · " between them. After an answer it shows "⏎ next" (Enter on the answered
- * option); n still moves on through a button clipped out of sight.
+ * "n: skip", with " · " between them. After an answer it shows "⏎ next" (Enter on the answered option;
+ * "enter: next" on Windows, traits.glyphs); n still moves on through a button clipped out of sight.
  */
 function hintBar(v: PaneView, el: QuizElements, traits: ClientTraits, onPress: (key: string) => void) {
   const { Box, Text, Button } = el
@@ -60,7 +60,7 @@ function hintBar(v: PaneView, el: QuizElements, traits: ClientTraits, onPress: (
   // q: close, where the client wants it (the CLI); the desktop pane's own X closes it
   const close = traits.closeButton ? [hint(keys.close, 'close', 'q')] : []
   if (v.picking) {
-    const row = [<Text key="select" dimColor>⏎ select</Text>, hint(keys.banks, 'done', 'z'), ...close]
+    const row = [<Text key="select" dimColor>{`${traits.glyphs.enter} select`}</Text>, hint(keys.banks, 'done', 'z'), ...close]
     return row.flatMap((item, i) => (i === 0 ? [item] : [<Text key={`sep-${i}`} dimColor> · </Text>, item]))
   }
   const items =
@@ -68,7 +68,7 @@ function hintBar(v: PaneView, el: QuizElements, traits: ClientTraits, onPress: (
     : q === null && v.resting ? [hint(keys.serve, 'serve next', 'n'), hint(keys.always, 'always serve', 's')]
     : q === null ? (v.bank > 0 ? [hint(keys.next(null), 'practice', 'n')] : [])
     : v.picked === null ? [hint(keys.skip(q), 'skip', 'n')]
-    : [<Text key="enter" dimColor>⏎ next</Text>]
+    : [<Text key="enter" dimColor>{`${traits.glyphs.enter} next`}</Text>]
   const hidden = q !== null && v.picked !== null && (
     <Box key="hidden-next" position="absolute" width={0} height={0} overflow="hidden">
       {hint(keys.next(q), 'next', 'n')}
@@ -203,7 +203,7 @@ export function drawQuiz(
             {v.banks.map(b => (
               // a perfect bank is marked like a record streak
               <Text key={`done:${b.lang}`} {...(b.oneShot === b.count ? { bold: true as const, color: TITLE_COLOR } : {})} dimColor={dim}>
-                {`  ✓ ${b.lang.padEnd(8)} one-shot ${String(b.oneShot).padStart(3)}/${b.count}`}
+                {`  ${traits.glyphs.right} ${b.lang.padEnd(8)} one-shot ${String(b.oneShot).padStart(3)}/${b.count}`}
               </Text>
             ))}
           </Box>
@@ -245,7 +245,7 @@ export function drawQuiz(
               }
               const right = i === q.answer
               const mine = i === p
-              const markOpt = right ? '✓ ' : mine ? '✗ ' : '  '
+              const markOpt = right ? `${traits.glyphs.right} ` : mine ? `${traits.glyphs.wrong} ` : '  '
               return answerButton(keys.answer(q, i), `${markOpt}${letter}`, opt, { plain: true, dimColor: dim || (!right && !mine) })
             })}
           </Box>

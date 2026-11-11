@@ -45,7 +45,8 @@ const DONE = { reason: 'answer', answer: 'done', durationMs: 1, isAborted: false
 // Everything beneath the plugin: question banks, an in-memory store, no env, and the engine's answers.
 // Calls on $ answer { value } (or { deny }); events answer their own result.
 // `shared`: a store the test can also write to, standing for another Claude session using it
-function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal', shared?: Record<string, unknown>, writes?: string[], topStack: unknown = {}) {
+// `env`: the process environment, e.g. { OS: 'Windows_NT' } for Claude Code on Windows
+function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal', shared?: Record<string, unknown>, writes?: string[], topStack: unknown = {}, env: Record<string, string> = {}) {
   const opened: { focus?: true }[] = []
   if (shared) {
     on('store.get', ($, e) => ({ value: shared[e.key] }))
@@ -61,13 +62,14 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
   } else {
     mock.store(on)
   }
-  mock.env(on, {})
+  mock.env(on, env)
   on('fs.exists', () => ({ value: true }))
   on('fs.list', () => ({
     value: Object.keys(banks).map(lang => ({ name: `${lang}.json`, kind: 'file', size: 1, mtimeMs: 0, isLink: false })),
   }) as never)
   on('fs.read', ($, e) => {
-    const path = String(e.path)
+    // On Windows the engine hands the hook `\` paths, whatever the plugin joined them with
+    const path = String(e.path).replace(/\\/g, '/')
     if (path.endsWith('/.claude-plugin/plugin.json')) return { value: JSON.stringify({ name: 'biteq', version: '9.9.9' }) }
     if (path.endsWith('/data/top-stack.json')) return { value: JSON.stringify(topStack) }
     return { value: JSON.stringify(banks[path.split('/').pop()!.replace('.json', '')] ?? []) }
@@ -443,6 +445,29 @@ describe('terminal hint bar', () => {
     expect(await title(ui)).not.toBe(before)
   })
 
+  // A Windows console's fonts have no ✓ ✗ ⏎: it would draw a boxed "?" for each
+  test('on Windows the terminal marks answers √ and × and the bar reads "enter: next"', async ($, on) => {
+    world(on, BANKS, 'terminal', undefined, undefined, {}, { OS: 'Windows_NT' })
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'b'))   // BANKS' answers are all a: b is a wrong pick
+    expect(await find(ui, { type: 'Button', text: /^√ a\) / })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /^× b\) / })).toBeDefined()
+    expect(await find(ui, { type: 'Text', text: /^enter: next$/ })).toBeDefined()
+    expect(JSON.stringify(await ui.drawn())).not.toMatch(/[✓✗⏎]/)
+  })
+
+  test('on Windows the desktop app keeps ✓ and ✗: it draws in its own fonts', async ($, on) => {
+    world(on, BANKS, 'desktop', undefined, undefined, {}, { OS: 'Windows_NT' })
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'b'))
+    expect(await find(ui, { type: 'Button', text: /^✓ a: / })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /^✗ b: / })).toBeDefined()
+  })
+
   test('Enter on an answered option moves on (terminal)', async ($, on) => {
     const { ui } = await terminal($, on)
     const before = await title(ui)
@@ -520,20 +545,16 @@ describe('presses', () => {
     expect((await find(desk, { type: 'Button', text: /^Skip$/ }))?.props.hotkey).toBeUndefined()
   })
 
-  test('desktop: a wait asks the pane for focus; boot does not', async ($, on) => {
-    const { opened } = world(on, BANKS, 'desktop')
-    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
-    expect(opened.some(o => o.focus)).toBe(false)
-    await $.turn.start({ text: 'go', turnId: 't1' })
-    expect(opened.some(o => o.focus === true)).toBe(true)
-  })
-
-  test('terminal: a wait does not take the keyboard', async ($, on) => {
-    const { opened } = world(on, BANKS, 'terminal')
-    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    await $.turn.start({ text: 'go', turnId: 't1' })
-    expect(opened.some(o => o.focus)).toBe(false)
-  })
+  // The CLI too: without it the person had to find ctrl+x tab every wait
+  for (const surface of ['terminal', 'desktop'] as const) {
+    test(`${surface}: a wait asks the pane for focus; boot does not`, async ($, on) => {
+      const { opened } = world(on, BANKS, surface)
+      await $.session.start({ cwd: '.', surface, isInteractive: true })
+      expect(opened.some(o => o.focus)).toBe(false)
+      await $.turn.start({ text: 'go', turnId: 't1' })
+      expect(opened.some(o => o.focus === true)).toBe(true)
+    })
+  }
 
   test('desktop: answering keeps option Buttons and still records', async ($, on) => {
     world(on, BANKS, 'desktop')
