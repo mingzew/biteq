@@ -15,7 +15,7 @@ Pick one. Each needs [Claude Code](https://code.claude.com) with function-hooks 
 claude plugin marketplace add mingzew/biteq && claude plugin install biteq@biteq
 ```
 
-**2. In a Claude Code Terminal session & Desktop  app** 
+**2. In a Claude Code Terminal session & Desktop app** 
 
 ```
 /plugin marketplace add mingzew/biteq
@@ -33,49 +33,28 @@ Check: `claude plugin list` shows `biteq@biteq` enabled.
 
 Remove: `claude plugin uninstall biteq@biteq`.
 
----
+## Commands
 
-While Claude is busy, a question pops up right beside the conversation:
+| Command                | What it does                                                                                                                                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/biteq [--lang bank]` | Open the pane; `--lang` picks the one bank to serve and is remembered (default `cs`). In the pane, `z` does the same                                                                      |
+| `/biteq langs`         | List question banks, the selected ones first                                                                                                                                              |
+| `/biteq check`         | Validate the question banks                                                                                                                                                               |
+| `/biteq stats`         | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
+| `/biteq doctor`        | Claude Code version, plugin path, store, status, debug log, questions                                                                                                                     |
+| `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered                                                      |
+| `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log                                                                                                             |
 
-```
-BiteQ - Bite Size Coding Questions
-streak 3 · best 12
-[ruby] Hash.new with a default object
-What does this print?
+Debugging: `/biteq debug` records each event to `~/.biteq/events.log`. `/biteq debug off` stops it. `BITEQ_HOME` changes that directory.
 
-  h = Hash.new([])
-  h[:a] << 1
-  p h
-
-a) {:a=>[1]}
-b) NoMethodError
-c) {:a=>[1], :b=>[1]}
-d) {}
-
-n: skip · z: banks · q: close
-```
-
-Answer it, and you see why:
-
-```
-✓ Correct! d) {}                         streak 4 · best 12
-
-h[:a] returns the shared default array without storing it
-under :a. << mutates that default; the hash stays empty.
-
-  h[:b]   # => [1]  (same default array)
-
-Use Hash.new { |hash, k| hash[k] = [] } for a fresh array
-per key.
-
-⏎ next · z: banks · q: close
-```
-
-Pick a bank (CS, Python, Ruby, JS and more). Missed questions come back until you get them right.
 
 **Status: V0 alpha. Claude Code only (Anthropic models). Tested on macOS and windows 10.**
 
-## How it works
+---
+## ReadMe for contributors
+
+
+**How it works**
 
 biteq is a Claude Code plugin of **function hooks** (`plugins/biteq`): it runs inside Claude Code's own
 engine, and Claude Code draws the quiz pane itself, beside the conversation, in the terminal, the desktop
@@ -128,22 +107,6 @@ Code tab, or the Claude Code extension in VS Code or Cursor.
   or the arrow keys and Enter; it's saved at once. `z` (or **Done**) goes back to the quiz.
 
 Cursor's own chat agent is a different harness and doesn't run Claude Code plugins.
-
-## Commands
-
-
-| Command                | What it does                                                                                                                                                                              |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/biteq [--lang bank]` | Open the pane; `--lang` picks the one bank to serve and is remembered (default `cs`). In the pane, `z` does the same                                                                      |
-| `/biteq langs`         | List question banks, the selected ones first                                                                                                                                              |
-| `/biteq check`         | Validate the question banks                                                                                                                                                               |
-| `/biteq stats`         | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
-| `/biteq doctor`        | Claude Code version, plugin path, store, status, debug log, questions                                                                                                                     |
-| `/biteq pause on|off`  | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered                                                      |
-| `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log                                                                                                             |
-
-
-Debugging: `/biteq debug` records each event to `~/.biteq/events.log`. `/biteq debug off` stops it. `BITEQ_HOME` changes that directory.
 
 ## Adding questions or a language
 
