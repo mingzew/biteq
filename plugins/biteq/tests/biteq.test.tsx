@@ -11,6 +11,9 @@ import type { Io } from '../hooks/biteq/io'
 import { Client, traitsOf } from '../hooks/biteq/client'
 import { next, press } from '../hooks/biteq/pane'
 
+// The engine runs tests with setTimeout; the strict config has no lib that declares it.
+declare const setTimeout: (fn: () => void, ms: number) => unknown
+
 const BANKS: Record<string, unknown[]> = {
   python: [
     { id: 'python-a', title: 'A', prompt: 'Pick a', options: ['a1', 'a2'], answer: 0, explanation: 'because', practicality: 5 },
@@ -1172,6 +1175,58 @@ describe('telemetry', () => {
     expect(await run($, 'debug off')).toBe('biteq: debug off')
     expect(shared.config).toMatchObject({ debug: false })
     expect(await run($, 'debug maybe')).toBe('usage: /biteq debug [on|off]')
+  })
+
+  // A checkout never sends, so these read the debug log instead: with debug on, a heartbeat that reached
+  // send() is logged as "No telemetry sent to /v1/heartbeat because ...".
+  const settle = () => new Promise<void>(resolve => setTimeout(resolve, 25))   // the report is not awaited
+  const prompt = ($: Engine, origin: { kind: string }, text = 'fix the bug') =>
+    $.prompt.submit({ text, wait: false, origin } as never)
+  const beats = (writes: string[]) => writes.join('\n').split('No telemetry sent to /v1/heartbeat because').length - 1
+  async function withDebug($: Engine, on: On, surface: 'terminal' | 'desktop' = 'terminal') {
+    const writes: string[] = []
+    const fetched: string[] = []
+    world(on, BANKS, surface, {}, writes)
+    on('http.fetch', ($, e) => {
+      fetched.push(e.url)
+      return { value: { status: 200, ok: true, headers: {}, text: '' } }
+    })
+    await $.session.start({ cwd: '.', surface, isInteractive: true })
+    expect(await run($, 'debug')).toContain('debug on')
+    return { writes, fetched }
+  }
+
+  test('a prompt the person typed sends a heartbeat and still reaches Claude', async ($, on) => {
+    const { writes, fetched } = await withDebug($, on)
+    const result = await prompt($, { kind: 'composer' })
+    await settle()
+    expect(result).toMatchObject({ text: 'fix the bug' })   // passed through unchanged
+    expect(beats(writes)).toBe(1)
+    await prompt($, { kind: 'composer' }, 'and another')
+    await settle()
+    expect(beats(writes)).toBe(2)   // every typed prompt, no throttle
+    expect(fetched).toEqual([])     // a checkout does not send
+  })
+
+  test('only typed prompts count: not an SDK turn, a notification, a schedule, or /biteq', async ($, on) => {
+    const { writes } = await withDebug($, on)
+    for (const kind of ['sdk', 'task-notification', 'scheduled-trigger', 'bridge']) {
+      await prompt($, { kind })
+    }
+    await prompt($, { kind: 'composer' }, '/biteq doctor')
+    await settle()
+    expect(beats(writes)).toBe(0)
+  })
+
+  test('the heartbeat does not depend on the pane: it still goes after q closes it', async ($, on) => {
+    const { writes } = await withDebug($, on)
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, /^close$/)
+    await $.turn.complete(DONE)
+    await prompt($, { kind: 'composer' })
+    await settle()
+    expect(beats(writes)).toBe(1)
   })
 
   test('reset --all leaves the telemetry userId', async ($, on) => {

@@ -45,7 +45,7 @@ sequenceDiagram
 
     Note over U,P: Prompt 1, user answers 1 question
     U->>C: prompt
-    C->>R: prompt.submit (not /biteq, passes through)
+    C->>R: prompt.submit (not /biteq, passes through; a typed prompt also sends a heartbeat)
     C->>R: turn.start
     R->>M: claude.parse() thinking, cli.signal()
     M->>P: onStatus(idle to thinking): waits +1
@@ -90,7 +90,7 @@ Paths are relative to `plugins/biteq/`. Rows are in the order they happen.
 | `hooks/biteq/pane.tsx` | `open(io, false)` | Clears `dismissed` and calls `io.openPane()` (`$.ui.open`). The desktop app docks the pane. A terminal docks it at 144+ columns, otherwise it waits until the window is wide enough or you type `/biteq`. No question yet, so it calls `nextQuestion()`. |
 | `hooks/biteq/pane.tsx` | `advance()` calling `pick()` | Picks Q1: the next question on the bank's top stack, then a random unseen question once the stack is done. 10% of the time it's one you previously missed instead (never the one just answered), and only missed ones once nothing is unseen. Once every question in the bank is seen and none is still missed, `pick()` returns null and the pane shows "Congratulations!", the bank's one-shot score (`✓ ruby  one-shot 35/44`), and how to go on (`n` / `z` in the terminal, the **Start over** / **Switch Q banks** buttons on desktop) (`restart()`, which forgets only those banks' `seen` ids). The first question appears at boot, before the first prompt. |
 | `hooks/register.ts` | `on('ui.render')` calling `pane.view()` then `pane.render()` | `view()` reads session state (which subscribes the pane to it); `render()` draws Q1 with its options. |
-| `hooks/register.ts` | `on('prompt.submit')` calling `cli.typedArgs()` | **2. Prompt 1.** You submit a prompt. It isn't `/biteq`, so it passes through to Claude unchanged. (A typed `/biteq` would run here and never reach Claude; see below.) |
+| `hooks/register.ts` | `on('prompt.submit')` calling `cli.typedArgs()` | **2. Prompt 1.** You submit a prompt. It isn't `/biteq`, so it passes through to Claude unchanged. If you typed it (`origin.kind` is `composer`), the hook also fires `telemetry.reportPrompt()` without waiting: a heartbeat that says this session used Claude, sent whether or not the pane is open (see `docs/telemetry.md`). (A typed `/biteq` would run here and never reach Claude; see below.) |
 | `hooks/register.ts` | `on('turn.start')` then `claudeEvent()` | Logs the event if debug is on (`/biteq debug`, `debug.logEvent`), then hands `{ event: 'turn.start' }` to `claude.parse()`. |
 | `hooks/biteq/claude.ts` | `parse()` | `turn.start` maps to `thinking`. |
 | `hooks/biteq/cli.ts` | `signal()` | Every status goes through here. It calls `store.setStatus()`, then `pane.onStatus()` with the old and new status. |

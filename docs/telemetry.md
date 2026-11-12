@@ -2,7 +2,7 @@
 
 ## Description
 
-Biteq telemetry counts who uses the quiz and what they do with it. The plugin reports when the pane is placed and when an answer is recorded. The running totals update on each report, and each change is recorded so the counts can be shown by day and by harness (`terminal` or `desktop`).
+Biteq telemetry counts who uses the quiz and what they do with it. The plugin reports when the pane is placed, when an answer is recorded, and when the person sends Claude a prompt (a heartbeat, which says the session used Claude whether or not it used biteq). The running totals update on each report, and each change is recorded so the counts can be shown by day and by harness (`terminal` or `desktop`).
 
 ## Metrics
 
@@ -15,6 +15,8 @@ The table is the all-time total for each metric. A change to a total is also rec
 | Opens    | A Claude session whose biteq pane was placed. The count stays after an answer.                               | A session row is created with `kind=open`                                | `Opens`, dimension `Harness`                                   |
 | Sessions | That same Claude session after the first recorded answer. Opened and never answered is opens minus sessions. | A session row becomes `kind=session`, or is created already as a session | `Sessions`, dimension `Harness` on that answer                 |
 | Answers  | One recorded answer. Further answers in the same session add here and do not create another session.         | Every accepted answer event                                              | `Answers`, dimension `Harness` on that event                   |
+| Claude sessions | A Claude session in which the person typed at least one prompt, whether or not biteq was used.        | An `active#` row is created for the session (its first heartbeat)        | `ActiveSessions`, dimension `Harness`                          |
+| Prompts  | One prompt the person typed. A prompt from a notification, a schedule or the SDK does not count.            | Every accepted heartbeat                                                 | `Prompts`, dimension `Harness`                                 |
 
 
 `pluginVersion` is written to the log line. It is not stored and it is not a CloudWatch dimension.
@@ -69,19 +71,19 @@ The second answer leaves that row as it is and sets `answersTerminal=2`.
 
 The plugin reports events. The AWS resources in `biteq-infra` store them and draw them.
 
-- **Plugin** (`plugins/biteq`). Decides when a pane placement or an answer is worth reporting, keeps the user id in the plugin store, and POSTs the event. It does not keep the totals.
-- **Function URL.** The public HTTPS address on the Lambda. The plugin calls `POST /v1/opens` and `POST /v1/answers`.
+- **Plugin** (`plugins/biteq`). Decides when a pane placement, an answer or a typed prompt is worth reporting, keeps the user id in the plugin store, and POSTs the event. It does not keep the totals.
+- **Function URL.** The public HTTPS address on the Lambda. The plugin calls `POST /v1/opens`, `POST /v1/answers` and `POST /v1/heartbeat`.
 - **Lambda** (`biteq-telemetry`). Checks the body, updates DynamoDB, emits a CloudWatch metric when a total changes, and writes one log line per request.
-- **DynamoDB** (`biteq-telemetry`). Holds the all-time numbers. One counter item stores the totals. A `seen` row and a session row record each machine and each Claude session, so a second open for the same session is not counted again. Each also keeps its own count of answers, which the dashboard's top-users table reads.
+- **DynamoDB** (`biteq-telemetry`). Holds the all-time numbers. One counter item stores the totals. A `seen` row and a session row record each machine and each Claude session, so a second open for the same session is not counted again. Each also keeps its own count of answers, which the dashboard's top-users table reads. An `active#` row records each Claude session the person typed a prompt in, with its prompt count.
 - **CloudWatch metrics** (namespace `Biteq`). One datapoint per counted change, split by harness. The daily graphs read these.
 - **CloudWatch dashboard** (`biteq-telemetry`). Shows the all-time totals and the daily lines.
-- **CloudWatch Logs** (`/aws/lambda/biteq-telemetry`). One line per request, for tracing a user or session. The dashboard does not read these logs.
+- **CloudWatch Logs** (`/aws/lambda/biteq-telemetry`). One line per request, for tracing a user or session. One dashboard chart reads them (prompts and answers per hour, 30 days).
 
 
 
 ### DynamoDB
 
-The all-time totals are one item in the `biteq-telemetry` table: `pk=counters`, `sk=totals`. These seven attributes live on that item only. Each is a number. Opens, sessions, and answers are split by harness, so the figure on the dashboard is the two attributes added together.
+The all-time totals are one item in the `biteq-telemetry` table: `pk=counters`, `sk=totals`. These eleven attributes live on that item only. Each is a number. Opens, sessions, answers, active sessions and prompts are split by harness, so the figure on the dashboard is the two attributes added together.
 
 
 | Attribute          | What it counts                                 |
@@ -93,9 +95,13 @@ The all-time totals are one item in the `biteq-telemetry` table: `pk=counters`, 
 | `sessionsDesktop`  | Desktop sessions that have at least one answer |
 | `answersTerminal`  | Recorded answers from the CLI                  |
 | `answersDesktop`   | Recorded answers from the desktop app          |
+| `activeSessionsTerminal` | CLI sessions with at least one typed prompt |
+| `activeSessionsDesktop`  | Desktop sessions with at least one typed prompt |
+| `promptsTerminal`  | Typed prompts from the CLI                     |
+| `promptsDesktop`   | Typed prompts from the desktop app             |
 
 
-An answer does not change the open attributes. The first answer adds one to that harness's session attribute. Opened and never answered is the open attributes minus the session attributes. A `seen` row and a session row are separate items in this same table. They do not carry these seven attributes.
+An answer does not change the open attributes. The first answer adds one to that harness's session attribute. Opened and never answered is the open attributes minus the session attributes. A `seen` row and a session row are separate items in this same table. They do not carry these eleven attributes.
 
 Those two rows carry one number of their own, `answers`:
 
@@ -104,13 +110,15 @@ Those two rows carry one number of their own, `answers`:
 
 Neither is a CloudWatch metric, and neither stores a time. The per-day and per-hour history is in the logs.
 
+An **`active#` row** (`pk=user#<userId>`, `sk=active#<sessionId>`) is the heartbeat's record of one Claude session: `harness`, `prompts` (typed prompts so far) and `lastPromptAt` (epoch seconds). It is created by the session's first heartbeat and updated by each later one. It is separate from the `session#` row on purpose: a session can have prompts and no pane, or an answer and no prompt, and the two rows are joined by session id on the dashboard. A session that is in both is one the person used Claude in and biteq in.
+
 ## Biteq Plugin Component Changes
 
-The plugin sends two events, `POST /v1/opens` and `POST /v1/answers`. The seven totals are not seven plugin calls. The harness on the event picks the terminal or desktop attribute, and the Lambda decides whether that event is a new user, a new open, a new session, or another answer.
+The plugin sends three events, `POST /v1/opens`, `POST /v1/answers` and `POST /v1/heartbeat`. The eleven totals are not eleven plugin calls. The harness on the event picks the terminal or desktop attribute, and the Lambda decides whether that event is a new user, a new open, a new session, another answer, a new Claude session or another prompt.
 
 ### Payload
 
-Both posts send the same four fields. An open uses `POST /v1/opens`. An answer uses `POST /v1/answers`.
+All three posts send the same four fields. An open uses `POST /v1/opens`, an answer `POST /v1/answers`, and a typed prompt `POST /v1/heartbeat`. No prompt text is sent.
 
 ```json
 {
@@ -173,6 +181,20 @@ It is also added to `PluginState['biteq']` in `types/index.d.ts` and to both `ke
 
 `answersTerminal` **and** `answersDesktop`**.** Every recorded answer. `pane.answer` sends `/v1/answers` after the stats save. The harness on that event picks the attribute. The second and third answers in one sitting each add one. They do not add a user, an open, or a session.
 
+`activeSessionsTerminal` **and** `activeSessionsDesktop`**.** The first heartbeat for that `$.session.id()`. The Lambda creates the session's `active#` row and adds one to the attribute for that harness. It also makes sure the machine has a `seen` row (a person can prompt Claude with biteq installed and never place the pane), so `users` counts everyone who ran biteq and prompted, not only those who opened or answered.
+
+`promptsTerminal` **and** `promptsDesktop`**.** Every heartbeat, including the first. A prompt adds no user, open or session after the session's first.
+
+### The heartbeat
+
+`reportPrompt` runs from the existing `on('prompt.submit')` hook in `register.ts`, for a prompt whose `origin.kind` is `composer` (the person's own Enter). A notification, a `/loop` or schedule firing, an SDK turn, the bridge and a peer session are not counted, so the number means a person used Claude. A typed `/biteq` command is answered by the hook and never reaches Claude, so it is not counted either.
+
+- **Every typed prompt, no throttle.** Prompts come at human pace, so one small POST each is cheap. There is no atom and no clock.
+- **Independent of the pane.** It does not go through `openPane`, `onStatus` or `dismissed`, so it still goes after the person pressed `q` or closed the pane, and when the pane was never placed.
+- **Never in the way.** The POST is not awaited, and the hook always calls `next(e)` after starting it: it only observes. A report that fails is dropped.
+- **Same skip rules** as the other two: a checkout path, an unsupported client, and a thrown or non-2xx POST. Nothing about the prompt is sent, only the four payload fields.
+- **A blind spot.** If the plugin is disabled or not loaded, no hook runs and no heartbeat is sent.
+
 ### Preventing duplicate opens
 
 `boot` and every later wait both call `openPane`, and an already-placed pane still returns `isPlaced: true`. That produces two cases: a later open, after the first one has been recorded, and an overlapping open, before it has.
@@ -191,7 +213,7 @@ A repeated answer is a separate case, and the plugin stops it before a POST. `pa
 
 One Lambda, one function URL, auth `NONE`, invoke mode `BUFFERED`, CORS off. The URL looks like `https://<id>.lambda-url.us-east-1.on.aws`. Paths are the function URL's raw path.
 
-Bodies larger than 1024 bytes are `400`. The routes are `POST /v1/opens` and `POST /v1/answers`. Anything else is `404`. The all-time numbers are on the dashboard widget.
+Bodies larger than 1024 bytes are `400`. The routes are `POST /v1/opens`, `POST /v1/answers` and `POST /v1/heartbeat`. Anything else is `404`. The all-time numbers are on the dashboard widget.
 
 ### `POST /v1/opens`
 
@@ -222,6 +244,21 @@ Sent once per recorded answer, including the second and later answers in the sam
 ```
 
 Same field rules.
+
+### `POST /v1/heartbeat`
+
+Sent once per prompt the person types, including the second and later prompts in the same Claude session.
+
+```json
+{
+  "userId": "6b9f1a20-0c3e-4d5f-8a7b-9c0d1e2f3a4b",
+  "sessionId": "0f3c1a2b-9d8e-4c7b-a6f5-1234567890ab",
+  "harness": "terminal",
+  "pluginVersion": "0.2.3"
+}
+```
+
+Same field rules. The response is always `{ "ok": true, "duplicate": false }` when applied: a later prompt in a session is a normal heartbeat, not a duplicate.
 
 ### Responses
 
@@ -397,9 +434,62 @@ ddb.transact_write_items(TransactItems=[
 
 
 
+### `POST /v1/heartbeat` writes
+
+The event is the same shape, with `"path": "/v1/heartbeat"`. There is no seen transaction first: it runs only after the session's first heartbeat, so a later prompt costs one transaction.
+
+```python
+suffix = "Terminal" if harness == "terminal" else "Desktop"
+
+# 1. Create the session's active row, and count the session and the prompt.
+ddb.transact_write_items(TransactItems=[
+    {"Put": {
+        "TableName": "biteq-telemetry",
+        "Item": {
+            "pk": {"S": f"user#{user_id}"},
+            "sk": {"S": f"active#{session_id}"},
+            "harness": {"S": harness},
+            "prompts": {"N": "1"},
+            "lastPromptAt": {"N": str(int(time.time()))},
+        },
+        "ConditionExpression": "attribute_not_exists(pk)",
+    }},
+    {"Update": {
+        "TableName": "biteq-telemetry",
+        "Key": {"pk": {"S": "counters"}, "sk": {"S": "totals"}},
+        "UpdateExpression": f"ADD activeSessions{suffix} :one, prompts{suffix} :one",
+        "ExpressionAttributeValues": {":one": {"N": "1"}},
+    }},
+])
+# committed -> emit ActiveSessions and Prompts, write the log line (result "created"),
+#              then run the seen transaction from the opens steps (a failure there cannot lose the metrics)
+# condition failed -> the row exists: step 2
+
+# 2. A later prompt: add one to the row and to the total.
+ddb.transact_write_items(TransactItems=[
+    {"Update": {
+        "TableName": "biteq-telemetry",
+        "Key": {"pk": {"S": f"user#{user_id}"}, "sk": {"S": f"active#{session_id}"}},
+        "UpdateExpression": "SET lastPromptAt = :now ADD #prompts :one",
+        "ConditionExpression": "attribute_exists(pk)",
+        "ExpressionAttributeNames": {"#prompts": "prompts"},
+        "ExpressionAttributeValues": {":now": {"N": str(int(time.time()))}, ":one": {"N": "1"}},
+    }},
+    {"Update": {
+        "TableName": "biteq-telemetry",
+        "Key": {"pk": {"S": "counters"}, "sk": {"S": "totals"}},
+        "UpdateExpression": f"ADD prompts{suffix} :one",
+        "ExpressionAttributeValues": {":one": {"N": "1"}},
+    }},
+])
+# committed -> emit Prompts, write the log line (result "counted")
+```
+
+Two first heartbeats that race both try step 1. The conditional put accepts one and rejects the other, which then runs step 2, so the session is counted once and both prompts are counted.
+
 ### Counter item
 
-`pk=counters`, `sk=totals`. Attributes, all numbers: `users`, `opensTerminal`, `opensDesktop`, `sessionsTerminal`, `sessionsDesktop`, `answersTerminal`, `answersDesktop`. Updates are `ADD`, which creates the attribute. The dashboard widget reads the totals with one `GetItem` of this item. The top-users table is separate: it scans the `seen` rows and queries each leader's session rows (see Dashboard). Missing attributes read as `0`.
+`pk=counters`, `sk=totals`. Attributes, all numbers: `users`, `opensTerminal`, `opensDesktop`, `sessionsTerminal`, `sessionsDesktop`, `answersTerminal`, `answersDesktop`, `activeSessionsTerminal`, `activeSessionsDesktop`, `promptsTerminal`, `promptsDesktop`. Updates are `ADD`, which creates the attribute. The dashboard widget reads the totals with one `GetItem` of this item. The top-users table is separate: it scans the `seen` rows and queries each leader's session rows (see Dashboard). Missing attributes read as `0`.
 
 ## DynamoDB table
 
@@ -413,7 +503,8 @@ Created in the stack as `biteq-telemetry`.
 
 | pk              | sk                    | Attributes                              |
 | --------------- | --------------------- | --------------------------------------- |
-| `counters`      | `totals`              | the seven numbers above                 |
+| `counters`      | `totals`              | the eleven numbers above                |
+| `user#<userId>` | `active#<sessionId>`  | `harness`, `prompts`, `lastPromptAt` (epoch seconds) |
 | `user#<userId>` | `seen`                | `answers`, this machine's answer count (absent until the first answer) |
 | `user#<userId>` | `session#<sessionId>` | `kind` (`open` or `session`), `harness`, `answers` (absent until the first answer) |
 
@@ -428,7 +519,7 @@ The function's log group is `/aws/lambda/biteq-telemetry`, retention 30 days. On
 {"type":"open","userId":"...","sessionId":"...","harness":"terminal","pluginVersion":"0.2.3","result":"created"}
 ```
 
-`result` is `created` for a new open, `promoted` when an answer creates or promotes the session, `answered` for a later answer, or `duplicate`. Invalid requests and a `500` log the status only, not the body. These lines are for tracing one id through time. The dashboard does not query them.
+`type` is `open`, `answer` or `heartbeat`. `result` is `created` for a new open or a session's first heartbeat, `promoted` when an answer creates or promotes the session, `answered` for a later answer, `counted` for a later heartbeat, or `duplicate`. Invalid requests and a `500` log the status only, not the body. These lines are for tracing one id through time, and the "prompts vs answers per hour" chart on the dashboard counts them. Because they hold `userId` and a time, they are also the source for a per-user hourly view: add `| filter userId = "<id>"` to that chart's query in the console.
 
 ## Dashboard
 
@@ -436,10 +527,14 @@ CloudWatch dashboard `biteq-telemetry`, region `us-east-1`, same account as the 
 
 1. **All-time**, a custom widget that invokes this Lambda. On `describe` the function returns `{ "markdown": "biteq all-time" }`. On `widgetContext` it `GetItem`s the counter row and returns the HTML string for four figures (users, opens, sessions, answers) and under them the terminal and desktop split. A JSON object would be shown as text. This widget is not the public URL.
 
-   Under the figures is a **top users by answers** table, the ten machines with the most answers. Each row shows the full `userId`, the answer count, and `N practised` (sessions with an answer), plus `M opened only` when some sessions were opened and never answered. Under each user are their answered sessions, most answers first, as `session <sessionId>` with that session's count. Five are listed, then `+N more`. The widget scans the `seen` rows for the ranking, then queries each leader's `session#` rows. Session ids come from the client, so the widget HTML-escapes them. Sessions have no stored time, so they are not in date order.
-2. **Last 12 weeks, one day wide.** Four line widgets, statistic `Sum`, metrics `NewUsers`, `Opens`, `Sessions`, `Answers`. Each widget has two lines, `Harness=terminal` and `Harness=desktop`.
+   Under the totals is the **Claude-session funnel**, built from the heartbeats: Claude sessions (a typed prompt), how many of those have a `session#` row (the pane was placed, or an answer created one), how many answered at least one question, and the practised share. "Never practised" is split into pane never placed and placed with no answer. Terminal and desktop get a line each. It joins `active#` rows to `session#` rows by user and session id in one scan, so a session that answered the boot question but was never prompted is not counted. Sessions from before the first heartbeat have no `active#` row, so the share starts high and settles.
 
-Metrics are standard resolution (60 seconds). The Lambda calls `PutMetricData` only after the matching transaction commits. A duplicate request emits nothing.
+   Then a **top users by answers** table, the ten machines with the most answers. Each row shows the full `userId`, the answer count, and `N practised` (sessions with an answer), plus `M opened only` when some sessions were opened and never answered. Under each user are their answered sessions, most answers first, as `session <sessionId>` with that session's count. Five are listed, then `+N more`. The widget scans the `seen` rows for the ranking, then queries each leader's `session#` rows. Session ids come from the client, so the widget HTML-escapes them. Sessions have no stored time, so they are not in date order.
+2. **Last 12 weeks, one day wide.** Five line widgets, statistic `Sum`, metrics `NewUsers`, `Opens`, `Sessions`, `Answers` and `ActiveSessions` (titled "Claude sessions"). Each widget has two lines, `Harness=terminal` and `Harness=desktop`.
+3. **Prompts vs answers (hourly, all users).** One chart, both harnesses added together with metric math (`FILL(x, 0)` so an hour reported by only one harness still adds up). Prompts are on the left axis. Answers and *answers per 100 prompts* are on the right, because prompts run far above answers. An hour with no prompts has no rate point.
+4. **Prompts vs answers per hour (logs, 30 days).** A Logs Insights chart on `/aws/lambda/biteq-telemetry`: `filter type in ["answer", "heartbeat"] | stats count() by bin(1h), type`. Unfiltered it is the same data as chart 3 limited to 30 days. Add a `userId` filter to follow one person. Insights bills by data scanned, which is small here.
+
+Metrics are standard resolution (60 seconds). The Lambda calls `PutMetricData` only after the matching transaction commits. A duplicate request emits nothing. `Prompts` and `ActiveSessions` have no history before the first heartbeat is sent, and the 12-week dashboard window is dense at one hour per point, so zoom in.
 
 Open the dashboard in the CloudWatch console.
 
@@ -468,7 +563,7 @@ Stack outputs:
 
 A report is skipped when `io.pluginRoot` does not contain `.claude/plugins/cache/` (`claude --plugin-dir` and `claude plugin test` both load the checkout), when `io.client()` is not `terminal` or `desktop`, or when the POST throws or returns a non-2xx.
 
-`/biteq debug` turns on the event log (`~/.biteq/events.log`). It does not change that cache rule. While the log is on, a POST that is sent appends one line: the path (`/v1/opens` or `/v1/answers`), whether the response was ok, and the Claude event that happened before the POST. A report skipped for a missing endpoint or a checkout path appends `Would have sent telemetry to endpoint <url> but <reason>`. `/biteq debug off` stops the log. `/biteq reset --all` clears it with the rest of config.
+`/biteq debug` turns on the event log (`~/.biteq/events.log`). It does not change that cache rule. While the log is on, a POST that is sent appends one line: the path (`/v1/opens`, `/v1/answers` or `/v1/heartbeat`), whether the response was ok, and the Claude event that happened before the POST. A report skipped for a missing endpoint or a checkout path appends `Would have sent telemetry to endpoint <url> but <reason>`. `/biteq debug off` stops the log. `/biteq reset --all` clears it with the rest of config.
 
 - `types/index.d.ts`. Add `openReported: boolean` to `PluginState['biteq']`.
 - `register.ts`. Declare the `openReported` atom, default `false`, and add a case to both `io()` switches. Implement `sessionId` and `httpPost`. From `openPane`, after `isPlaced` is true, call `reportOpen` without awaiting it.
@@ -476,6 +571,7 @@ A report is skipped when `io.pluginRoot` does not contain `.claude/plugins/cache
 - `store.ts`. Add the store key `userId`. `/biteq reset --all` keeps deleting `stats` and `config` only.
 - `hooks/biteq/telemetry.ts`. New. Builds the two payloads, applies the skip rules above, and reads `version` from `${pluginRoot}/.claude-plugin/plugin.json`. When `userId` is missing, write it to the store before the POST. Set `openReported` only when the response is 2xx. The endpoint constant is the `BiteqTelemetryUrl` stack output.
 - `pane.tsx`. After `answer` has saved stats for a new answer, call the answer report. A repeat press already returns before that save, so it does not report.
+- `register.ts` and `telemetry.ts` (heartbeat). Add `reportPrompt`, which sends `/v1/heartbeat` through the same `send`. In the existing `on('prompt.submit')` hook, when `/biteq` is not what was typed and `e.origin.kind === 'composer'`, call it without awaiting, then `next(e)`. No new atom, `Io` member or store key.
 
 
 
@@ -483,10 +579,10 @@ A report is skipped when `io.pluginRoot` does not contain `.claude/plugins/cache
 
 `biteq-infra/biteq_infra/handler.py`. Python 3.12, arm64, 128 MB, timeout 10 seconds, reserved concurrency 5.
 
-- Function URL, auth `NONE`, invoke mode `BUFFERED`, CORS off. `POST /v1/opens` and `POST /v1/answers` follow the write steps above. Any other path or method is `404`. A body over 1024 bytes, or a body that fails the field rules, is `400`. A transaction that fails for a reason other than its condition is `500`.
-- On a CloudWatch custom-widget invoke, `describe` returns `{ "markdown": "biteq all-time" }`, and `widgetContext` returns the HTML string for the four all-time figures plus the terminal and desktop split. That invoke is IAM, not the public URL. It `GetItem`s `pk=counters`, `sk=totals`. Missing attributes read as `0`. It also scans the `seen` rows for the ten users with the most answers and queries each one's `session#` rows (`begins_with`), returning the top-users table described under Dashboard.
-- Emit `NewUsers`, `Opens`, `Sessions`, and `Answers` in namespace `Biteq` only after the matching transaction commits. A duplicate emits nothing. Standard resolution.
-- Write one JSON log line per request that passed validation. `result` is `created`, `promoted`, `answered`, or `duplicate`. An invalid request and a `500` log the status only.
+- Function URL, auth `NONE`, invoke mode `BUFFERED`, CORS off. `POST /v1/opens`, `POST /v1/answers` and `POST /v1/heartbeat` follow the write steps above. Any other path or method is `404`. A body over 1024 bytes, or a body that fails the field rules, is `400`. A transaction that fails for a reason other than its condition is `500`.
+- On a CloudWatch custom-widget invoke, `describe` returns `{ "markdown": "biteq all-time" }`, and `widgetContext` returns the HTML string for the four all-time figures plus the terminal and desktop split. That invoke is IAM, not the public URL. It `GetItem`s `pk=counters`, `sk=totals`. Missing attributes read as `0`. It also scans the `seen` rows for the ten users with the most answers and queries each one's `session#` rows (`begins_with`), returning the top-users table described under Dashboard. One more scan of the `active#` and `session#` rows builds the Claude-session funnel.
+- Emit `NewUsers`, `Opens`, `Sessions`, `Answers`, `ActiveSessions` and `Prompts` in namespace `Biteq` only after the matching transaction commits. A duplicate emits nothing. Standard resolution.
+- Write one JSON log line per request that passed validation. `result` is `created`, `promoted`, `answered`, `counted`, or `duplicate`. An invalid request and a `500` log the status only.
 
 
 
@@ -506,7 +602,9 @@ A report is skipped when `io.pluginRoot` does not contain `.claude/plugins/cache
 
 - Dashboard `biteq-telemetry` in `us-east-1`.
 - An all-time custom widget that invokes this Lambda. It shows the totals and the top-users table.
-- Four line widgets for the last 12 weeks, one day wide, statistic `Sum`: `NewUsers`, `Opens`, `Sessions`, `Answers`. Each has two lines, `Harness=terminal` and `Harness=desktop`.
+- Five line widgets for the last 12 weeks, one day wide, statistic `Sum`: `NewUsers`, `Opens`, `Sessions`, `Answers`, `ActiveSessions`. Each has two lines, `Harness=terminal` and `Harness=desktop`.
+- A "Prompts vs answers" chart, hourly, both harnesses added: prompts on the left axis, answers and answers per 100 prompts on the right.
+- A Logs Insights chart on the Lambda's log group, prompts and answers per hour, 30 days.
 
 
 

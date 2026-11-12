@@ -11,7 +11,7 @@
 //   config  remembered languages
 //   debug   event log, on after /biteq debug
 //   macos   stubs
-//   telemetry  a placed pane and a recorded answer
+//   telemetry  a placed pane, a recorded answer and a typed prompt
 //   io      what the modules may do through the engine
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement } from 'claude-code'
@@ -25,7 +25,7 @@ import type { Io, View } from './biteq/io'
 import { isHintKey, keys } from './biteq/draw'
 import { closed, press, render, view } from './biteq/pane'
 import { DEFAULT_STATS } from './biteq/quiz'
-import { reportOpen } from './biteq/telemetry'
+import { reportOpen, reportPrompt } from './biteq/telemetry'
 
 const PANE = 'biteq'
 const QUIZ = 'quiz'
@@ -170,10 +170,14 @@ export const register: Register = on => {
 
   // The desktop Code tab may not list a command the plugin registered after it started, and then
   // "/biteq" arrives as a plain prompt: run it here and drop it, so it never reaches Claude.
+  // Any other prompt passes through unchanged. One the person typed (not a notification, a /loop firing
+  // or an SDK turn) also sends a heartbeat, whether or not the pane is open. It is not awaited, so it
+  // never delays the prompt, and this hook always calls next(e): it only observes.
   on('prompt.submit', async ($, e, next) => {
     const args = typedArgs(e.text)
-    if (args === null) return next(e)
-    return { drop: await run(io($), args) }
+    if (args !== null) return { drop: await run(io($), args) }
+    if (e.origin.kind === 'composer') void reportPrompt(io($))
+    return next(e)
   })
 
   // ---- Claude Code events -> status (claude.parse, then cli.signal)
