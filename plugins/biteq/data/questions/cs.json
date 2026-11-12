@@ -3,10 +3,10 @@
     "id": "cs-bigo-doubling",
     "title": "Complexity",
     "prompt": "What is the time complexity?",
-    "code": "i = 1\nwhile i < n:\n    for j in range(n):\n        work()\n    i *= 2",
+    "code": "i = 1\nwhile i < n:\n    for j in range(n):\n        work()  # O(1)\n    i *= 2",
     "options": ["O(n)", "O(n log n)", "O(n²)", "O(log n)"],
     "answer": 1,
-    "explanation": "Multiply how many times each loop runs. i doubles each pass, so it reaches n after log₂ n passes, and each pass runs the inner loop n times.\n\nn = 16\ni = 1, 2, 4, 8   # 4 passes, which is log₂ 16\n16 work() calls per pass   # 4 * 16 = 64, not 16 * 16\n\ni += 1   # would make n passes instead, and O(n²)",
+    "explanation": "Inner loop: runs n times on every pass.\nOuter loop: i doubles (1, 2, 4, ...), so it reaches n after log₂ n passes, not n.\n\nQuick recap on logs:\nlog₂ n means how many times you double 1 to reach n,\nor halve n to get down to 1.\nLogs grow slowly: even n = 1,000,000 is only about 20 passes.\n\nn = 8, one row per pass of the outer loop, one * per work() call:\n\npass 1  i = 1   ********\npass 2  i = 2   ********\npass 3  i = 4   ********\nstop    i = 8   (8 < 8 is false)\n\n3 rows * 8 stars = 24 work() calls\n3 = log₂ 8 and 8 = n, so the 24 is n log₂ n: O(n log n)\n\nThe other options:\n  O(n²): needs the outer loop to run n times, as with i += 1 instead of i *= 2\n  O(n): needs only one loop\n  O(log n): counts the outer loop and ignores the inner one",
     "practicality": 5
   },
   {
@@ -16,7 +16,7 @@
     "code": "flagged = [email for email in signups if email in blocked]",
     "options": ["O(n)", "O(n log n)", "O(n²)", "O(1)"],
     "answer": 2,
-    "explanation": "email in blocked scans the blocked list from the start, so each check is O(n). It runs once per signup, so the whole line is O(n) * O(n) = O(n²).\n\nflagged = [email for email in signups   # n iterations\n           if email in blocked]         # list lookup: O(n) each\n\nblocked = set(blocked)                  # O(n) once; set lookup is O(1)\nflagged = [email for email in signups if email in blocked]   # now O(n) overall",
+    "explanation": "email in blocked scans the whole list, so each check is O(n). It runs once per signup, so the line is O(n) * O(n) = O(n²).\n\nflagged = [email for email in signups   # n iterations\n           if email in blocked]         # list lookup: O(n) each\n\nFix: make blocked a set, whose lookup is O(1).\n\nblocked = set(blocked)                                       # O(n) once\nflagged = [email for email in signups if email in blocked]   # now O(n) overall\n\nThe other options:\n  O(n): it looks like one loop, but the in test on a list is a loop too\n  O(n log n): only if the list were sorted and binary-searched, and in doesn't do that\n  O(1): even a single lookup in a list is O(n)",
     "practicality": 9
   },
   {
@@ -26,7 +26,7 @@
     "code": "cache = LRUCache(capacity=2)\ncache.put(\"a\", 1)\ncache.put(\"b\", 2)\ncache.get(\"a\")      # \"a\" becomes the most recently used\ncache.put(\"c\", 3)   # full: evicts \"b\", the least recently used",
     "options": ["Hash map + min-heap", "Hash map + doubly linked list", "Sorted array + binary search", "Two stacks"],
     "answer": 1,
-    "explanation": "A hash map from key to node finds any entry in O(1). A doubly linked list keeps the entries in order of use: on get or put, unlink the node and move it to the front in O(1); when full, drop the node at the back in O(1).\n\nget(key):  node = map[key]; move node to front; return node.value\nput(key):  add/move node to front; if over capacity, remove the back node and its map entry\n\nA min-heap would make every access O(log n), and a sorted array needs O(n) shifts to reorder.",
+    "explanation": "Core problem: get and put must both be O(1), and the cache must always know which key was used least recently.\n\nFix: a hash map plus a doubly linked list.\n1. The hash map finds any entry in O(1).\n2. The list keeps entries in order of use, most recent at the front. A node can be unlinked and moved to the front in O(1), and the node at the back is always the one to evict.\n\nlist, front -> back:\nput(\"a\", 1)    # a\nput(\"b\", 2)    # b, a\nget(\"a\")       # a, b      a moves to the front\nput(\"c\", 3)    # c, a      full: b, at the back, is evicted\n\nThe other options:\n  hash map + min-heap: every access must update the heap, which costs O(log n)\n  sorted array + binary search: finding is O(log n), and keeping the order needs O(n) shifts\n  two stacks: no way to reach an arbitrary key in O(1)",
     "practicality": 6
   },
   {
@@ -34,9 +34,9 @@
     "title": "Concurrency",
     "prompt": "Two threads each run this 100,000 times on a shared counter with no lock. What is the final value?",
     "code": "counter += 1",
-    "options": ["Always 200,000", "At most 200,000, possibly less", "Possibly more than 200,000", "Always 100,000"],
+    "options": ["Always 200,000, because counter += 1 is a single operation", "At most 200,000, possibly less", "Possibly more than 200,000", "Always 100,000"],
     "answer": 1,
-    "explanation": "counter += 1 is three steps, not one: read counter, add 1, write it back. Two threads can interleave those steps, and then one increment is lost:\n\nThread A: read counter      # 5\nThread B: read counter      # 5 (A hasn't written yet)\nThread A: write 5 + 1       # counter = 6\nThread B: write 5 + 1       # counter = 6, A's increment is lost\n\nEach lost update makes the total smaller, never larger, so the result is at most 200,000 and usually less. This happens even in CPython with the GIL, because a thread can be switched between the read and the write. Guard it with a lock (with lock: counter += 1) or use an atomic counter.",
+    "explanation": "Core problem: counter += 1 is three steps, not one: read counter, add 1, write it back. Two threads can interleave them, and then an increment is lost.\n\nThread A: read counter      # 5\nThread B: read counter      # 5 (A hasn't written yet)\nThread A: write 5 + 1       # counter = 6\nThread B: write 5 + 1       # counter = 6, A's increment is lost\n\nEach lost update only lowers the total, so the result is at most 200,000, and usually less.\n\nThe other options:\n  always 200,000: only if += were one indivisible step. It isn't, even in CPython with the GIL, because a thread can be switched between the read and the write\n  more than 200,000: updates can be lost, but never counted twice\n  always 100,000: only the collisions are lost, not one whole thread's work\n\nFix: guard it with a lock (with lock: counter += 1) or use an atomic counter.",
     "practicality": 7
   },
   {
@@ -50,15 +50,6 @@
     "practicality": 7
   },
   {
-    "id": "cs-fcc-001",
-    "prompt": "In terms of Big-O complexity, what is the time complexity for lookups in a binary tree index?",
-    "options": ["O(log n)", "O(n)", "O(n log n)", "O(1)"],
-    "answer": 0,
-    "explanation": "This is because a binary tree index allows for efficient searching by halving the search space at each step.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #1"
-  },
-  {
     "id": "cs-fcc-003",
     "prompt": "What is the base case in a recursive function?",
     "options": ["The initial input value to the recursive function", "The condition under which the recursive function starts calling itself", "The condition under which the recursive function stops calling itself", "The maximum number of times the recursive function can call itself"],
@@ -68,83 +59,20 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #3"
   },
   {
-    "id": "cs-fcc-005",
-    "prompt": "What is the average time complexity of an element insertion in a hash table?",
-    "options": ["O(1)", "O(logn)", "O(n)", "O(n^2)"],
-    "answer": 0,
-    "explanation": "The average time complexity of an element insertion in a hash table is O(1). Unlike arrays, hash tables use a hashing function to generate a unique key or index for each element, ensuring constant time for element insertion.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #5"
-  },
-  {
-    "id": "cs-fcc-007",
-    "prompt": "Which sorting algorithm has an average time complexity of O(nlogn)?",
-    "options": ["Insertion sort", "Selection sort", "Bubble sort", "Quick sort"],
-    "answer": 3,
-    "explanation": "Quick sort has an average time complexity of O(nlogn), making it efficient for sorting large datasets.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #7"
-  },
-  {
-    "id": "cs-fcc-008",
-    "prompt": "Which data structure does Dijkstra's shortest-path algorithm use to pick the next closest vertex?",
-    "options": ["Priority Queue", "Hash set", "String", "Stack"],
-    "answer": 0,
-    "explanation": "Dijkstra's algorithm, which is used to find the shortest path in a graph, typically employs a priority queue to efficiently select the next vertex with the smallest distance.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #8"
-  },
-  {
-    "id": "cs-fcc-009",
-    "prompt": "What is the time complexity of inserting an element into a linked list at the beginning?",
-    "options": ["O(1)", "O(log n)", "O(n)", "O(n2)"],
-    "answer": 0,
-    "explanation": "The time complexity involved to insert a node at the head of the linked list as well as to append at the tail is O(1).",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #9"
-  },
-  {
     "id": "cs-fcc-016",
     "prompt": "A stable sort keeps items that compare equal in their original order. Which of these sorting algorithms is stable?",
     "options": ["Merge Sort", "Selection sort", "Heap Sort", "Quick Sort"],
     "answer": 0,
-    "explanation": "Merge sort is stable: when two items compare equal, the merge step takes the one from the left half first, so they keep their original order.\n\nSort [(\"Bo\", 30), (\"Al\", 25), (\"Cy\", 30)] by age:\nstable:     Al 25, Bo 30, Cy 30   # Bo stays before Cy\nnot stable: Al 25, Cy 30, Bo 30   # allowed for quick, heap or selection sort\n\nStability matters when you sort by one key after another, e.g. by name and then by age. Python's sorted() and JavaScript's Array.prototype.sort are stable.",
+    "explanation": "Core problem: a stable sort keeps items that compare equal in their original order.\n\nSort [(\"Bo\", 30), (\"Al\", 25), (\"Cy\", 30)] by age:\nstable:     Al 25, Bo 30, Cy 30   # Bo stays before Cy\nnot stable: Al 25, Cy 30, Bo 30   # equal items are allowed to swap\n\nMerge sort is stable: when two items compare equal, the merge step takes the one from the left half first.\n\nThe other options are not stable in their usual form: selection sort swaps items across long distances, heap sort moves items around the heap, and quicksort swaps while partitioning, so equal items can change places.\n\nStability matters when you sort by one key after another, e.g. by name and then by age. Python's sorted() and JavaScript's Array.prototype.sort are stable.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #16"
-  },
-  {
-    "id": "cs-fcc-017",
-    "prompt": "Which of the following sorting algorithms has the same best-case and worst-case time complexities?",
-    "options": ["Insertion Sort", "Bubble Sort", "Quick Sort", "Merge Sort"],
-    "answer": 3,
-    "explanation": "Merge sort has a time complexity of O(nlogn) in all cases - best, average and worst.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #17"
-  },
-  {
-    "id": "cs-fcc-026",
-    "prompt": "The Traveling Salesman Problem: given cities and the distance between each pair, find the shortest tour, a route that visits every city exactly once and returns to the start. Which is true of finding that shortest tour?",
-    "options": ["It is an NP-Hard problem.", "It is an NP-Complete problem.", "It is a P problem.", "It is an NP problem."],
-    "answer": 0,
-    "explanation": "NP-hard means at least as hard as every problem in NP: no known algorithm solves it in polynomial time, and finding one would solve all of NP. Checking every tour of n cities takes about n! steps.\n\nFinding the shortest tour is NP-hard. It isn't NP-complete, because you can't check quickly that a given tour is the shortest. The yes/no version (\"is there a tour shorter than k?\") is in NP and is NP-complete.\n\nIn practice, route planners use heuristics and approximations that find a good tour, not a provably shortest one.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #26"
-  },
-  {
-    "id": "cs-fcc-027",
-    "prompt": "Which of the following algorithms can be used for the shortest path problem for an unweighted graph?",
-    "options": ["Linear Search", "Breadth First Search", "Ternary Search", "Binary Search"],
-    "answer": 1,
-    "explanation": "Breadth First Search can be used for the shortest path problem for an unweighted graph.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #27"
   },
   {
     "id": "cs-fcc-028",
     "prompt": "What is SOLID?",
     "options": ["A database consistency model, like ACID", "Five principles of object-oriented design", "Four principles of functional programming", "A naming convention for classes and files"],
     "answer": 1,
-    "explanation": "SOLID is an acronym for five object-oriented design principles that keep code easy to change:\n\nS  Single responsibility: a class has one reason to change.\nO  Open/closed: open for extension, closed for modification; add behaviour without editing working code.\nL  Liskov substitution: a subclass can stand in anywhere its parent is used.\nI  Interface segregation: several small interfaces beat one large one clients only partly use.\nD  Dependency inversion: depend on abstractions (an interface), not concrete classes.\n\nACID (atomicity, consistency, isolation, durability) is the database one.",
+    "explanation": "SOLID is five object-oriented design principles that keep code easy to change:\n\nS  Single responsibility: a class has one reason to change.\nO  Open/closed: open for extension, closed for modification; add behaviour without editing working code.\nL  Liskov substitution: a subclass can stand in anywhere its parent is used.\nI  Interface segregation: several small interfaces beat one large one clients only partly use.\nD  Dependency inversion: depend on abstractions (an interface), not concrete classes.\n\nThe other options:\n  a database consistency model: that is ACID (atomicity, consistency, isolation, durability)\n  principles of functional programming: SOLID is about classes and interfaces\n  a naming convention: nothing in it is about names",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #28"
   },
@@ -153,7 +81,7 @@
     "prompt": "What is the term for when data is being pushed onto a full stack?",
     "options": ["Empty collection", "Stack Overflow", "Garbage Collection", "Underflow"],
     "answer": 1,
-    "explanation": "Stack Overflow happens when there is an attempt to push data on an already full stack.",
+    "explanation": "A stack with a fixed size can run out of room. Pushing onto a full stack is a stack overflow. Popping from an empty stack is the opposite, an underflow.\n\ncapacity 3:   push A, push B, push C   # full\npush D                                  # overflow: nowhere to put it\npop, pop, pop                           # empty\npop                                     # underflow: nothing to remove\n\nThe call stack overflows the same way, which is what infinite recursion causes.\n\nThe other options: garbage collection reclaims unused memory and has nothing to do with stacks, and \"empty collection\" describes a state, not an error.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #34"
   },
@@ -162,7 +90,7 @@
     "prompt": "Which of the following is the most correct statement?",
     "options": ["All undirected graphs have topological ordering", "A cyclic graph also has topological ordering.", "Topological sort is just an another name for BFS", "Topological sort is possible only for a Directed Acyclic Graph"],
     "answer": 3,
-    "explanation": "A topological ordering lists a directed graph's nodes so every edge points forward: if A -> B, A comes before B. Build steps and course prerequisites are the classic uses.\n\nshirt -> tie -> jacket, shirt -> belt   # one valid order: shirt, belt, tie, jacket\nA -> B -> C -> A                       # a cycle: whichever comes first, some edge points backwards\n\nSo an ordering exists exactly when the graph is directed and has no cycles (a DAG). Undirected edges have no direction to respect. It's computed with DFS or Kahn's algorithm, not BFS order alone.",
+    "explanation": "Core problem: a topological ordering lists a directed graph's nodes so every edge points forward (if A -> B, A comes before B). A cycle makes that impossible.\n\nshirt -> tie -> jacket, shirt -> belt   # one valid order: shirt, belt, tie, jacket\nA -> B -> C -> A                       # a cycle: whichever comes first, some edge points backwards\n\nSo an ordering exists exactly when the graph is directed and has no cycles (a DAG).\n\nThe other options:\n  undirected graphs: their edges have no direction to respect\n  cyclic graphs: a cycle always has an edge pointing backwards\n  \"a name for BFS\": it is computed with DFS or Kahn's algorithm, not BFS alone\n\nBuild steps and course prerequisites are the classic uses.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #39",
     "comment": "improve the topological ordering in explanation."
@@ -172,7 +100,7 @@
     "prompt": "Between merge sort and quicksort, which guarantees O(n log n) even in the worst case?",
     "options": ["Both", "Merge sort", "Neither", "Quicksort"],
     "answer": 1,
-    "explanation": "Merge sort is O(n log n) in every case. Quicksort is O(n log n) on average and usually faster in practice, but O(n^2) in the worst case (consistently bad pivots).",
+    "explanation": "Core problem: quicksort's speed depends on its pivot, and merge sort's does not.\n\nmerge sort:             always splits in half, then merges   # log n levels of n work each = O(n log n), every time\nquicksort, good pivot:  splits roughly in half               # O(n log n)\nquicksort, worst pivot: the pivot is always the smallest or largest item, so each split leaves n - 1 items on one side\n                        # n levels of about n work each = O(n²)\n\nA first-element pivot on an already sorted list does this.\n\nQuicksort is still common because it is often faster in practice and works in place, and random or median pivots make the worst case very unlikely.\n\nThe other options: \"both\" is wrong because quicksort can degrade to O(n²), and \"neither\" is wrong because merge sort does guarantee it.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #42"
   },
@@ -181,43 +109,16 @@
     "prompt": "What data structure does a binary search tree degenerate to if it isn't balanced properly?",
     "options": ["Linked List", "Set", "Queue", "Dictionary"],
     "answer": 0,
-    "explanation": "A binary search tree degenerates to a linked list if it is not balanced properly. It is balanced if the height of the left and right subtrees of any node differ by at most one.",
+    "explanation": "A BST keeps smaller values on the left and larger on the right, so a lookup follows one branch per level. Insert values that are already in order and each new one goes to the same side, so the tree becomes a chain.\n\ninsert 1, 2, 3, 4:\n1\n  2\n    3\n      4        # each node has one child: this is a linked list\n\nbalanced tree of n nodes:  about log n levels to reach a value\ndegenerate tree:           up to n levels, so a lookup is O(n)\n\nThe other options: a set, a queue and a dictionary are different structures, and the tree doesn't turn into any of them. Self-balancing trees (AVL, red-black) rotate nodes to prevent this.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #43"
-  },
-  {
-    "id": "cs-fcc-044",
-    "prompt": "Which algorithm utilizes a pivot value to sort?",
-    "options": ["Quick Sort", "Insertion Sort", "Merge Sort", "Bubble Sort"],
-    "answer": 0,
-    "explanation": "Quick sort works by selecting one element (called “the pivot”) and finding the index where the pivot should end up in the sorted array.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #44"
-  },
-  {
-    "id": "cs-fcc-051",
-    "prompt": "What is the worst case time complexity for accessing an element in a BST(Binary Search Tree)?",
-    "options": ["O(logn)", "O(n*n)", "O(n*logn)", "O(n)"],
-    "answer": 3,
-    "explanation": "The worst case time complexity would be O(n) because we might need to visit all of the nodes.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #51"
-  },
-  {
-    "id": "cs-fcc-056",
-    "prompt": "Which of the following is a Divide and Conquer algorithm?",
-    "options": ["Heap Sort", "Selection Sort", "Bubble Sort", "Merge Sort"],
-    "answer": 3,
-    "explanation": "Merge Sort recursively splits the array into smaller arrays, sorts those arrays and merges them into one sorted array.",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #56"
   },
   {
     "id": "cs-fcc-057",
     "prompt": "Which is true of a fixed-size array, like a plain array in C or Java?",
     "options": ["It can only be one-dimensional", "Insertion and deletion of elements has a time complexity of O(1)", "Size of an array can not be changed once initialized", "A single array can contain data of different data types"],
     "answer": 2,
-    "explanation": "A fixed-size array is one contiguous block of memory sized when it is created. To grow it you allocate a bigger array and copy everything across (which is what dynamic arrays like ArrayList or Python lists do for you).\n\nWhy not O(1) insert and delete? Reading arr[i] is O(1), but inserting or deleting in the middle means shifting every later element one slot:\n\n[a, b, c, d, _]  insert x at index 1\n[a, x, b, c, d]  b, c and d each moved right: O(n)\n\nOnly changing the last element is O(1). Fast insert and delete in the middle (given the node) is what a linked list offers.",
+    "explanation": "A fixed-size array is one contiguous block of memory, so its size can't change. To grow it you allocate a bigger array and copy everything across.\n\nThe other options:\n  one-dimensional only: arrays can have more dimensions\n  O(1) insert and delete: only at the end; in the middle every later element shifts, O(n)\n  different data types: a typed array holds one type",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #57"
   },
@@ -226,7 +127,7 @@
     "prompt": "How many bits make up a byte?",
     "options": ["16 bits", "8 bits", "12 bits", "32 bits"],
     "answer": 1,
-    "explanation": "There are 8 bits in a byte",
+    "explanation": "A bit is a single 0 or 1. A byte is 8 bits, which gives 2^8 = 256 possible values (0 to 255).\n\n1 bit     -> 0 or 1                  # 2 values\n8 bits    -> 00000000 to 11111111    # 256 values: one byte\n1 byte    -> one ASCII character, or one number from 0 to 255\n\nThe other sizes are real, but they are other units: 16 bits is 2 bytes and 32 bits is 4 bytes.",
     "practicality": 3,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #68"
   },
@@ -235,7 +136,7 @@
     "prompt": "Which data structure is used for the implementation of a recursive algorithm?",
     "options": ["Linked list", "Stack", "Queue", "Tree"],
     "answer": 1,
-    "explanation": "In recursion, the nested function that is called later returns the value first, which is in the same nature as that of a stack (Last In First Out).",
+    "explanation": "Each call waits for the call it made to finish, so the most recent call returns first: last in, first out. That is a stack, and the language keeps one for you, the call stack.\n\nfactorial(3)           # waits for factorial(2)\n  factorial(2)         # waits for factorial(1)\n    factorial(1)       # returns 1 first\ncall stack, top first: factorial(1), factorial(2), factorial(3)\n\nThis is why infinite recursion ends in a stack overflow.\n\nThe other options: a queue would resume the oldest call first, which is the wrong order. A linked list and a tree don't have this last-in-first-out order built in.",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #122"
   },
@@ -244,34 +145,16 @@
     "prompt": "What are the four pillars of Object-oriented programming?",
     "options": ["Objects, Methods, Properties and Fields.", "Abstraction, Encapsulation, Inheritance, and Polymorphism.", "Declaration, Modeling, Evaluation and Implementation.", "Immutability, Purity, Transparency and State."],
     "answer": 1,
-    "explanation": "Abstraction, encapsulation, inheritance, and polymorphism are software design principles to help you write clean object-oriented code.",
+    "explanation": "Abstraction:   expose what something does, hide how           # you call car.start(), not the engine code\nEncapsulation: keep an object's data private behind methods   # a balance changes only via deposit() and withdraw()\nInheritance:   a class reuses and extends another             # Dog extends Animal\nPolymorphism:  different classes answer the same call        # shape.area() works for Circle and Square\n\nThe other options:\n  objects, methods, properties and fields: the parts a class is made of, not principles\n  declaration, modeling, evaluation and implementation: not a real set\n  immutability, purity, transparency and state: ideas from functional programming",
     "practicality": 4,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #127"
-  },
-  {
-    "id": "cs-fcc-132",
-    "prompt": "What is the best case time complexity for the merge sort algorithm?",
-    "options": ["O(n^2)", "O(log(n))", "O(n*log(n))", "O(2^n)"],
-    "answer": 2,
-    "explanation": "Merge sort is a divide and conquer algorithm that has a best case time complexity of O(n*log n)",
-    "practicality": 4,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #132"
-  },
-  {
-    "id": "cs-fcc-133",
-    "prompt": "What is the advantage of using linked lists over arrays?",
-    "options": ["Random accessing elements is easier in linked lists than arrays", "Linked lists helps in faster insertions and deletions than arrays", "Memory usage in linked lists is less than arrays", "Reverse traversal is possible in singly linked lists"],
-    "answer": 1,
-    "explanation": "Linked lists have quicker insertions and deletions than arrays because there is no need to shift all other elements with lists.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #133"
   },
   {
     "id": "cs-fcc-134",
     "prompt": "Which sorting algorithm is best when data is nearly sorted?",
     "options": ["Heap Sort", "Merge Sort", "Selection Sort", "Insertion Sort"],
     "answer": 3,
-    "explanation": "Insertion sort does about n comparisons when each element is already near its place, so it runs in close to O(n) on nearly sorted data. Selection sort is O(n^2) regardless.",
+    "explanation": "Insertion sort takes each item and slides it left past larger items until it fits. On nearly sorted data each item moves only a step or two, so the total work is close to n.\n\n[1, 2, 4, 3, 5, 6]\n3 slides left past 4     # 1 move\nevery other item stays   # 0 moves\nabout n comparisons      # O(n)\n\nOn a reversed list every item slides all the way to the front: about n²/2 moves, O(n²).\n\nThe other options:\n  selection sort: always scans the rest for the minimum, O(n²) whatever the order\n  heap sort and merge sort: O(n log n) every time, so the order doesn't help",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #134"
   },
@@ -290,18 +173,9 @@
     "code": "def f(n):\n    if n <= 1:\n        return 1\n    return f(n - 1) + f(n - 1)",
     "options": ["O(n)", "O(n²)", "O(2^n)", "O(n log n)"],
     "answer": 2,
-    "explanation": "Each call makes two more calls until n reaches 1, so the calls form a binary tree n levels deep: 1 + 2 + 4 + ... + 2^(n-1) = 2^n - 1 calls.\n\nf(3)                      # 1 call\n├── f(2)                  # 2 calls\n│   ├── f(1)  f(1)        # 4 calls\n└── f(2) ...\n\nIn general a recursion that branches b times and goes d deep makes about b^d calls. Computing f(n - 1) once and doubling it (return 2 * f(n - 1)) makes it O(n); naive Fibonacci has the same blow-up.",
+    "explanation": "Core problem: every call makes two more calls, so each level has twice as many calls as the one above it, and there are n levels.\n\nn = 3:\nlevel 1:  f(3)                    # 1 call\nlevel 2:  f(2)  f(2)              # 2 calls\nlevel 3:  f(1)  f(1)  f(1)  f(1)  # 4 calls\ntotal: 1 + 2 + 4 = 7 = 2³ - 1\n\nIn general 1 + 2 + 4 + ... + 2^(n-1) = 2^n - 1 calls, so O(2^n).\n\nThe other options:\n  O(n): there are n levels, but each has twice the calls of the one above, not the same number\n  O(n²): that would be n levels of about n calls each; here the calls double\n  O(n log n): nothing here is halved or sorted\n\nFix: compute f(n - 1) once and reuse it (return 2 * f(n - 1)), which is O(n). Naive Fibonacci blows up in the same way, exponentially.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #139"
-  },
-  {
-    "id": "cs-fcc-140",
-    "prompt": "What is the worst case time complexity for binary and linear search?",
-    "options": ["binary search is O(n) and linear search is O(logn)", "binary search is O(n) and linear search is O(n)", "binary search is O(logn) and linear search is O(logn)", "binary search is O(logn) and linear search is O(n)"],
-    "answer": 3,
-    "explanation": "The worst case time complexity for linear search O(n) because we have to iterate through n elements. The worst case time complexity for binary search is O(logn) because it is a divide and conquer algorithm.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #140"
   },
   {
     "id": "cs-fizzbuzz-order",
@@ -314,31 +188,13 @@
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #151"
   },
   {
-    "id": "cs-fcc-152",
-    "prompt": "What's the Big O notation of an algorithm that increases the running time linearly with the input size?",
-    "options": ["O(n)", "O(log n)", "O(1)", "O(n^2)"],
-    "answer": 0,
-    "explanation": "The letter n represents the input size, and the big O represents the increase of the running time.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #152"
-  },
-  {
     "id": "cs-fcc-156",
     "prompt": "Which data structure is used to implement an auto-complete feature?",
     "options": ["Trie", "Stack", "Linked List", "Tree"],
     "answer": 0,
-    "explanation": "A Trie is a tree based data structure where each node stores a character performing efficient search operations on them",
+    "explanation": "A trie stores words one letter per level, so words with the same start share the same path. Typing a prefix walks down that path, and everything below it is a completion.\n\nc\n  a              # typing \"ca\" lands here\n    r            # car\n    t            # cat\n\nThe cost depends on the length of the prefix, not on how many words are stored.\n\nThe other options: a stack and a linked list have no notion of prefixes. A tree is the general idea, and a trie is the specific tree built for this.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #156"
-  },
-  {
-    "id": "cs-fcc-161",
-    "prompt": "What is a data structure that consists of nodes, where each node has data and a reference to the next node in the sequence?",
-    "options": ["Vector", "Linked List", "Heap", "Stack"],
-    "answer": 1,
-    "explanation": "A Linked List contains nodes and each node has data and a reference to next node so that it can have access to the data of its next node and we can get the information of all nodes by iterating the node until it reaches nullptr.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #161"
   },
   {
     "id": "cs-fcc-168",
@@ -348,24 +204,6 @@
     "explanation": "Dynamic programming is a technique used to solve problems by breaking them into smaller subproblems and storing their solutions, reducing redundant calculations and improving efficiency.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #168"
-  },
-  {
-    "id": "cs-fcc-170",
-    "prompt": "What is the use of a priority queue?",
-    "options": ["A priority queue manages elements based on priority, ensuring higher priority items are processed first.", "It's a fixed-size queue.", "It's a queue that organizes elements by their value.", "It only accepts elements of the same type."],
-    "answer": 0,
-    "explanation": "A priority queue is essential in scenarios where certain tasks need to be handled in order of importance or urgency.",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #170"
-  },
-  {
-    "id": "cs-fcc-172",
-    "prompt": "What is a hash table in computer science?",
-    "options": ["A hash table is primarily used for sorting data.", "A hash table is limited to a fixed size and cannot grow dynamically.", "A hash table is a data structure that only stores keys, not values.", "A hash table stores key-value pairs, using a hash function to enable fast data retrieval."],
-    "answer": 3,
-    "explanation": "Hash tables are widely used in computer science for implementing associative arrays, databases, and various applications that require fast data access.",
-    "practicality": 7,
-    "source": "freeCodeCamp/Developer_Quiz_Site general-cs-quiz #172"
   },
   {
     "id": "cs-fcc-179",
@@ -383,17 +221,17 @@
     "code": "DELETE /admin/users/7\nAuthorization: Bearer <valid token for user 42>",
     "options": ["401 Unauthorized", "403 Forbidden", "400 Bad Request", "405 Method Not Allowed"],
     "answer": 1,
-    "explanation": "401 means \"I don't know who you are\": credentials are missing, invalid or expired, so logging in (again) could fix it. 403 means \"I know who you are, and you can't do this\": retrying with the same identity won't help.\n\nNo Authorization header       # 401 (send a WWW-Authenticate header with it)\nExpired or tampered token     # 401: the client should refresh or log in again\nValid token, not an admin     # 403: authenticated, but not allowed\n\nClients act on the difference: a 401 often triggers a token refresh or a redirect to login, which loops forever if you send it for a permission problem. Some APIs return 404 instead of 403 to hide that a resource exists at all.",
+    "explanation": "Core problem: 401 means \"I don't know who you are\" (missing, invalid or expired credentials), so logging in again could fix it. 403 means \"I know who you are, and you can't do this\", so retrying with the same identity won't help.\n\nNo Authorization header       # 401 (send a WWW-Authenticate header with it)\nExpired or tampered token     # 401: the client should refresh or log in again\nValid token, not an admin     # 403: authenticated, but not allowed\n\nThe other options:\n  401 Unauthorized: the name misleads, it means unauthenticated. This user is authenticated\n  400 Bad Request: the request is well formed; the problem is permission\n  405 Method Not Allowed: DELETE is a valid method here; this user just may not use it\n\nWhy it matters: a 401 triggers a token refresh or a login redirect, which loops forever if you send it for a permission problem.",
     "practicality": 9
   },
   {
     "id": "cs-cors-preflight",
     "title": "CORS preflight",
-    "prompt": "A page on https://app.example.com runs this. The console says the request was blocked by CORS policy because the preflight response has no Access-Control-Allow-Origin header. The same POST works from curl. What happened?",
+    "prompt": "A page on https://app.example.com runs this. The console says the request was blocked by CORS policy. The same POST works from curl. What happened?",
     "code": "fetch(\"https://api.example.com/orders\", {\n  method: \"POST\",\n  headers: { \"Content-Type\": \"application/json\" },\n  body: JSON.stringify(order),\n})",
-    "options": ["The API rejected the JSON body; curl skips that validation", "The browser sent the POST, the API created the order, and the browser then hid the response", "The browser first sent an OPTIONS preflight; the API's reply didn't allow app.example.com, so the browser never sent the POST", "app.example.com must add Access-Control-Allow-Origin to its own pages' responses"],
+    "options": ["The API rejected the JSON body; curl skips that validation", "The browser sent the POST, the API created the order, and the browser then hid the response", "A preflight OPTIONS request was refused, so the browser never sent the POST", "app.example.com must add Access-Control-Allow-Origin to its own pages' responses"],
     "answer": 2,
-    "explanation": "CORS is enforced by the browser, not the server, which is why curl works. A cross-origin request that isn't \"simple\" (here, Content-Type: application/json) gets a preflight: the browser asks the API with OPTIONS first, and only sends the real request if the answer allows it.\n\nOPTIONS /orders                                  # sent by the browser automatically\nOrigin: https://app.example.com\nAccess-Control-Request-Headers: content-type\n\n# the API must answer with:\nAccess-Control-Allow-Origin: https://app.example.com\nAccess-Control-Allow-Methods: POST\nAccess-Control-Allow-Headers: Content-Type\n\nThe fix belongs on the API (api.example.com). The \"sent, then hidden\" option does happen, but only for simple requests that skip the preflight, such as a form-encoded POST: the server acts on it and the page just can't read the reply.",
+    "explanation": "Core problem: CORS is enforced by the browser, not the server, which is why curl works. A POST with Content-Type: application/json isn't \"simple\", so the browser first asks the API with an OPTIONS preflight, and only sends the real request if the answer allows it.\n\nbrowser -> OPTIONS /orders                        # preflight, sent automatically\n           Origin: https://app.example.com\n           Access-Control-Request-Headers: content-type\n\napi     -> must answer with:\n           Access-Control-Allow-Origin: https://app.example.com\n           Access-Control-Allow-Methods: POST\n           Access-Control-Allow-Headers: Content-Type\n\nIf the answer doesn't allow it, the browser never sends the POST.\n\nThe other options:\n  the API rejected the JSON body: the body was never sent, because the preflight failed first\n  the POST was sent, then hidden: that happens only for simple requests that skip the preflight, such as a form-encoded POST. This one is JSON\n  app.example.com must add the header: it goes on the API's responses, not the page's\n\nFix: allow the origin on the API (api.example.com).",
     "practicality": 8
   },
   {
@@ -403,7 +241,7 @@
     "code": "Cache-Control: no-cache",
     "options": ["Store it, but check with the server that it's still current before every reuse", "Never store it anywhere", "Store it in the browser only, never in a shared cache like a CDN", "Reuse it without asking until the browser is restarted"],
     "answer": 0,
-    "explanation": "no-cache doesn't mean \"don't cache\". It means a cache may keep the response but must revalidate it with the server (for example with If-None-Match and the ETag) before using it again. If nothing changed, the server answers 304 Not Modified and the stored copy is used.\n\nCache-Control: no-cache      # store, but revalidate every time\nCache-Control: no-store      # don't store at all: use this for sensitive data\nCache-Control: private       # browser may store it; shared caches (CDNs, proxies) may not\nCache-Control: max-age=60    # reuse for 60 seconds without asking\n\nFor balances you'd usually want private, no-store, or no-cache plus private, depending on whether a stale copy on disk is acceptable.",
+    "explanation": "Core problem: no-cache doesn't mean \"don't cache\". A cache may keep the response, but must revalidate it with the server before each reuse (for example with If-None-Match and the ETag). If nothing changed, the server answers 304 Not Modified and the stored copy is used.\n\nCache-Control: no-cache      # store, but revalidate every time\nCache-Control: no-store      # don't store at all: use this for sensitive data\nCache-Control: private       # browser may store it; shared caches (CDNs, proxies) may not\nCache-Control: max-age=60    # reuse for 60 seconds without asking\n\nThe other options are the other headers: \"never store it\" is no-store, \"browser only\" is private, and \"reuse without asking\" is max-age.\n\nFor balances you'd usually want private, no-store, or no-cache plus private, depending on whether a stale copy on disk is acceptable.",
     "practicality": 7
   },
   {
@@ -413,7 +251,7 @@
     "code": "location /reports/ {\n    proxy_pass http://app:8000;\n    proxy_read_timeout 60s;\n}",
     "options": ["500 Internal Server Error", "502 Bad Gateway", "503 Service Unavailable", "504 Gateway Timeout"],
     "answer": 3,
-    "explanation": "A 5xx from a proxy or load balancer says which side failed. 504 means the gateway (nginx) reached the app but the app didn't answer in time; the app may well finish the report afterwards, and nobody receives it.\n\n504 Gateway Timeout    # upstream too slow: raise the timeout, or make the work async (return 202 and poll)\n502 Bad Gateway        # upstream down, refused the connection, or sent a broken response (crashed, wrong port)\n503 Service Unavailable # overloaded or in maintenance, often sent on purpose with Retry-After\n500 Internal Server Error # the app itself threw an error\n\nWhen debugging, 502 and 504 point at the connection between proxy and app; 500 points into the app's own logs.",
+    "explanation": "Core problem: the app needs 75s, but nginx waits only 60s (proxy_read_timeout), so nginx gives up. That is a 504: the gateway reached the app, and the app didn't answer in time. The app may well finish the report afterwards, and nobody receives it.\n\n504 Gateway Timeout        # upstream too slow: raise the timeout, or make the work async (return 202 and poll)\n502 Bad Gateway            # upstream down, refused the connection, or sent a broken response (crashed, wrong port)\n503 Service Unavailable    # overloaded or in maintenance, often sent on purpose with Retry-After\n500 Internal Server Error  # the app itself threw an error\n\nWhen debugging, 502 and 504 point at the connection between proxy and app; 500 points into the app's own logs.",
     "practicality": 7
   },
   {
@@ -431,17 +269,17 @@
     "prompt": "During a flash sale, millions of requests hit one product page cached in Redis. The product's cache entry hits its TTL and is evicted, and database CPU spikes until the platform times out. What happened, and what fixes it?",
     "options": ["Cache penetration: add a Bloom filter in front of Redis to reject IDs that do not exist", "Cache stampede: lock per product ID so one request rebuilds the cache, the rest wait", "Cache avalanche: add random jitter to the TTL so keys do not all expire together", "Replication lag: add PostgreSQL read replicas to spread the read load"],
     "answer": 1,
-    "explanation": "A cache stampede is when a heavily requested key's TTL (time to live) runs out and many requests miss at once. Every one of them queries the database to rebuild the same entry, and that pile-up is the CPU spike. A lock scoped to that key lets one request rebuild it while the rest wait and read from the cache again.\n\nWithout a lock:\n  GET product:99 -> nil\n    # TTL ran out, the key is gone\n  10,000 requests miss\n    # each one queries PostgreSQL for product 99\n\nWith a lock on product 99:\n  request 1: takes lock:product:99\n    # queries PostgreSQL, then SETs product:99\n  requests 2..n: lock is taken\n    # sleep ~50ms, then GET product:99 again (now a hit)\n  requests for other products\n    # use other lock keys, so they are not held up\n\nSimilar names, different problems:\n  avalanche\n    # many keys expire together; jittered TTLs fix that,\n    # but one hot key still stampedes\n  penetration\n    # keys that exist nowhere, cache or database; a Bloom filter\n    # fixes that, but product 99 does exist\n\nRead replicas spread the load but do not stop thousands of identical queries; the lock does.",
+    "explanation": "Core problem: a cache stampede. A hot key's TTL runs out, many requests miss at once, and every one of them queries the database to rebuild the same entry. That pile-up is the CPU spike.\n\nFix: a lock per key, so one request rebuilds the entry while the rest wait and read it from the cache.\n\nwithout a lock:\n  10,000 requests miss   # each one queries PostgreSQL for product 99\nwith a lock on product 99:\n  request 1              # takes lock:product:99, queries once, then SETs product:99\n  requests 2..n          # lock is taken: sleep ~50ms, then GET product:99 (now a hit)\n  other products         # use other lock keys, so they are not held up\n\nThe other options:\n  cache avalanche: many different keys expire together. Jittered TTLs fix that, but one hot key still stampedes\n  cache penetration: requests for keys that exist nowhere, cache or database. A Bloom filter fixes that, but product 99 does exist\n  replication lag: replicas spread the load, but don't stop thousands of identical queries",
     "practicality": 6
   },
   {
     "id": "cs-cache-aside-stale-write",
     "title": "Stale write after DEL",
     "prompt": "Thread A updates the row, then deletes `product:99` from the cache. Slow thread B read the old row before the update and fills the cache after the delete. The cache now serves old data. What consistently stops this?",
-    "code": "B: read product 99 from DB       # sees version 7\nA: UPDATE product 99             # now version 8\nA: DEL product:99\nB: SET product:99 = version 7    # stale data is back in the cache",
-    "options": ["Shorten the TTL so stale entries expire sooner","Delete the key a second time after a short delay","Store a version with each entry and reject a cache write older than what is already there","Read from a database replica so reads never see old data"],
+    "code": "B: read product 99 from DB       # sees version 7\nA: UPDATE product 99             # now version 8\nA: DEL product:99                # the key is now empty\nB: SET product:99 = version 7    # stale data is back in the cache",
+    "options": ["Shorten the TTL so stale entries expire sooner","Delete the key a second time after a short delay","Replace the delete with a versioned marker; reject writes with an older version","Read from a database replica so reads never see old data"],
     "answer": 2,
-    "explanation": "A plain DEL leaves nothing to compare against, so B's late SET wins. Give every entry a version from the database and make the cache fill conditional: write only if the incoming version is newer than what is stored.\n\nA: UPDATE product 99 -> version 8\nA: SET product:99 = tombstone v8   # instead of DEL, so a version exists to compare against\nB: SET product:99 = old data v7    # compare-and-set sees 7 < 8 and rejects it\nB: next read misses and refills from the database at v8\n\nIn Redis, do the compare and the SET in one Lua script, or the check itself can race.\n\nThe other options only narrow the window:\n  delete again after a delay\n    # a mitigation, not a fix: it works only if B finishes before the second delete,\n    # and a slower B (a GC pause, a slow query) still writes stale data afterwards\n  shorter TTL\n    # the stale entry still lives until it expires\n  read replicas\n    # replicas lag the primary, so B reads old data more often, not less",
+    "explanation": "Core problem: DEL leaves nothing to compare against.\n\nFix in two parts:\n1. Replace DEL with a tombstone: a soft-delete marker that keeps the database version after the data is gone.\n2. Make every cache fill conditional: write only if the incoming version is newer than what is stored, as one atomic step.\n\nwith DEL:\nA: DEL product:99                  # key is empty: nothing to compare against\nB: SET product:99 = old data v7    # accepted: stale data is back\n\nwith a tombstone:\nA: SET product:99 = tombstone v8   # the version stays after the data is gone\nB: SET product:99 = old data v7    # compare-and-set sees 7 < 8 and rejects it\nnext read: sees the tombstone, misses, refills from the database at v8\n\nGive the tombstone a TTL longer than your slowest read, or a late write can slip in once it expires.\n\nThe other options only mitigate the problem by narrowing the window:\n  delete again after a delay: fails if B is slower than the delay\n  shorter TTL: the stale entry lives until it expires\n  read replicas: replicas lag the primary, so B reads old data more often",
     "practicality": 6
   },
   {
@@ -461,7 +299,7 @@
     "code": "10:00  a resolver caches www.example.com = 203.0.113.10 (TTL 24h)\n12:00  you lower the TTL to 60s\n13:00  you switch the record to 198.51.100.20\n13:05  that resolver still answers 203.0.113.10",
     "options": ["Browsers cache DNS answers for 24h whatever the TTL says","DNS changes spread outward from the root servers, which takes up to 24h","A resolver that already cached the old record keeps it until its old 24h TTL runs out","Your authoritative server keeps serving the old IP until its own cache expires"],
     "answer": 2,
-    "explanation": "Updating the TTL does not push it to resolvers that already cached the record. They still hold the old copy with the old 24h countdown, and they won't see the 60s value until it runs out. A TTL is a countdown that starts when a resolver fetches the record, using the TTL it was given at that moment, so lowering a TTL only helps once the old TTL has expired everywhere. Lower it at least one full old TTL before the migration.\n\n10:00  cached with TTL 24h          # expires tomorrow 10:00, whatever you change now\n12:00  you lower the TTL to 60s     # applies only to answers fetched from now on\n13:00  you switch the IP            # that resolver still holds the old one\n10:00 next day: its copy expires    # 21 hours after cutover; one cached at 11:59 would hold it until 11:59 next day, 23h after\n\nCommon wrong ideas:\n  authoritative servers\n    # they answer from the zone and don't cache it, so they switch the moment you change it\n  the plan\n    # lower the TTL 24h ahead, migrate, then raise it again once the new IP is stable",
+    "explanation": "Core problem:\n1. A resolver's countdown starts as soon as it fetches the record, using the TTL it was given then.\n2. Changes to the TTL do NOT push to resolvers that already cached the record. They keep the old 24h countdown and won't see the new value until it runs out.\n\nFix: lower the TTL at least one full old TTL (24h) before the migration.\n\n10:00  cached with TTL 24h          # expires tomorrow 10:00\n12:00  you lower the TTL to 60s     # applies only to answers fetched from now on\n13:00  you switch the IP            # that resolver still holds the old one\n10:00 next day: its copy expires    # 21 hours after cutover; one cached at 11:59 would hold it until 11:59 next day, 23h after\n\nThe other options:\n  browsers cache DNS for 24h: browsers keep answers for about a minute, not 24h\n  changes spread from the root servers: nothing is pushed; each resolver refetches only when its own copy expires\n  the authoritative server keeps the old IP: this server has the new IP immediately. It never keeps the old record, because this is where you made the IP change. The old IP is stuck at resolvers that cached it",
     "practicality": 8
   },
   {
@@ -470,7 +308,7 @@
     "prompt": "A recursive resolver with an empty cache looks up `www.example.com`. Which sequence of servers does it ask, and in what order?",
     "options": ["The example.com server, then the .com server, then a root server","A .com server, then a root server, then the example.com server","A root server, which knows every domain and returns the IP directly","A root server, then a .com server, then the example.com server"],
     "answer": 3,
-    "explanation": "The resolver starts at the top and gets pointed one level down at each step. A root server doesn't know the IP, only who runs .com. The .com server doesn't know it either, only who runs example.com. Only that last server, the domain's authoritative server, returns the real answer.\n\nroot server         -> \"ask the .com servers\" (a.gtld-servers.net ...)    # a referral, not an answer\n.com server         -> \"ask hera.ns.cloudflare.com ...\" for example.com   # another referral\nexample.com server  -> www.example.com A 172.66.147.243                  # the actual answer\n\nOnce cached, later lookups skip the top levels: the resolver keeps each referral for its own TTL, so a warm cache goes straight to the example.com server, or answers locally.",
+    "explanation": "Core problem: no single server knows the answer. Each one only points the resolver one level down.\n\nroot server         -> \"ask the .com servers\"            # a referral, not an answer\n.com server         -> \"ask the example.com servers\"     # another referral\nexample.com server  -> www.example.com A 172.66.147.243  # the actual answer, from the authoritative server\n\nWith a warm cache the resolver skips the top steps, because it keeps each referral for its own TTL.",
     "practicality": 5
   },
   {
@@ -478,29 +316,29 @@
     "title": "Retrying a timed-out POST",
     "prompt": "A client times out on `POST /charge` and can't tell whether the server processed it. `GET`, `PUT` and `DELETE` can be retried automatically, but a retried `POST` could charge the customer twice. What makes the retry safe?",
     "code": "POST /charge\n{ \"amount\": 4200, \"card\": \"tok_123\" }\n-> no response (timeout)",
-    "options": ["Retry with exponential backoff and jitter","Put a fresh request ID on each attempt and log it on the server","Send Cache-Control: no-store so the retry always reaches the server","Send an Idempotency-Key created once per charge and reused on every retry; the server stores the first result and replays it"],
+    "options": ["Retry with exponential backoff and jitter","Put a fresh request ID on each attempt and log it on the server","Before retrying, look for an existing charge with the same amount and card, and skip the retry if one exists","Send one Idempotency-Key per charge, reused on every retry; the server replays the first result"],
     "answer": 3,
-    "explanation": "A timeout doesn't tell you whether the charge ran, so retrying a non-idempotent POST blindly can create it twice. GET, HEAD, PUT, DELETE and OPTIONS are idempotent by spec, so clients and proxies may retry them. POST is not. An Idempotency-Key makes it behave like one: the client creates the key once per charge and sends the same key on every retry, and the server stores the key with the first outcome and returns that stored result when it sees the key again.\n\nattempt 1: POST /charge  Idempotency-Key: k-81f3   # server charges, stores k-81f3 -> 201 ch_1; reply is lost\nattempt 2: POST /charge  Idempotency-Key: k-81f3   # server finds k-81f3, returns 201 ch_1; no second charge\nattempt 3 with a new key                           # looks like a new charge, so it charges again\n\nBackoff only spaces retries out and doesn't stop duplicates. A fresh request ID per attempt is good for tracing, but the server can't tell the attempts are the same charge.",
+    "explanation": "Core problem: after a timeout you can't tell whether the charge ran, and POST is not idempotent, so a blind retry can charge twice.\n\nFix: an Idempotency-Key. The client creates one key per charge and sends it on every retry. The server stores the key with the first result and replays that result when it sees the key again.\n\nattempt 1: POST /charge  Idempotency-Key: k-81f3   # server charges, stores k-81f3 -> 201 ch_1; reply is lost\nattempt 2: POST /charge  Idempotency-Key: k-81f3   # server finds k-81f3, returns 201 ch_1; no second charge\nattempt 3 with a new key                           # looks like a new charge, so it charges again\n\nThe other options:\n  backoff and jitter: spaces retries out, but doesn't stop duplicates\n  a fresh request ID per attempt: good for tracing, but the server can't tell the attempts are the same charge\n  matching on amount and card: two real purchases of the same amount look identical, and the check can race with the charge",
     "practicality": 9
   },
   {
     "id": "cs-feed-fanout-celebrity",
     "title": "Celebrity fan-out",
-    "prompt": "A user with 20 million followers posts on a fan-out-on-write system, and the write queues back up. What is the best fix? Fan-out-on-write copies each new post into every follower's stored feed when it is published. Fan-out-on-read builds a feed from the accounts you follow when it is opened.",
+    "prompt": "A user with 20 million followers posts on a fan-out-on-write system (each new post is copied into every follower's stored feed when it is published), and the write queues back up. What is the best fix?",
     "code": "normal user posts (300 followers)   -> 300 feed writes\ncelebrity posts (20M followers)     -> 20,000,000 feed writes",
     "options": ["Keep fan-out-on-write for everyone and add more queue partitions","Switch every user to fan-out-on-read, building each feed when it is opened","Keep fan-out-on-write for normal accounts, and merge huge accounts' posts into the feed at read time","Publish one global feed to a CDN and personalize it on the client"],
     "answer": 2,
-    "explanation": "A post's write cost is the author's follower count, while a feed's read cost is only the number of accounts the reader follows. Fan-out-on-write keeps reads cheap, but one celebrity post becomes 20 million writes. So skip the fan-out for the few huge accounts and keep it for everyone else. Each time a feed is loaded, merge the reader's stored feed with the latest posts from the huge accounts they follow. The celebrity's post is never copied into each follower's feed.\n\nnormal user posts (300 followers)   -> 300 writes        # fan-out-on-write, cheap\ncelebrity posts (20M followers)     -> 1 write           # stored once, in their own post list\nreader opens feed                   -> 1 feed lookup + latest posts of a handful of followed celebrities, merged by time\n                                                         # repeated on every load, but a reader follows few huge accounts\n\nThe other options fail for specific reasons:\n  more partitions\n    # spreads the 20M writes out but does not shrink them; the cost still grows with followers\n  fan-out-on-read for everyone\n    # feeds are opened far more often than people post, and every open queries and merges hundreds of accounts\n  one global feed on a CDN\n    # a feed differs per reader, so one shared copy cannot hold it",
+    "explanation": "Core problem: a post's write cost grows with the author's follower count, so one celebrity post becomes 20 million writes.\n\nFix: a hybrid.\n1. Normal accounts: fan-out-on-write as before, so reads stay cheap.\n2. Huge accounts: no fan-out. The post is stored once, in their own post list.\n3. When a feed is opened: take the reader's stored feed and merge in the latest posts from the huge accounts they follow.\n\nnormal user posts (300 followers)   -> 300 writes   # fan-out-on-write, cheap\ncelebrity posts (20M followers)     -> 1 write      # stored once, not copied to followers\nreader opens feed                   -> 1 feed lookup + the latest posts of a few followed celebrities, merged by time\n\nThe other options:\n  more partitions: spreads the 20M writes out, but doesn't shrink them\n  fan-out-on-read for everyone: feeds are opened far more often than people post, and every open queries and merges hundreds of accounts\n  one global feed on a CDN: a feed differs per reader, so one shared copy can't hold it",
     "practicality": 5
   },
   {
     "id": "cs-n-plus-one",
     "title": "One query per row",
     "prompt": "This page shows 50 posts with their authors. It is slow. How many queries run, and what is the fix?",
-    "code": "posts = query(\"SELECT id, title, author_id FROM posts LIMIT 50\")\nfor post in posts:\n    author = query(\"SELECT name FROM users WHERE id = ?\", post.author_id)\n    print(post.title, author.name)",
+    "code": "posts = query(\"SELECT id, title, author_id FROM posts LIMIT 50\")\nfor post in posts:\n    author = query(\"SELECT name FROM authors WHERE id = ?\", post.author_id)\n    print(post.title, author.name)",
     "options": ["50 queries; add an index on author_id","51 queries; raise the connection pool size so they run in parallel","51 queries; fetch all the authors in one query, with a join or WHERE id IN (...)","51 queries; show 10 posts per page instead of 50"],
     "answer": 2,
-    "explanation": "The loop runs a query for every post, on top of the one that fetched the posts: 1 + 50 = 51 round trips. Each query is fast, but the round trips add up, and the count grows with the page size. Fetch all the authors in one query, then match them to the posts in memory, or use a join. ORMs hide this: a lazily loaded relation looks like a plain attribute but runs a query.\n\nSELECT id, title, author_id FROM posts LIMIT 50    # 1 query\nSELECT name FROM users WHERE id = 7                # post 1's author\nSELECT name FROM users WHERE id = 3                # post 2's author ... 50 times\n\nfixed:\nSELECT id, title, author_id FROM posts LIMIT 50\nSELECT id, name FROM users WHERE id IN (7, 3, ...)    # 2 queries in total\n\nThe other fixes leave the problem in place:\n  an index\n    # each lookup is faster, but there are still 50 of them\n  a bigger pool\n    # they run in parallel, but it is still 51 queries\n  fewer posts per page\n    # 11 queries instead of 51, and the same shape",
+    "explanation": "This is an N+1 problem: one query for the posts\n\nSELECT id, title, author_id FROM posts LIMIT 50\n\nand one more per post for its author, because the query sits inside the loop\n\nfor post in posts:                                       # 50 posts, so 50 iterations\n    SELECT name FROM authors WHERE id = post.author_id   # runs once per iteration\n\nWe already have the author id on each post, but we are looking for the author's name, and that is a separate lookup: 1 + 50 = 51 queries.\n\nFix: fetch all the authors in one query, with a join or WHERE id IN (...), and match them to the posts in memory:\n\nSELECT id, title, author_id FROM posts LIMIT 50\nSELECT id, name FROM authors WHERE id IN (7, 3, ...)    # 2 queries in total\n\nThe other fixes leave the problem in place:\n  an index\n    # each lookup is faster, but there are still 50 of them\n  a bigger pool\n    # they run in parallel, but it is still 51 queries\n  fewer posts per page\n    # 11 queries instead of 51, and the same shape",
     "practicality": 8
   },
   {
@@ -508,7 +346,7 @@
     "title": "Adding an index",
     "prompt": "A `users` table has 10 million rows. This query takes about 2 seconds, and `EXPLAIN` shows a full table scan. What does adding an index on `email` change, and what does it cost?",
     "code": "SELECT * FROM users WHERE email = 'ada@example.com';",
-    "options": ["Rows are re-sorted on disk by email, so every other query on the table gets faster too, at no cost","The result is cached after the first run, so repeat queries are instant, at the cost of memory","The database jumps straight to the matching row, and the index is built once and never needs updating afterwards","The database walks a B-tree to the row instead of checking every row; it costs disk space and makes every INSERT and UPDATE of that column slower"],
+    "options": ["Rows are re-sorted on disk by email, so every other query on the table gets faster too, at no cost","The result is cached after the first run, so repeat queries are instant, at the cost of memory","The database jumps straight to the matching row, and the index is built once and never needs updating afterwards","The database walks a B-tree instead of scanning every row; it costs disk space and slows writes to that column"],
     "answer": 3,
     "explanation": "Without an index, the database reads every row and compares each email, so the work grows with the table. An index is a separate sorted structure (usually a B-tree) on email, so it can walk a few levels straight to the matching row. The price is that every write also has to update the index, and the index takes up space, so index the columns you filter and join on, not everything.\n\nno index      -> read all 10,000,000 rows, compare each email       # grows with the table\nwith index    -> walk the B-tree: about 4 page reads to the row     # grows very slowly\nINSERT a user -> write the row AND update the email index           # the cost\n\nLookups through a B-tree are O(log n), not O(1). A hash index is O(1) for exact matches, but it cannot do ranges or ORDER BY, which is why the B-tree is the usual default.\n\nAn index isn't always used. WHERE LOWER(email) = ... and LIKE '%example.com' can't use a plain index on email, so they still scan.",
     "practicality": 8
@@ -520,7 +358,7 @@
     "code": "key = Point(1, 2)\ntable[key] = \"a\"\nkey.x = 5\ntable.get(key)\ntable.get(Point(1, 2))",
     "options": ["\"a\" and \"a\"","\"a\" and not found","not found and \"a\"","not found and not found"],
     "answer": 3,
-    "explanation": "The table filed the entry in a slot chosen by the hash of the key at insert time, and it stores a reference to your object, not a copy. Changing key.x doesn't move the entry, but it does change the stored key. Both lookups then fail, for different reasons.\n\ntable[key] = \"a\"          # hash(1, 2) picks slot H1; the entry holds a reference to key\nkey.x = 5                 # the stored key is now (5, 2), but the entry stays in slot H1\ntable.get(key)            # hash(5, 2) picks a different slot H2: nothing there\ntable.get(Point(1, 2))    # hash(1, 2) picks slot H1: found, but the stored key is now (5, 2), which does not equal (1, 2)\n\nSo the first lookup goes to the wrong slot, and the second goes to the right slot but the key no longer matches. Even a fresh Point(5, 2) fails, because it hashes to H2. The entry is still in the table, and it only turns up if you iterate over it.\n\nUse immutable values as keys, or never change the fields that feed the hash once a key is in a table.",
+    "explanation": "A hash table does two steps for every lookup:\n1. Find the slot: it hashes the key to pick one.\n2. Compare keys: it compares the key stored in that slot with the key you passed in.\n\nThe core problem is that the table keeps a reference to your key, NOT a copy, and that reference is stored together with the value as one entry. So changing key.x changes the stored key, but does NOT move the entry to a new slot. Both lookups then fail, at different steps.\n\ntable[key] = \"a\"          # hash(1, 2) picks slot H1; the entry in H1 is (reference to key, \"a\")\nkey.x = 5                 # the key inside the entry now reads (5, 2), but the entry stays in H1\ntable.get(key)            # step 1: hash(5, 2) picks slot H2, which is empty: not found\ntable.get(Point(1, 2))    # step 1: hash(1, 2) picks H1, found the right slot. BUT step 2: the key in H1 is now (5, 2), which does not equal (1, 2): not found\n\nThe first lookup fails at step 1 (wrong slot). The second fails at step 2 (right slot, but the key does not match). Even a fresh Point(5, 2) fails, because it hashes to H2.\n\nUse immutable values as keys, or never change the fields that feed the hash once a key is in a table.",
     "practicality": 8
   },
   {
@@ -530,16 +368,16 @@
     "code": "queue = [item_1, item_2, ..., item_n]\nwhile queue is not empty:\n    item = queue.remove_first()\n    process(item)",
     "options": ["O(n), because each removal is a single step","O(n log n), because the array reorders itself after each removal","O(n²), because each removal shifts every remaining item one place left","O(n), because the array gets shorter, so later removals cost less"],
     "answer": 2,
-    "explanation": "Removing the first item from an array isn't free. The items sit in consecutive slots, so every remaining item has to move one slot left to close the gap. That's n-1 moves for the first removal, n-2 for the second, and so on: (n-1) + (n-2) + ... + 1, which adds up to about n²/2 moves, so O(n²). It looks like it should be O(n) because the array shrinks, but the shrinking only halves the total. It doesn't change the growth: double n and the work quadruples.\n\n[a, b, c, d]\nremove_first -> [b, c, d]    # b, c, d each moved left: 3 moves\nremove_first -> [c, d]       # 2 moves\nremove_first -> [d]          # 1 move\nn = 100,000                  # about 5,000,000,000 moves in total\n\nWays to avoid it:\n  a deque (double-ended queue)\n    # removes from the front in O(1)\n  an index that moves forward (i += 1)\n    # instead of removing anything\n  removing from the end\n    # already O(1), because nothing has to shift",
+    "explanation": "Core problem: removing the first item from an array shifts every remaining item one slot left to close the gap. So each removal costs up to n moves, and draining n items is O(n²).\n\n[a, b, c, d]\nremove_first -> [b, c, d]    # b, c, d each moved left: 3 moves\nremove_first -> [c, d]       # 2 moves\nremove_first -> [d]          # 1 move\nn = 100,000                  # about 5,000,000,000 moves in total\n\nAdding up (n-1) + (n-2) + ... + 1 gives about n²/2 moves. Double n and the work quadruples.\n\nThe other options:\n  O(n), a single step: each removal shifts every remaining item, so it is n steps, not one\n  O(n log n), the array reorders itself: nothing is sorted, the items just slide left\n  O(n), later removals cost less: true, but it only halves the total (n²/2, not n²)\n\nFix: use a deque, which removes from the front in O(1), or move an index forward (i += 1) instead of removing anything.",
     "practicality": 8
   },
   {
     "id": "cs-top-k-min-heap",
     "title": "Top 10 from a stream",
     "prompt": "100 million numbers arrive one at a time, and you can't keep them all in memory. You need the 10 largest. Which approach works?",
-    "options": ["Sort the whole stream, then take the last 10","Put every number in a max-heap, then pop 10 times","Keep a max-heap of size 10, so the largest number is always on top","Keep a min-heap of size 10, and replace its smallest number whenever a bigger one arrives"],
+    "options": ["Sort the whole stream, then take the last 10","Put every number in a max-heap, then pop 10 times","Keep a max-heap of size 10, and replace its top whenever a bigger number arrives","Keep a min-heap of size 10; replace its smallest number whenever a bigger one arrives"],
     "answer": 3,
-    "explanation": "You only need to remember the 10 best numbers so far. For each new number the question is \"does it beat the weakest of my current 10?\", and the weakest is the smallest. A min-heap keeps its smallest number on top, ready to compare and replace. It looks backwards to use a min-heap to find the largest, but the heap's job is to guard the cut-off, not to hold the best.\n\nheap = min-heap holding the first 10 numbers\nfor each number x that arrives:\n    if x > heap.smallest:          # beats the weakest of the current top 10\n        heap.replace_smallest(x)   # costs log 10, a handful of steps\n# at the end the heap holds the 10 largest\n\nEach number costs one comparison and at most one tiny replacement, so the total is about O(n) time and only 10 numbers of memory. Sorting everything is O(n log n) time and O(n) memory.\n\nA max-heap of 10 puts the largest number on top, which is the one you don't need. To decide whether a new number belongs, you'd compare against the smallest, and that one is buried. The natural rule with a max-heap (\"replace the top when a smaller one arrives\") keeps the 10 smallest instead.",
+    "explanation": "Core problem: you only need to remember the 10 best numbers so far, and every new number must beat the weakest of them, which is the smallest.\n\nFix: a min-heap of size 10 always puts the weakest number on top. We can always be sure we are removing the smallest number.\n\nKeeping the 3 largest from the stream 5, 9, 2, then 11:\n\nmin-heap {5, 9, 2}, smallest on top (2):\n  11 arrives: 11 > 2, replace 2   -> {5, 9, 11}   # correct: the 3 largest\n\nWhy not a max-heap? It puts the best number on top, but the one you need to compare with and remove is the weakest.\n\nmax-heap {5, 9, 2}, largest on top (9):\n  11 arrives: 11 > 9, replace 9   -> {5, 2, 11}   # wrong: threw away 9, kept 2\n\nEach number costs one comparison and at most one small replacement, so about O(n) time and only 10 numbers of memory.\n\nThe other options (sorting, or a max-heap of every number) need all 100 million numbers in memory.",
     "practicality": 7
   },
   {
@@ -549,7 +387,7 @@
     "code": "nums = [2, 4, 6]\nfor x in nums:\n    if x is even:\n        nums.remove(x)\nprint(nums)",
     "options": ["[4]","[]","[4, 6]","An error, because the list changed during the loop"],
     "answer": 0,
-    "explanation": "Removing an item shifts everything after it one place left, but the loop still moves on to the next position. So the item that slid into the gap is never looked at.\n\nposition 0: x = 2   # even, removed; the list is now [4, 6]\nposition 1: x = 6   # 4 slid into position 0, so position 1 is now 6; even, removed; the list is now [4]\nposition 2:         # past the end, so the loop stops. 4 was never checked.\n\nFix it by building a new list ([x for x in nums if x is odd]), looping over a copy, or looping backwards. Some languages throw an error here instead, but either way: don't change a list while you loop over it.",
+    "explanation": "Core problem: removing an item shifts everything after it one place left, but the loop still moves on to the next position. So the item that slid into the gap is never looked at.\n\nposition 0: x = 2   # even, removed; the list is now [4, 6]\nposition 1: x = 6   # 4 slid into position 0, so position 1 is now 6; even, removed; the list is now [4]\nposition 2:         # past the end, so the loop stops. 4 was never checked.\n\nThe other options:\n  []: needs 4 to be checked and removed, but it never was\n  [4, 6]: needs 6 to survive, but it was checked and removed\n  an error: a loop by position doesn't raise one here, though some languages and collections do\n\nFix: build a new list ([x for x in nums if x is odd]), loop over a copy, or loop backwards. Don't change a list while you loop over it.",
     "practicality": 8
   },
   {
@@ -559,7 +397,7 @@
     "code": "[1, 3, 2, 7, 4]",
     "options": ["It is not a valid heap, because it is not sorted","It is a valid heap, and reading it left to right gives sorted order","It is a valid heap, and the second smallest value is always at index 1","It is a valid min-heap, but not sorted: only each parent is smaller than its children"],
     "answer": 3,
-    "explanation": "A heap only promises one thing: every parent is no bigger than its children. The two children of a node have no order between them, so 3 can sit before 2. Here the second smallest value is 2, at index 2, not index 1.\n\n        1\n      /   \\\n     3     2        # siblings: no order between them\n    / \\\n   7   4\n\nThe smallest is always at the root, but nothing else is in order. To get sorted values you pop repeatedly (1, 2, 3, 4, 7), which is how heap sort works. A binary search tree is different: there, left < node < right.",
+    "explanation": "Core problem: a heap promises only that every parent is no bigger than its children. It does not sort the array.\n\n        1\n      /   \\\n     3     2        # siblings: no order between them\n    / \\\n   7   4\n\nThe other options:\n  not valid because it isn't sorted: a heap doesn't need to be sorted\n  sorted left to right: 3 comes before 2\n  second smallest always at index 1: here it is 2, at index 2\n\nTo get sorted values you pop repeatedly (1, 2, 3, 4, 7), which is how heap sort works.",
     "practicality": 6
   },
   {
@@ -568,14 +406,14 @@
     "prompt": "Users are stored in a hash map keyed by username. How do you find every username from \"ada\" to \"adz\" alphabetically?",
     "options": ["Ask the map for the keys between \"ada\" and \"adz\", since it keeps its keys in order","Hash \"ada\" and \"adz\" and read the slots between them","Scan every entry, or keep a sorted structure (a sorted array or a B-tree) and walk from \"ada\" to \"adz\"","Make the table bigger so alphabetically close names land in nearby slots"],
     "answer": 2,
-    "explanation": "A hash function scatters keys on purpose. \"ada\" and \"adb\" are next to each other alphabetically but land in unrelated slots. A hash map is excellent at \"find this exact key\" and has no idea which keys sit between two others, so the only way to get a range from it is to check every entry, which gets slower as the map grows.\n\nslot(\"ada\") -> 9    slot(\"adb\") -> 0    slot(\"adc\") -> 3    slot(\"add\") -> 7    # for example: no pattern\n\nA sorted structure keeps neighbours together. With a sorted array, binary search to \"ada\" and walk until you pass \"adz\", so you only touch the names in the range. A B-tree does the same, which is why databases use B-tree indexes for BETWEEN and ORDER BY.",
+    "explanation": "Core problem: a hash function scatters keys on purpose, so names that are neighbours alphabetically land in unrelated slots.\n\nslot(\"ada\") -> 9    slot(\"adb\") -> 0    slot(\"adc\") -> 3    slot(\"add\") -> 7    # for example: no pattern\n\nA hash map is excellent at \"find this exact key\" and has no idea which keys sit between two others. A range means checking every entry, which gets slower as the map grows.\n\nFix: a sorted structure keeps neighbours together. With a sorted array, binary search to \"ada\" and walk until you pass \"adz\", touching only the names in the range. A B-tree does the same, which is why databases use B-tree indexes for BETWEEN and ORDER BY.\n\nThe other options:\n  ask the map for the keys in between: it doesn't keep its keys in order\n  hash \"ada\" and \"adz\" and read the slots between: those slots hold unrelated names\n  make the table bigger: a bigger table doesn't make the hash preserve order",
     "practicality": 7
   },
   {
     "id": "cs-offset-deep-pages",
     "title": "Deep pages",
-    "prompt": "An API lists orders 20 at a time, sorted by the indexed `id`. Page 1 returns in 2 ms. How does the page at offset 1,000,000 compare, and why?",
-    "code": "SELECT * FROM orders ORDER BY id LIMIT 20 OFFSET 1000000",
+    "prompt": "An API lists orders 20 per page, sorted by the indexed `id`. The orders table has 50 million rows. A client requests page 1, which takes 2 ms. Then it requests a deep page by skipping the first 1,000,000 rows with an offset. How long does the deep page take compared with page 1, and why?",
+    "code": "# page 1\nGET /orders?limit=20&offset=0          # 2 ms\n\n# a page deep in the list: skips the first 1,000,000 rows\nGET /orders?limit=20&offset=1000000\n\n# the query the server runs for the deep page\nSELECT * FROM orders ORDER BY id LIMIT 20 OFFSET 1000000",
     "options": ["Much slower: the database still walks past the first 1,000,000 rows and throws them away","About the same: the index jumps straight to row 1,000,000","Slightly slower, because the larger number takes longer to parse","Faster: fewer rows are left after the offset"],
     "answer": 0,
     "explanation": "OFFSET n doesn't jump to row n. The database has to count its way past n rows to find where the page starts, so the cost grows with how deep you go: page 1 reads 20 rows, but the page at offset 1,000,000 reads 1,000,020 rows and returns only the last 20. The fix is keyset pagination: remember the last id you returned and ask for the rows after it, which uses the index to start at the right place.\n\npage 1:              LIMIT 20 OFFSET 0         # reads 20 rows\noffset 1,000,000:    LIMIT 20 OFFSET 1000000   # reads 1,000,020 rows, throws away a million\n\nkeyset:\nSELECT * FROM orders WHERE id > 1000000 ORDER BY id LIMIT 20    # starts at the right place: same cost on every page\n\nThe trade-off: keyset pagination can't jump straight to \"page 37\", only to the next and previous pages, and it needs a unique, ordered column to key on.",
@@ -585,9 +423,9 @@
     "id": "cs-backoff-jitter",
     "title": "Backoff without jitter",
     "prompt": "A service is down for 10 seconds. 10,000 clients each retry with exponential backoff (wait 1s, 2s, 4s, 8s...). The service comes back and falls over again within seconds. What is missing?",
-    "options": ["Random jitter: clients that failed together all retry at the same instants","A longer maximum backoff","More retries per client","A shorter timeout on each request"],
+    "options": ["Random jitter, so clients stop retrying at the same instants","A longer maximum backoff, so the retries spread over a wider window","More retries per client, so more of them eventually get through","A shorter timeout on each request, so failed attempts return sooner"],
     "answer": 0,
-    "explanation": "All 10,000 clients failed at the same moment, so exponential backoff gives them all the same schedule. Backoff spaces the waves out, but it doesn't spread the clients within a wave: every client retries at 1s, 3s, 7s and 15s. The service comes back at 10s, and the next wave, at 15s, is all 10,000 requests in a single second. Adding random jitter, so each client waits a random time up to its backoff value, spreads the clients across the whole window.\n\nno jitter:    10,000 requests at 1s, 3s, 7s, 15s   # the wave at 15s hits the recovered service all at once\nfull jitter:  retries spread over each window      # roughly 1,500 requests a second at worst after recovery\n\nwait = random(0, backoff)    # instead of exactly backoff\n\nThe other options keep the clients in lockstep. More retries or a longer maximum backoff just make the waves bigger and later, and a shorter timeout doesn't change when they retry.",
+    "explanation": "Core problem: all 10,000 clients failed at the same moment, so exponential backoff gives them all the same schedule. Backoff spaces the waves out, but not the clients within a wave.\n\nFix: random jitter. Each client waits a random time up to its backoff value, which spreads the retries out.\n\nno jitter:    10,000 requests at 1s, 3s, 7s, 15s   # the wave at 15s hits the recovered service all at once\nwith jitter:  retries spread across each window    # the same 10,000 requests arrive over seconds, not in one instant\n\nwait = random(0, backoff)    # instead of exactly backoff\n\nThe other options:\n  longer maximum backoff: the waves come later and are just as big\n  more retries per client: more load, and still in lockstep\n  shorter timeout: doesn't change when the clients retry",
     "practicality": 8
   }
 ]
