@@ -14,8 +14,22 @@ export enum Client {
   ClaudeDesktop = 'desktop',    // the Claude desktop app's Code tab
 }
 
+/** The marks the quiz draws: beside the right answer and a wrong pick, and the Enter key in the hint bar. */
+export type Glyphs = { right: string; wrong: string; enter: string }
+
+const UNICODE_GLYPHS: Glyphs = { right: '✓', wrong: '✗', enter: '⏎' }
+
+// A Windows console window (cmd, PowerShell) draws in Consolas or Lucida Console, which have no ✓ ✗ ⏎, and
+// shows each as a boxed "?". These three are in both, and in Windows Terminal's Cascadia Mono; Claude Code
+// itself marks a pass with √ on Windows.
+export const WINDOWS_GLYPHS: Glyphs = { right: '√', wrong: '×', enter: 'enter:' }
+
 /** What biteq does differently per client. Add a field here rather than a client check at a call site. */
 export type ClientTraits = {
+  /** The pane is drawn in the terminal's own font, so on Windows it takes WINDOWS_GLYPHS (traitsOf). */
+  terminalFont: boolean
+  /** The marks it draws; UNICODE_GLYPHS unless traitsOf swapped them. */
+  glyphs: Glyphs
   /** Buttons answer to letter hotkeys (a–d, n, z, q) and show them; ctrl+x tab gives the pane the keyboard. */
   hotkeys: boolean
   /** Next/Skip and Banks are a hint bar on the pane's bottom row, pressed by hotkey and kept out of the focus ring. */
@@ -36,7 +50,11 @@ export type ClientTraits = {
   autoFocus: boolean
   /** The quiz is drawn by the surface module quiz-client.tsx. */
   clientModule: boolean
-  /** A new wait asks for the pane's keyboard (the composer is empty then), so the first click is a press. */
+  /**
+   * A new wait asks for the pane's keyboard (the composer is empty then): on the desktop the first click is a
+   * press; in the CLI a-d answer at once, without ctrl+x tab (hard to find, and a click in a Windows console
+   * selects text instead). The engine refuses it over a half-typed prompt or a dialog; Esc hands the keys back.
+   */
   focusOnWait: boolean
   /** The pane offers its own close: a Close button, or the CLI hint bar's q: close. The desktop pane's X does that. */
   closeButton: boolean
@@ -46,11 +64,13 @@ export type ClientTraits = {
 
 export const TRAITS: Record<Client, ClientTraits> = {
   [Client.ClaudeCli]: {
+    terminalFont: true, glyphs: UNICODE_GLYPHS,
     hotkeys: true, hintBar: true, enterMovesOn: true, dimsWhenUnfocused: true, bracketActions: false,
-    showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: false,
+    showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: true,
     closeButton: true, wordButtons: false,
   },
   [Client.ClaudeDesktop]: {
+    terminalFont: false, glyphs: UNICODE_GLYPHS,
     hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,
     showsTitle: false, optionSeparator: ':', alignStart: true, autoFocus: true, clientModule: true, focusOnWait: true,
     closeButton: false, wordButtons: true,
@@ -62,6 +82,7 @@ export const TRAITS: Record<Client, ClientTraits> = {
  * (a headless `claude -p`). A plain pane drawn by the hook: clickable bracketed buttons, no hotkeys.
  */
 export const FALLBACK: ClientTraits = {
+  terminalFont: false, glyphs: UNICODE_GLYPHS,
   hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,
   showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: false,
   closeButton: true, wordButtons: false,
@@ -74,7 +95,11 @@ export function toClient(surface: string | null | undefined): Client | null {
   return (surface && BY_SURFACE[surface]) || null
 }
 
-/** The traits of a client; FALLBACK for an unsupported client or none. */
-export function traitsOf(client: Client | null): ClientTraits {
-  return client === null ? FALLBACK : TRAITS[client]
+/**
+ * The traits of a client; FALLBACK for an unsupported client or none. `windows`: Claude Code runs on
+ * Windows (register.ts reads it once per session), where a client drawn in the terminal's font gets WINDOWS_GLYPHS.
+ */
+export function traitsOf(client: Client | null, windows = false): ClientTraits {
+  const traits = client === null ? FALLBACK : TRAITS[client]
+  return windows && traits.terminalFont ? { ...traits, glyphs: WINDOWS_GLYPHS } : traits
 }

@@ -14,10 +14,12 @@ claude --plugin-dir ./plugins/biteq
 
 The pane opens with the session and again on each prompt (unless you close it). In the desktop app,
 click an answer, then **Next**. In the terminal it docks beside the conversation at 144+ columns,
-otherwise inline; `ctrl+x tab` gives it the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter)
+otherwise inline. It takes the keyboard each time Claude starts working, unless the prompt has text in it
+(Esc gives the keyboard back, `ctrl+x tab` gives it to the pane again): the arrow keys walk the answers, `a`–`d` (or Enter)
 answer, and a hint bar on the pane's bottom row names the rest: `n: skip · z: banks · q: close` before
 answering, `⏎ next · z: banks · q: close` after (Enter on the answered question moves on; `n` still does,
-unshown). Esc goes back to the prompt. Resting after Claude is done, the bar reads `n: serve next · s: always
+unshown). On Windows the terminal pane marks answers `√` and `×` and the bar reads `enter: next`: a Windows
+console's fonts have no `✓ ✗ ⏎`. Esc goes back to the prompt. Resting after Claude is done, the bar reads `n: serve next · s: always
 serve · z: banks · q: close`. A bank's hand-picked questions (`data/top-stack.json`) are served first, in order. A skipped question comes back only after the rest of the bank, even in a new session. Missed questions come back (10% of the time, and only those once nothing is
 unseen). Once every question in the bank is answered, and every missed one answered right since, the pane says
 "Congratulations!", shows how many of

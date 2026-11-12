@@ -275,9 +275,9 @@ export async function onStatus(io: Io, was: Status, now: Status): Promise<void> 
     const c = await io.get('current')
     if (c.question === null) await advance(io, null, s)
     if (!(await io.get('dismissed'))) {
-      // Desktop: ask for the pane's keyboard now that the composer is empty, so the
-      // first click on an option is a press. The CLI keeps ctrl+x tab. A grant is
-      // refused if the composer has text; boot still opens without focus.
+      // Ask for the pane's keyboard now that the composer is empty: on the desktop the
+      // first click on an option is a press, in the CLI a-d answer without ctrl+x tab.
+      // A grant is refused if the composer has text; boot still opens without focus.
       void io.openPane((await io.traits()).focusOnWait)
     }
   }
