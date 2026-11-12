@@ -20,10 +20,11 @@ import { parse } from './biteq/claude'
 import type { ClaudeEvent } from './biteq/claude'
 import { COMMAND, boot, run, signal, typedArgs } from './biteq/cli'
 import { toClient, traitsOf } from './biteq/client'
+import type { ClientTraits } from './biteq/client'
 import { logEvent, rememberClaude } from './biteq/debug'
 import type { Io, View } from './biteq/io'
 import { isHintKey, keys } from './biteq/draw'
-import { closed, press, render, view } from './biteq/pane'
+import { closed, press, render, view, type PaneView } from './biteq/pane'
 import { DEFAULT_STATS } from './biteq/quiz'
 import { reportOpen, reportPrompt } from './biteq/telemetry'
 
@@ -121,6 +122,7 @@ function io($: EngineInterface): Io {
       try { await $.ui.focus({ requestId: PANE, key }) } catch { /* deny, or a surface with no ring */ }
       finally { ownFocus = null }
     },
+    switchToFullscreen: async () => { await $.command.run({ command: 'tui', args: 'fullscreen' }) },
     client: async () => toClient(await $.session.surface()),
     traits: async () => traitsOf(toClient(await $.session.surface()), windows),
     version: async () => (await $.session.version()).version,
@@ -154,6 +156,11 @@ async function claudeEvent($: EngineInterface, e: ClaudeEvent): Promise<void> {
 /** A docked pane's body rows (the hint bar goes on the last); none inline, where it fits its content. */
 function fillRows(props: { placement: 'dock' | 'inline'; scroll: { bodyRows: number } }): number | undefined {
   return props.placement === 'dock' && props.scroll.bodyRows > 0 ? props.scroll.bodyRows : undefined
+}
+
+/** What only the hook's own drawing knows: whether the pane has the keyboard, and whether it is inline. */
+function paneView(quiz: PaneView, props: { isFocused: boolean; placement: 'dock' | 'inline' }, traits: ClientTraits): PaneView {
+  return { ...quiz, ...(traits.dimsWhenUnfocused ? { focused: props.isFocused } : {}), inline: props.placement === 'inline' }
 }
 
 export const register: Register = on => {
@@ -227,13 +234,13 @@ export const register: Register = on => {
         clientOk = false
       }
     }
-    return render(traits.dimsWhenUnfocused ? { ...quiz, focused: e.props.isFocused } : quiz, el, traits, fillRows(e.props))
+    return render(paneView(quiz, e.props, traits), el, traits, fillRows(e.props))
   }).catch(async ($, e, next) => {
     clientOk = false
     if (next.called) return next(e)
     const quiz = await view(io($))
     const traits = traitsOf(toClient(e.surface), windows)
-    return render(traits.dimsWhenUnfocused ? { ...quiz, focused: e.props.isFocused } : quiz, $.ui.resolve(e), traits, fillRows(e.props))
+    return render(paneView(quiz, e.props, traits), $.ui.resolve(e), traits, fillRows(e.props))
   })
 
   on('ui.message', async ($, e) => {

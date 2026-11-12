@@ -92,11 +92,16 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
   on('session.surface', () => ({ value: surface }) as never)
   on('classic.Notification', () => ({}) as never)
   on('prompt.submit', ($, e) => ({ text: e.text }))
-  on('command.run', () => ({ text: '' }))
+  // beneath the plugin: a command it runs ($.command.run) lands here, as `command args`
+  const ran: string[] = []
+  on('command.run', ($, e) => {
+    ran.push(`${e.command} ${e.args}`)
+    return { text: '' }
+  })
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
-  return { opened }
+  return { opened, ran }
 }
 
 // The pane's Buttons are keyed by action and question (`answer:0:python-a`, `next:python-a`),
@@ -381,6 +386,69 @@ describe('when Claude is done', () => {
     await run($, '')
     expect(await find(ui, { text: RESTING_RE })).toBeDefined()
     expect(await title(ui)).toBeUndefined()
+  })
+})
+
+describe('inline CLI pane: fullscreen', () => {
+  const INLINE = { ...PANE, props: { ...PANE.props, placement: 'inline' } } as const
+  async function pane($: Engine, on: On, surface: 'terminal' | 'desktop' | 'vscode', placement: typeof PANE | typeof INLINE) {
+    const { ran } = world(on, BANKS, surface, { config: { pauseWhenDone: false } })
+    await $.session.start({ cwd: '.', surface, isInteractive: true })
+    const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface, ...placement })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    return { ui, ran }
+  }
+  const NOTE = /BiteQ requires fullscreen to work/
+  const fButton = (ui: Drawing) => find(ui, { type: 'Button', text: /^switch to fullscreen$/ })
+
+  test('inline in the terminal, only the title and the note: f and /tui fullscreen in the BiteQ colour', async ($, on) => {
+    const { ui } = await pane($, on, 'terminal', INLINE)
+    expect(await find(ui, { text: /^BiteQ$/ })).toBeDefined()
+    const parts = ['BiteQ requires fullscreen to work. Press ', 'f', ' to switch to fullscreen or run ', '/tui fullscreen', '.']
+    for (const part of parts) {
+      const props = (await find(ui, { text: new RegExp(`^${part.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`) }))?.props
+      expect(props).toMatchObject({ bold: true, ...(part === 'f' || part === '/tui fullscreen' ? { color: '#F58700' } : {}) })
+      expect(props?.dimColor).toBeUndefined()   // never dimmed, so it stands out
+    }
+    expect((await fButton(ui))?.props).toMatchObject({ hotkey: 'f' })
+    // nothing else: no streak, no question, no hint bar
+    for (const gone of [/^streak /, /^Pick /, /^skip$/, /^banks$/, /^close$/]) expect(await find(ui, { text: gone })).toBeUndefined()
+  })
+
+  test('docked, the quiz shows and there is no note', async ($, on) => {
+    const { ui } = await pane($, on, 'terminal', PANE)
+    expect(await find(ui, { text: /^Pick / })).toBeDefined()
+    expect(await find(ui, { text: NOTE })).toBeUndefined()
+    expect(await fButton(ui)).toBeUndefined()
+  })
+
+  // VS Code shares the CLI's drawing (no Client module): the offersFullscreen trait keeps the quiz there
+  for (const surface of ['desktop', 'vscode'] as const) {
+    test(`${surface}: never, even inline`, async ($, on) => {
+      const { ui } = await pane($, on, surface, INLINE)
+      expect(await find(ui, { text: /^Pick / })).toBeDefined()
+      expect(await find(ui, { text: NOTE })).toBeUndefined()
+    })
+  }
+
+  test('only the CLI shows it (the offersFullscreen trait)', () => {
+    expect(traitsOf(Client.ClaudeCli).offersFullscreen).toBe(true)
+    expect(traitsOf(Client.ClaudeDesktop).offersFullscreen).toBe(false)
+    expect(traitsOf(null).offersFullscreen).toBe(false)
+  })
+
+  test("f runs Claude Code's /tui fullscreen, once however often it is pressed", async ($, on) => {
+    const { ui, ran } = await pane($, on, 'terminal', INLINE)
+    await click(ui, /^switch to fullscreen$/)
+    await click(ui, /^switch to fullscreen$/)
+    await $.turn.complete(DONE)   // the command waits for the session to be idle
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 20))
+    expect(ran).toEqual(['tui fullscreen'])
+  })
+
+  test("f stays out of the arrow keys' focus ring, like the hint bar", async ($, on) => {
+    await pane($, on, 'terminal', INLINE)
+    expect(await $.ui.focus({ requestId: 'biteq', element: keys.fullscreen, origin: { kind: 'person' } } as never)).toMatchObject({ deny: expect.stringContaining('hint bar') } as never)
   })
 })
 

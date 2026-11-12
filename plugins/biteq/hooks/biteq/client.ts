@@ -60,6 +60,11 @@ export type ClientTraits = {
   closeButton: boolean
   /** A wrapped Button label comes out centered, so a long answer is drawn as one Button per word. */
   wordButtons: boolean
+  /**
+   * Drawn inline (the terminal's classic layout), the pane shows only how to switch Claude Code to fullscreen, where
+   * it docks beside the chat and takes clicks. The person's f is the yes; Claude Code's own /tui makes the change.
+   */
+  offersFullscreen: boolean
 }
 
 export const TRAITS: Record<Client, ClientTraits> = {
@@ -67,13 +72,13 @@ export const TRAITS: Record<Client, ClientTraits> = {
     terminalFont: true, glyphs: UNICODE_GLYPHS,
     hotkeys: true, hintBar: true, enterMovesOn: true, dimsWhenUnfocused: true, bracketActions: false,
     showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: true,
-    closeButton: true, wordButtons: false,
+    closeButton: true, wordButtons: false, offersFullscreen: true,
   },
   [Client.ClaudeDesktop]: {
     terminalFont: false, glyphs: UNICODE_GLYPHS,
     hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,
     showsTitle: false, optionSeparator: ':', alignStart: true, autoFocus: true, clientModule: true, focusOnWait: true,
-    closeButton: false, wordButtons: true,
+    closeButton: false, wordButtons: true, offersFullscreen: false,
   },
 }
 
@@ -85,7 +90,7 @@ export const FALLBACK: ClientTraits = {
   terminalFont: false, glyphs: UNICODE_GLYPHS,
   hotkeys: false, hintBar: false, enterMovesOn: false, dimsWhenUnfocused: false, bracketActions: true,
   showsTitle: true, optionSeparator: ')', alignStart: false, autoFocus: false, clientModule: false, focusOnWait: false,
-  closeButton: true, wordButtons: false,
+  closeButton: true, wordButtons: false, offersFullscreen: false,
 }
 
 const BY_SURFACE: Record<string, Client> = Object.fromEntries(Object.values(Client).map(c => [c, c]))

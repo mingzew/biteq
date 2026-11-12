@@ -35,6 +35,9 @@ export type Io = {
   openPane: (focus: boolean) => Promise<boolean>   // false: the surface can't place it yet
   closePane: () => Promise<void>
   focus: (key: string) => Promise<void>   // move the pane's focus ring; a deny is ignored
+  // Claude Code's own `/tui fullscreen`, as if the person typed it: it saves the setting and switches this session.
+  // It runs once the session is idle, so the promise waits for Claude to finish: don't await it from a press.
+  switchToFullscreen: () => Promise<void>
 
   // which supported client this session runs in (null: unsupported, or headless), and what that
   // means for biteq; see client.ts
