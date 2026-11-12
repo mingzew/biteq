@@ -133,7 +133,7 @@ claude -p "/biteq check" --plugin-dir ./plugins/biteq < /dev/null   # real engin
 ## Working agreements
 
 - Agents don't commit or push; people review the diff and commit themselves. Work on a feature branch off `main`.
-- Keep `README.md`, `plugins/biteq/README.md` and `docs/flow.md` in step with behaviour changes.
+- Keep `README.md` and `docs/flow.md` in step with behaviour changes.
 - Match the surrounding code: comments explain *why*, at the density already there.
 - Ask before changing anything global (`~/.claude/settings.json`, `~/.claude.json`, real plugin stores).
 

@@ -1,114 +1,70 @@
-# biteq
+# BiteQ
 
 Bite-size coding questions that appear while your AI agent is thinking, so you practice instead of reaching for your phone.
 
+![BiteQ pane beside Claude Code, showing a question while Claude works](docs/images/demo.png)
+
+## Install
+
+BiteQ is a plugin for [Claude Code](https://code.claude.com) (it uses function-hooks plugins, an early-access feature). You don't need to install anything else.
+
+**In a Claude Code session (terminal or desktop app)**
+
 ```
-BiteQ - Bite Size Coding Questions
-streak 3 · best 12
-[ruby] Hash.new with a default array
-What does `p h` print?
-
-  h = Hash.new([])
-  h[:a] << 1
-  p h
-
-a) {:a=>[1]}
-b) {}
-...
+/plugin marketplace add mingzew/biteq
+/plugin install biteq@biteq
+/reload-plugins
 ```
 
-**Status: V0 alpha. Claude Code only (Anthropic models). Tested on macOS.**
+**Or from your terminal, as one line**
 
-## How it works
+```bash
+claude plugin marketplace add mingzew/biteq && claude plugin install biteq@biteq
+```
 
-biteq is a Claude Code plugin of **function hooks** (`plugins/biteq`): it runs inside Claude Code's own
-engine, and Claude Code draws the quiz pane itself, beside the conversation, in the terminal, the desktop
-app's Code tab, and the VS Code / Cursor extension.
+Then start a new session. Check it worked with `claude plugin list` (it shows `biteq@biteq` enabled). Remove it with `claude plugin uninstall biteq@biteq`.
 
-- Nothing to install beyond Claude Code: no Python, Node or binary.
-- The pane opens with the session; each prompt serves a question while Claude works.
-- Once Claude is done you can finish the question on screen, but Next doesn't serve another: the pane says
-  "Claude is done, go review" until Claude works again. **Serve next question** serves one anyway; **Always serve**
-  turns this off for good (remembered; `/biteq pause on` turns it back on). A new session opens the pane resting
-  too ("Claude hasn't started yet…") until you prompt Claude.
-- You practise one bank at a time (default `cs`, general CS questions, so anyone can start right
-  away). Only that bank is served. Missed questions come back later (light spaced repetition), and once
-  nothing is unseen they come back until you get them right. Then the pane congratulates you, says how many
-  you got right in one shot (the first time you ever saw them) for each bank, and offers **Start over** (`n` in
-  the terminal) or another bank (`z`).
-- Stats are shared by every Claude Code session. `/biteq stats` tracks the key metric: how many AI waits (a
-  prompt until the next one) you practised in while Claude worked. It also counts the waits you practised in
-  at any time, after Claude was done included, and how many of those were only after. For each bank it also shows your correct answers (re-asks included) and how many of
-  its questions you got right in one shot; Start over keeps that, only `/biteq reset --all` clears it.
+## First run
 
-**Design rule: the quiz is a pane.** BiteQ is shown in a Claude Code pane (`$.ui.open`): docked beside
-the conversation in the terminal's fullscreen layout and in the desktop app, inline above the prompt only when
-there's no room to dock. Keep it a pane. Don't move it to the band above the prompt, the status line, toasts or
-a separate window unless the team explicitly decides otherwise.
+1. The pane opens with your session. In a terminal narrower than 144 columns, type `/biteq` to open it.
+2. Prompt Claude. A question appears while Claude works.
+3. Answer it, then move on.
 
-See [`plugins/biteq/README.md`](plugins/biteq/README.md) for the layout and development, and
-[`docs/flow.md`](docs/flow.md) for a step-by-step trace through the code.
+| Where | How to answer | Other keys |
+| --- | --- | --- |
+| Terminal | Arrow keys and Enter, or `a`–`d` | `n` skip · `z` switch banks · `q` close · Enter for next after answering |
+| Desktop app | Click an answer, then **Next** | **Switch Q banks** to change bank; the pane's own X closes it |
 
-## Requirements
-
-Claude Code with function-hooks plugins (an early-access API): the terminal CLI, the Claude desktop app's
-Code tab, or the Claude Code extension in VS Code or Cursor.
-
-## Quick start
-
-1. Load the plugin, using **either** option:
-   - **Plugin** (installed once, shared by the CLI, the desktop app and the extensions):
-     `/plugin marketplace add <you>/biteq`, then `/plugin install biteq@biteq`.
-     From a local checkout: `/plugin marketplace add /path/to/biteq`.
-   - **Local dev:** `claude --plugin-dir ./plugins/biteq` (applies to that one session only).
-2. The pane opens with the session (in a terminal narrower than 144 columns, type `/biteq`).
-3. Prompt Claude. A question appears. In the desktop app, click an answer, then **Next**. In the terminal, the
-   pane takes the keyboard each time Claude starts working (not over a half-typed prompt; Esc gives it back, and
-   `ctrl+x tab` gives it to the pane again): the arrow keys walk the answers, `a`–`d` (or Enter) answer, and the
-   hint bar at the bottom names the rest: `n: skip · z: banks · q: close` before you answer, `⏎ next · z: banks ·
-   q: close` after (Enter moves on; `n` still does too, though the bar no longer shows it). On Windows the
-   terminal shows `√`/`×` and `enter: next` instead, because the console fonts have no `✓ ✗ ⏎`. In the desktop app,
-   the pane's own X closes it.
-4. To change what you practise, press `z` (desktop: **Switch Q banks**) at any time. Pick one bank with `1`–`9`
-   or the arrow keys and Enter; it's saved at once. `z` (or **Done**) goes back to the quiz.
-
-Cursor's own chat agent is a different harness and doesn't run Claude Code plugins.
+In the terminal the pane takes the keyboard each time Claude starts working (never over a half-typed prompt). Press Esc to hand it back to the prompt, or `ctrl+x tab` to give it to the pane again. On Windows the terminal shows `√`/`×` and `enter: next`, because console fonts have no `✓ ✗ ⏎`.
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `/biteq [--lang bank]` | Open the pane; `--lang` picks the one bank to serve and is remembered (default `cs`). In the pane, `z` does the same |
-| `/biteq langs` | List question banks, the selected ones first |
-| `/biteq check` | Validate the question banks |
-| `/biteq stats` | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
-| `/biteq doctor` | Claude Code version, plugin path, store, status, debug log, questions |
-| `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered |
-| `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log |
+| Command                | What it does                                                                                                                                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/biteq [--lang bank]` | Open the pane; `--lang` picks the one bank to serve and is remembered (default `cs`). In the pane, `z` does the same                                                                      |
+| `/biteq langs`         | List question banks, the selected ones first                                                                                                                                              |
+| `/biteq check`         | Validate the question banks                                                                                                                                                               |
+| `/biteq stats`         | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
+| `/biteq doctor`        | Claude Code version, plugin path, store, status, debug log, questions                                                                                                                     |
+| `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered                                                      |
+| `/biteq debug [on\|off]` | Record each event to `~/.biteq/events.log` (`BITEQ_HOME` changes that directory). Remembered                                                                                            |
+| `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log                                                                                                             |
 
-Debugging: `/biteq debug` records each event to `~/.biteq/events.log`. `/biteq debug off` stops it. `BITEQ_HOME` changes that directory.
+## How it works for you
 
-## Adding questions or a language
+- **Questions arrive while Claude works.** When Claude is done, you can finish the question on screen, but Next won't serve another: the pane says "Claude is done, go review" until Claude works again. **Serve next question** serves one anyway, and **Always serve** turns the pause off for good (`/biteq pause on` turns it back on). A new session opens the pane resting too, until you prompt Claude.
+- **One bank at a time.** The default is `cs` (general CS questions, so anyone can start right away). Press `z` at any time to pick another bank; it's saved at once.
+- **Missed questions come back.** Light spaced repetition, and once nothing is unseen they keep coming back until you get them right. When you finish a bank the pane congratulates you, shows how many you got right in one shot, and offers **Start over** or another bank.
+- **Stats are shared by every session.** `/biteq stats` tracks the key number: how many AI waits (from one prompt to the next) you practised in while Claude worked.
 
-Questions live in `plugins/biteq/data/questions/<lang>.json`, one JSON array per language.
-To add a language, create `<lang>.json` (`[]` is valid). The language is the filename. Each question has this shape:
+## Status
 
-```json
-{
-  "id": "ruby-hash-default-shared",
-  "title": "Hash.new with a default array",
-  "prompt": "What does `p h` print?",
-  "code": "h = Hash.new([])\nh[:a] << 1\np h",
-  "options": ["{:a=>[1]}", "{}", "{:a=>[]}", "KeyError"],
-  "answer": 1,
-  "explanation": "Why the answer is right."
-}
-```
+V0 alpha.
 
-`id` must start with `<lang>-` and be unique across all banks; `options` has 2–4 entries; `answer` is the index of the right one.
-Run `/biteq check` after editing.
+- Supported: the Claude CLI and the Claude desktop app's Code tab, on macOS and Windows.
+- Other clients (for example the VS Code or Cursor extensions) get a basic fallback, not the full pane experience. Cursor's own chat agent doesn't run Claude Code plugins at all.
+- Not built yet: notifications outside Claude Code, focusing the agent app when it's done, and Cursor native-agent support.
 
-## Not built yet
+## Contributing
 
-Notifications outside Claude Code, focusing the agent app when it's done (`macos.ts` stubs), Cursor
-native-agent support.
+Want to add questions, a language, or change the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
