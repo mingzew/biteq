@@ -141,7 +141,7 @@ async function cmdReset(io: Io, all: boolean): Promise<string> {
     for (const path of [log, `${log}.1`]) {
       if (await io.exists(path)) {
         await io.write(path, '')   // the engine's file API can't delete: empty it
-        removed.push(path.split('/').pop() ?? path)
+        removed.push(path.split(/[\\/]/).pop() ?? path)   // the file's name: a Windows path splits on \ too
       }
     }
     await bootPane(io, await loadQuestions(io, [await getLang(io)]))

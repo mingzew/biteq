@@ -62,10 +62,12 @@ Code tab, or the Claude Code extension in VS Code or Cursor.
      From a local checkout: `/plugin marketplace add /path/to/biteq`.
    - **Local dev:** `claude --plugin-dir ./plugins/biteq` (applies to that one session only).
 2. The pane opens with the session (in a terminal narrower than 144 columns, type `/biteq`).
-3. Prompt Claude. A question appears. In the desktop app, click an answer, then **Next**. In the terminal,
-   `ctrl+x tab` gives the pane the keyboard: the arrow keys walk the answers, `a`–`d` (or Enter) answer, and the
+3. Prompt Claude. A question appears. In the desktop app, click an answer, then **Next**. In the terminal, the
+   pane takes the keyboard each time Claude starts working (not over a half-typed prompt; Esc gives it back, and
+   `ctrl+x tab` gives it to the pane again): the arrow keys walk the answers, `a`–`d` (or Enter) answer, and the
    hint bar at the bottom names the rest: `n: skip · z: banks · q: close` before you answer, `⏎ next · z: banks ·
-   q: close` after (Enter moves on; `n` still does too, though the bar no longer shows it). In the desktop app,
+   q: close` after (Enter moves on; `n` still does too, though the bar no longer shows it). On Windows the
+   terminal shows `√`/`×` and `enter: next` instead, because the console fonts have no `✓ ✗ ⏎`. In the desktop app,
    the pane's own X closes it.
 4. To change what you practise, press `z` (desktop: **Switch Q banks**) at any time. Pick one bank with `1`–`9`
    or the arrow keys and Enter; it's saved at once. `z` (or **Done**) goes back to the quiz.

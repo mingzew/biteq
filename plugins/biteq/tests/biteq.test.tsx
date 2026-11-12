@@ -11,6 +11,9 @@ import type { Io } from '../hooks/biteq/io'
 import { Client, traitsOf } from '../hooks/biteq/client'
 import { next, press } from '../hooks/biteq/pane'
 
+// The engine runs tests with setTimeout; the strict config has no lib that declares it.
+declare const setTimeout: (fn: () => void, ms: number) => unknown
+
 const BANKS: Record<string, unknown[]> = {
   python: [
     { id: 'python-a', title: 'A', prompt: 'Pick a', options: ['a1', 'a2'], answer: 0, explanation: 'because', practicality: 5 },
@@ -45,7 +48,8 @@ const DONE = { reason: 'answer', answer: 'done', durationMs: 1, isAborted: false
 // Everything beneath the plugin: question banks, an in-memory store, no env, and the engine's answers.
 // Calls on $ answer { value } (or { deny }); events answer their own result.
 // `shared`: a store the test can also write to, standing for another Claude session using it
-function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal', shared?: Record<string, unknown>, writes?: string[], topStack: unknown = {}) {
+// `env`: the process environment, e.g. { OS: 'Windows_NT' } for Claude Code on Windows
+function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'terminal', shared?: Record<string, unknown>, writes?: string[], topStack: unknown = {}, env: Record<string, string> = {}) {
   const opened: { focus?: true }[] = []
   if (shared) {
     on('store.get', ($, e) => ({ value: shared[e.key] }))
@@ -61,13 +65,14 @@ function world(on: On, banks: Record<string, unknown[]> = BANKS, surface = 'term
   } else {
     mock.store(on)
   }
-  mock.env(on, {})
+  mock.env(on, env)
   on('fs.exists', () => ({ value: true }))
   on('fs.list', () => ({
     value: Object.keys(banks).map(lang => ({ name: `${lang}.json`, kind: 'file', size: 1, mtimeMs: 0, isLink: false })),
   }) as never)
   on('fs.read', ($, e) => {
-    const path = String(e.path)
+    // On Windows the engine hands the hook `\` paths, whatever the plugin joined them with
+    const path = String(e.path).replace(/\\/g, '/')
     if (path.endsWith('/.claude-plugin/plugin.json')) return { value: JSON.stringify({ name: 'biteq', version: '9.9.9' }) }
     if (path.endsWith('/data/top-stack.json')) return { value: JSON.stringify(topStack) }
     return { value: JSON.stringify(banks[path.split('/').pop()!.replace('.json', '')] ?? []) }
@@ -443,6 +448,29 @@ describe('terminal hint bar', () => {
     expect(await title(ui)).not.toBe(before)
   })
 
+  // A Windows console's fonts have no ✓ ✗ ⏎: it would draw a boxed "?" for each
+  test('on Windows the terminal marks answers √ and × and the bar reads "enter: next"', async ($, on) => {
+    world(on, BANKS, 'terminal', undefined, undefined, {}, { OS: 'Windows_NT' })
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'b'))   // BANKS' answers are all a: b is a wrong pick
+    expect(await find(ui, { type: 'Button', text: /^√ a\) / })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /^× b\) / })).toBeDefined()
+    expect(await find(ui, { type: 'Text', text: /^enter: next$/ })).toBeDefined()
+    expect(JSON.stringify(await ui.drawn())).not.toMatch(/[✓✗⏎]/)
+  })
+
+  test('on Windows the desktop app keeps ✓ and ✗: it draws in its own fonts', async ($, on) => {
+    world(on, BANKS, 'desktop', undefined, undefined, {}, { OS: 'Windows_NT' })
+    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
+    const ui: Drawing = await $.ui.mount({ plugin: 'biteq', surface: 'desktop', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'b'))
+    expect(await find(ui, { type: 'Button', text: /^✓ a: / })).toBeDefined()
+    expect(await find(ui, { type: 'Button', text: /^✗ b: / })).toBeDefined()
+  })
+
   test('Enter on an answered option moves on (terminal)', async ($, on) => {
     const { ui } = await terminal($, on)
     const before = await title(ui)
@@ -520,20 +548,16 @@ describe('presses', () => {
     expect((await find(desk, { type: 'Button', text: /^Skip$/ }))?.props.hotkey).toBeUndefined()
   })
 
-  test('desktop: a wait asks the pane for focus; boot does not', async ($, on) => {
-    const { opened } = world(on, BANKS, 'desktop')
-    await $.session.start({ cwd: '.', surface: 'desktop', isInteractive: true })
-    expect(opened.some(o => o.focus)).toBe(false)
-    await $.turn.start({ text: 'go', turnId: 't1' })
-    expect(opened.some(o => o.focus === true)).toBe(true)
-  })
-
-  test('terminal: a wait does not take the keyboard', async ($, on) => {
-    const { opened } = world(on, BANKS, 'terminal')
-    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
-    await $.turn.start({ text: 'go', turnId: 't1' })
-    expect(opened.some(o => o.focus)).toBe(false)
-  })
+  // The CLI too: without it the person had to find ctrl+x tab every wait
+  for (const surface of ['terminal', 'desktop'] as const) {
+    test(`${surface}: a wait asks the pane for focus; boot does not`, async ($, on) => {
+      const { opened } = world(on, BANKS, surface)
+      await $.session.start({ cwd: '.', surface, isInteractive: true })
+      expect(opened.some(o => o.focus)).toBe(false)
+      await $.turn.start({ text: 'go', turnId: 't1' })
+      expect(opened.some(o => o.focus === true)).toBe(true)
+    })
+  }
 
   test('desktop: answering keeps option Buttons and still records', async ($, on) => {
     world(on, BANKS, 'desktop')
@@ -1151,6 +1175,58 @@ describe('telemetry', () => {
     expect(await run($, 'debug off')).toBe('biteq: debug off')
     expect(shared.config).toMatchObject({ debug: false })
     expect(await run($, 'debug maybe')).toBe('usage: /biteq debug [on|off]')
+  })
+
+  // A checkout never sends, so these read the debug log instead: with debug on, a heartbeat that reached
+  // send() is logged as "No telemetry sent to /v1/heartbeat because ...".
+  const settle = () => new Promise<void>(resolve => setTimeout(resolve, 25))   // the report is not awaited
+  const prompt = ($: Engine, origin: { kind: string }, text = 'fix the bug') =>
+    $.prompt.submit({ text, wait: false, origin } as never)
+  const beats = (writes: string[]) => writes.join('\n').split('No telemetry sent to /v1/heartbeat because').length - 1
+  async function withDebug($: Engine, on: On, surface: 'terminal' | 'desktop' = 'terminal') {
+    const writes: string[] = []
+    const fetched: string[] = []
+    world(on, BANKS, surface, {}, writes)
+    on('http.fetch', ($, e) => {
+      fetched.push(e.url)
+      return { value: { status: 200, ok: true, headers: {}, text: '' } }
+    })
+    await $.session.start({ cwd: '.', surface, isInteractive: true })
+    expect(await run($, 'debug')).toContain('debug on')
+    return { writes, fetched }
+  }
+
+  test('a prompt the person typed sends a heartbeat and still reaches Claude', async ($, on) => {
+    const { writes, fetched } = await withDebug($, on)
+    const result = await prompt($, { kind: 'composer' })
+    await settle()
+    expect(result).toMatchObject({ text: 'fix the bug' })   // passed through unchanged
+    expect(beats(writes)).toBe(1)
+    await prompt($, { kind: 'composer' }, 'and another')
+    await settle()
+    expect(beats(writes)).toBe(2)   // every typed prompt, no throttle
+    expect(fetched).toEqual([])     // a checkout does not send
+  })
+
+  test('only typed prompts count: not an SDK turn, a notification, a schedule, or /biteq', async ($, on) => {
+    const { writes } = await withDebug($, on)
+    for (const kind of ['sdk', 'task-notification', 'scheduled-trigger', 'bridge']) {
+      await prompt($, { kind })
+    }
+    await prompt($, { kind: 'composer' }, '/biteq doctor')
+    await settle()
+    expect(beats(writes)).toBe(0)
+  })
+
+  test('the heartbeat does not depend on the pane: it still goes after q closes it', async ($, on) => {
+    const { writes } = await withDebug($, on)
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, /^close$/)
+    await $.turn.complete(DONE)
+    await prompt($, { kind: 'composer' })
+    await settle()
+    expect(beats(writes)).toBe(1)
   })
 
   test('reset --all leaves the telemetry userId', async ($, on) => {

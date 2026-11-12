@@ -25,6 +25,8 @@ between Claude Code releases; the engine's own declarations are the authority (s
   never served; once every question in it is answered the pane says so and offers **Start over** (SUP-15).
 - **CLI keys:** answers are arrow-selectable buttons with `a`-`d`; Next/Skip/Banks are a hint bar on the pane's
   bottom row (`n: skip · z: banks · q: close`, `⏎ next` after answering) and are never in the focus ring.
+  The pane asks for the keyboard each time Claude starts working (the engine refuses over a half-typed prompt),
+  so `a`-`d` answer without `ctrl+x tab`; Esc hands it back to the prompt.
 - **Banks are switched in the pane** (`z`, any time): a screen where picking a bank replaces the last, digits `1`-`9` in the CLI, saved
   as it changes. `z` again goes back to the quiz.
 - **Closing:** the CLI keeps `q: close` in its hint bar; the desktop pane has no Close button (its own X closes it).

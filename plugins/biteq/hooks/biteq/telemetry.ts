@@ -1,4 +1,4 @@
-// A placed pane and a recorded answer, sent to the telemetry Lambda.
+// A placed pane, a recorded answer and a typed prompt, sent to the telemetry Lambda.
 //
 // This file does not touch `$`. register.ts puts sessionId and httpPost on `io`.
 // A checkout (`--plugin-dir`, `claude plugin test`) is skipped, and so is any
@@ -17,7 +17,7 @@ const ENDPOINT = 'https://tpcghrqsrjtjw6tdnzesnmr3eu0ewmpx.lambda-url.us-east-1.
 const INSTALLED = '.claude/plugins/cache/'
 
 type Harness = 'terminal' | 'desktop'
-type Path = '/v1/opens' | '/v1/answers'
+type Path = '/v1/opens' | '/v1/answers' | '/v1/heartbeat'
 
 type Payload = {
   userId: string
@@ -41,6 +41,18 @@ export async function reportAnswer(io: Io): Promise<void> {
     await send(io, '/v1/answers')
   } catch {
     // a dropped report must not break the pane
+  }
+}
+
+/**
+ * One typed prompt: the heartbeat that says this session used Claude. It does not depend on the
+ * pane, so it still goes when the pane was closed or never placed. Carries no prompt text.
+ */
+export async function reportPrompt(io: Io): Promise<void> {
+  try {
+    await send(io, '/v1/heartbeat')
+  } catch {
+    // a dropped report must not break the prompt
   }
 }
 
