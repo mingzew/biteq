@@ -43,7 +43,8 @@ app's Code tab, and the VS Code / Cursor extension.
 
 **Design rule: the quiz is a pane.** BiteQ is shown in a Claude Code pane (`$.ui.open`): docked beside
 the conversation in the terminal's fullscreen layout and in the desktop app, inline above the prompt only when
-there's no room to dock. Keep it a pane. Don't move it to the band above the prompt, the status line, toasts or
+there's no room to dock or fullscreen is off. Inline, the terminal pane shows only how to switch to fullscreen
+(`f`, which runs Claude Code's `/tui fullscreen`). Keep it a pane. Don't move it to the band above the prompt, the status line, toasts or
 a separate window unless the team explicitly decides otherwise.
 
 See [`plugins/biteq/README.md`](plugins/biteq/README.md) for the layout and development, and

@@ -13,8 +13,10 @@ claude --plugin-dir ./plugins/biteq
 ```
 
 The pane opens with the session and again on each prompt (unless you close it). In the desktop app,
-click an answer, then **Next**. In the terminal it docks beside the conversation at 144+ columns,
-otherwise inline. It takes the keyboard each time Claude starts working, unless the prompt has text in it
+click an answer, then **Next**. In the terminal it docks beside the conversation at 144+ columns in Claude Code's
+fullscreen layout. Without fullscreen it sits inline and shows only "BiteQ requires fullscreen to work. Press f to
+switch to fullscreen or run /tui fullscreen." `f` runs Claude Code's own `/tui fullscreen` (saved in your Claude
+Code settings; `/tui default` goes back) as soon as Claude is idle, and the pane docks with the quiz. It takes the keyboard each time Claude starts working, unless the prompt has text in it
 (Esc gives the keyboard back, `ctrl+x tab` gives it to the pane again): the arrow keys walk the answers, `a`–`d` (or Enter)
 answer, and a hint bar on the pane's bottom row names the rest: `n: skip · z: banks · q: close` before
 answering, `⏎ next · z: banks · q: close` after (Enter on the answered question moves on; `n` still does,
@@ -103,7 +105,7 @@ in-engine modules (the Claude Code extension inside Cursor works).
 ## Develop
 
 **If the pane shows inline above the prompt instead of docked:** the terminal pane only docks in Claude Code's
-fullscreen layout. Claude Code turns fullscreen off by itself after sessions end abruptly (it records
+fullscreen layout: press `f` on the pane, or run `/tui fullscreen`. Claude Code also turns fullscreen off by itself after sessions end abruptly (it records
 `"fullscreenAutoDisabled"` in `~/.claude.json`), for example when a test harness kills `claude` instead of
 exiting with `/exit`. Remove that key, or re-enable fullscreen, and restart the session.
 
