@@ -76,7 +76,7 @@ BiteQ sends anonymous usage counts so we can see how many people use it and whet
 | --- | --- |
 | Open | The pane is shown in a Claude session |
 | Answer | You answer a question |
-| Prompt | You send a prompt to Claude, whether or not you use the quiz |
+| Prompt heartbeat | You send a prompt to Claude, whether or not you use the quiz. We never send your prompts |
 
 Every report carries the same four fields:
 
@@ -87,7 +87,7 @@ Every report carries the same four fields:
 
 **What is never sent.** Your prompts, Claude's replies, your code, file names, which questions you saw, or whether your answers were right.
 
-**Why.** The prompt report lets us compare people who use BiteQ with people who only use Claude, which is the number we most want to know.
+**Why.** The prompt heartbeat lets us compare people who use BiteQ with people who only use Claude, which is the number we most want to know.
 
 **How long it is kept.** Reports are kept for 30 days.
 
