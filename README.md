@@ -59,7 +59,7 @@ In the terminal the pane takes the keyboard each time Claude starts working (nev
 
 ## Status
 
-V0 alpha.
+Alpha, version 0.1.0.
 
 - Supported: the Claude CLI and the Claude desktop app's Code tab, on macOS and Windows.
 - Other clients (for example the VS Code or Cursor extensions) get a basic fallback, not the full pane experience. Cursor's own chat agent doesn't run Claude Code plugins at all.
