@@ -530,11 +530,11 @@ CloudWatch dashboard `biteq-telemetry`, region `us-east-1`, same account as the 
    Under the totals is the **Claude-session funnel**, built from the heartbeats: Claude sessions (a typed prompt), how many of those have a `session#` row (the pane was placed, or an answer created one), how many answered at least one question, and the practised share. "Never practised" is split into pane never placed and placed with no answer. Terminal and desktop get a line each. It joins `active#` rows to `session#` rows by user and session id in one scan, so a session that answered the boot question but was never prompted is not counted. Sessions from before the first heartbeat have no `active#` row, so the share starts high and settles.
 
    Then a **top users by answers** table, the ten machines with the most answers. Each row shows the full `userId`, the answer count, and `N practised` (sessions with an answer), plus `M opened only` when some sessions were opened and never answered. Under each user are their answered sessions, most answers first, as `session <sessionId>` with that session's count. Five are listed, then `+N more`. The widget scans the `seen` rows for the ranking, then queries each leader's `session#` rows. Session ids come from the client, so the widget HTML-escapes them. Sessions have no stored time, so they are not in date order.
-2. **Last 12 weeks, one day wide.** Five line widgets, statistic `Sum`, metrics `NewUsers`, `Opens`, `Sessions`, `Answers` and `ActiveSessions` (titled "Claude sessions"). Each widget has two lines, `Harness=terminal` and `Harness=desktop`.
-3. **Prompts vs answers (hourly, all users).** One chart, both harnesses added together with metric math (`FILL(x, 0)` so an hour reported by only one harness still adds up). Prompts are on the left axis. Answers and *answers per 100 prompts* are on the right, because prompts run far above answers. An hour with no prompts has no rate point.
-4. **Prompts vs answers per hour (logs, 30 days).** A Logs Insights chart on `/aws/lambda/biteq-telemetry`: `filter type in ["answer", "heartbeat"] | stats count() by bin(1h), type`. Unfiltered it is the same data as chart 3 limited to 30 days. Add a `userId` filter to follow one person. Insights bills by data scanned, which is small here.
+2. **Prompts vs answers per hour (logs, 30 days).** Full width, under the all-time widget. A Logs Insights chart on `/aws/lambda/biteq-telemetry`: `filter type in ["answer", "heartbeat"] | stats count() by bin(1h), type`. It is the only chart of prompts, and the one to use for one person: add a `userId` filter. Insights bills by data scanned, which is small here.
+3. **Answers.** Full width, under chart 2. Last 12 weeks, one day wide, statistic `Sum`, metric `Answers`, two lines, `Harness=terminal` and `Harness=desktop`.
+4. **Last 12 weeks, one day wide.** Four line widgets in two rows, statistic `Sum`: `NewUsers` and `Opens`, then `Sessions` and `ActiveSessions` (titled "Claude sessions"). Each widget has two lines, `Harness=terminal` and `Harness=desktop`.
 
-Metrics are standard resolution (60 seconds). The Lambda calls `PutMetricData` only after the matching transaction commits. A duplicate request emits nothing. `Prompts` and `ActiveSessions` have no history before the first heartbeat is sent, and the 12-week dashboard window is dense at one hour per point, so zoom in.
+Metrics are standard resolution (60 seconds). The Lambda calls `PutMetricData` only after the matching transaction commits. A duplicate request emits nothing. `ActiveSessions` has no history before the first heartbeat is sent. The `Prompts` metric is still emitted but no widget charts it; the logs chart is the prompts view.
 
 Open the dashboard in the CloudWatch console.
 
@@ -602,9 +602,9 @@ A report is skipped when `io.pluginRoot` does not contain `.claude/plugins/cache
 
 - Dashboard `biteq-telemetry` in `us-east-1`.
 - An all-time custom widget that invokes this Lambda. It shows the totals and the top-users table.
-- Five line widgets for the last 12 weeks, one day wide, statistic `Sum`: `NewUsers`, `Opens`, `Sessions`, `Answers`, `ActiveSessions`. Each has two lines, `Harness=terminal` and `Harness=desktop`.
-- A "Prompts vs answers" chart, hourly, both harnesses added: prompts on the left axis, answers and answers per 100 prompts on the right.
-- A Logs Insights chart on the Lambda's log group, prompts and answers per hour, 30 days.
+- A Logs Insights chart on the Lambda's log group, prompts and answers per hour, 30 days, full width.
+- A full-width line widget for `Answers`, last 12 weeks, one day wide, statistic `Sum`, with two lines, `Harness=terminal` and `Harness=desktop`.
+- Four line widgets in two rows for the last 12 weeks, one day wide, statistic `Sum`: `NewUsers`, `Opens`, `Sessions`, `ActiveSessions`. Each has two lines, `Harness=terminal` and `Harness=desktop`.
 
 
 
