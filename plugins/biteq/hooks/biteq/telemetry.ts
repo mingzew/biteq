@@ -4,8 +4,11 @@
 // A checkout (`--plugin-dir`, `claude plugin test`) is skipped, and so is any
 // client other than the CLI or the desktop Code tab. A thrown POST or a non-2xx
 // is dropped. The quiz does not wait on either report.
+// Nothing is sent when CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set or the person ran
+// `/biteq telemetry off`; that one switch covers opens, answers and the heartbeat.
 // With /biteq debug on, a POST that is sent is also written to the debug log.
 import { Client } from './client'
+import { getTelemetry } from './config'
 import { lastClaudeEvent, logEvent } from './debug'
 import type { Io } from './io'
 import { USER_ID } from './store'
@@ -56,7 +59,31 @@ export async function reportPrompt(io: Io): Promise<void> {
   }
 }
 
+const TRAFFIC_FLAG = 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'
+
+/** Why reporting is off: Claude Code's own setting, or the person's `/biteq telemetry off`. */
+export type TelemetryState = { on: true } | { on: false; why: 'claude' | 'user' }
+
+/**
+ * Whether reports may be sent. Claude Code's CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC wins over the saved
+ * choice and never changes it. The engine only refuses a plugin's request that carries `auth`, and ours
+ * carries none, so this check is what honours the flag. Set means any value but empty, `0` or `false`.
+ */
+export async function telemetryState(io: Io): Promise<TelemetryState> {
+  const flag = ((await io.env(TRAFFIC_FLAG)) ?? '').trim().toLowerCase()
+  if (flag !== '' && flag !== '0' && flag !== 'false') return { on: false, why: 'claude' }
+  if (!(await getTelemetry(io))) return { on: false, why: 'user' }
+  return { on: true }
+}
+
 async function send(io: Io, path: Path): Promise<boolean> {
+  // First, so nothing below runs while reporting is off: in particular no userId is created or stored.
+  const state = await telemetryState(io)
+  if (!state.on) {
+    const reason = state.why === 'claude' ? `${TRAFFIC_FLAG} is set` : 'telemetry was turned off by the user'
+    void logEvent(io, 'telemetry', `No telemetry sent to ${path} because ${reason}`)
+    return false
+  }
   if (!ENDPOINT || !io.pluginRoot.includes(INSTALLED)) {
     const reasons = [
       !ENDPOINT ? 'no endpoint is set' : '',

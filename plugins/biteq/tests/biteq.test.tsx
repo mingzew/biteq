@@ -1240,4 +1240,123 @@ describe('telemetry', () => {
     expect(shared.stats).toBeUndefined()
     expect(shared.config).toBeUndefined()
   })
+
+  // The opt-out (SUP-31) and Claude Code's CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC (SUP-30). A checkout never
+  // sends, so the debug log is where a skip shows: "No telemetry sent to <path> because <reason>". The opt-out
+  // reasons come before the checkout one, so a log line with the checkout reason means the gate let it through.
+  const FLAG = 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'
+  const OFF = 'telemetry was turned off by the user'
+  const FLAGGED = `${FLAG} is set`
+  async function gated($: Engine, on: On, shared: Record<string, unknown> = {}, env: Record<string, string> = {}) {
+    const writes: string[] = []
+    const fetched: string[] = []
+    world(on, BANKS, 'terminal', shared, writes, {}, env)
+    on('http.fetch', ($, e) => {
+      fetched.push(e.url)
+      return { value: { status: 200, ok: true, headers: {}, text: '' } }
+    })
+    await $.session.start({ cwd: '.', surface: 'terminal', isInteractive: true })
+    expect(await run($, 'debug')).toContain('debug on')
+    return { writes, fetched, shared, log: () => writes.join('\n') }
+  }
+  /** One open, one answer and one heartbeat, each of which would report. */
+  async function useBiteq($: Engine) {
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'a'))
+    await prompt($, { kind: 'composer' })
+    await settle()
+  }
+
+  test('/biteq telemetry on|off is remembered in its own key and shown by doctor', async ($, on) => {
+    const { shared } = await gated($, on)
+    expect(await run($, 'telemetry')).toBe('biteq: telemetry: on')   // the default
+    expect(await run($, 'doctor')).toMatch(/telemetry +on /)
+    expect(await run($, 'telemetry off')).toBe('biteq: telemetry: off')
+    expect(shared.privacy).toEqual({ telemetry: false })
+    expect(await run($, 'doctor')).toMatch(/telemetry +off \(\/biteq telemetry on to turn it back on\)/)
+    expect(await run($, 'telemetry on')).toBe('biteq: telemetry: on')
+    expect(shared.privacy).toEqual({ telemetry: true })
+    expect(await run($, 'telemetry maybe')).toBe('usage: /biteq telemetry on|off')
+    expect(shared.privacy).toEqual({ telemetry: true })   // a bad value changes nothing
+  })
+
+  test('on (the default): nothing is skipped for the opt-out', async ($, on) => {
+    const { log } = await gated($, on)
+    await useBiteq($)
+    expect(log()).toContain('No telemetry sent to /v1/opens because')
+    expect(log()).not.toContain(OFF)
+    expect(log()).not.toContain(FLAGGED)
+  })
+
+  test('off: no open, answer or heartbeat, and no userId is created', async ($, on) => {
+    // Saved before the session starts: the pane's first open is reported at session start, before a command could run
+    const { log, fetched, shared } = await gated($, on, { privacy: { telemetry: false } })
+    await useBiteq($)
+    for (const path of ['/v1/opens', '/v1/answers', '/v1/heartbeat']) {
+      expect(log()).toContain(`No telemetry sent to ${path} because ${OFF}`)
+    }
+    expect(fetched).toEqual([])
+    expect(shared.userId).toBeUndefined()
+  })
+
+  test('off leaves a userId that is already stored, and the quiz works the same', async ($, on) => {
+    const id = '6b9f1a20-0c3e-4d5f-8a7b-9c0d1e2f3a4b'
+    const { shared } = await gated($, on, { userId: id })
+    await run($, 'telemetry off')
+    const ui = await $.ui.mount({ plugin: 'biteq', surface: 'terminal', ...PANE })
+    await $.turn.start({ text: 'go', turnId: 't1' })
+    await click(ui, OPEN(ui, 'a'))
+    expect(await find(ui, { text: ANSWERED(ui) })).toBeTruthy()   // the answer was still recorded
+    expect(shared.userId).toBe(id)
+  })
+
+  test('the choice survives a new session', async ($, on) => {
+    // what an earlier session saved: /biteq telemetry off wrote this key
+    const { log } = await gated($, on, { privacy: { telemetry: false } })
+    expect(await run($, 'doctor')).toMatch(/telemetry +off \(\/biteq telemetry on/)
+    await prompt($, { kind: 'composer' })
+    await settle()
+    expect(log()).toContain(`No telemetry sent to /v1/heartbeat because ${OFF}`)
+  })
+
+  test('reset --all leaves the telemetry choice', async ($, on) => {
+    const { shared } = await gated($, on, { privacy: { telemetry: false } })
+    expect(await run($, 'reset --all')).toContain('removed: status, stats, config')
+    expect(shared.privacy).toEqual({ telemetry: false })
+    expect(await run($, 'doctor')).toMatch(/telemetry +off/)
+  })
+
+  test('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC set: all three reports are skipped and it is logged', async ($, on) => {
+    const { log, fetched, shared } = await gated($, on, {}, { [FLAG]: '1' })
+    await useBiteq($)
+    for (const path of ['/v1/opens', '/v1/answers', '/v1/heartbeat']) {
+      expect(log()).toContain(`No telemetry sent to ${path} because ${FLAGGED}`)
+    }
+    expect(fetched).toEqual([])
+    expect(shared.userId).toBeUndefined()
+  })
+
+  test('the flag wins in doctor, and never changes the saved choice', async ($, on) => {
+    const { shared, log } = await gated($, on, {}, { [FLAG]: 'true' })
+    expect(await run($, 'doctor')).toMatch(/telemetry +off \(Claude Code setting\)/)   // BiteQ's own is on
+    expect(shared.privacy).toBeUndefined()
+    expect(await run($, 'telemetry')).toBe('biteq: telemetry: off (Claude Code setting; your BiteQ choice is on)')
+    expect(await run($, 'telemetry off')).toContain('your BiteQ choice is off')   // still saved
+    expect(shared.privacy).toEqual({ telemetry: false })
+    await prompt($, { kind: 'composer' })
+    await settle()
+    expect(log()).toContain(FLAGGED)   // the flag is the reason given, not the saved choice
+    expect(log()).not.toContain(OFF)
+  })
+
+  for (const value of ['', '0', 'false', 'FALSE']) {
+    test(`a flag of "${value}" does not count as set`, async ($, on) => {
+      const { log } = await gated($, on, {}, { [FLAG]: value })
+      await prompt($, { kind: 'composer' })
+      await settle()
+      expect(log()).not.toContain(FLAGGED)
+      expect(await run($, 'doctor')).toMatch(/telemetry +on /)
+    })
+  }
 })

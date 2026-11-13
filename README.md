@@ -45,8 +45,9 @@ In the terminal the pane takes the keyboard each time Claude starts working (nev
 | `/biteq langs`         | List question banks, the selected ones first                                                                                                                                              |
 | `/biteq check`         | Validate the question banks                                                                                                                                                               |
 | `/biteq stats`         | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
-| `/biteq doctor`        | Claude Code version, plugin path, store, status, debug log, questions                                                                                                                     |
+| `/biteq doctor`        | Claude Code version, plugin path, store, status, debug log, questions, telemetry on or off                                                                                                                  |
 | `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered                                                      |
+| `/biteq telemetry on\|off` | Turn usage reporting off or back on (see [Telemetry](#telemetry-and-privacy)). `/biteq doctor` shows which. Remembered, and `reset --all` keeps it |
 | `/biteq debug [on\|off]` | Record each event to `~/.biteq/events.log` (`BITEQ_HOME` changes that directory). Remembered                                                                                            |
 | `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log                                                                                                             |
 
@@ -64,6 +65,41 @@ Alpha, version 0.1.0.
 - Supported: the Claude CLI and the Claude desktop app's Code tab, on macOS and Windows.
 - Other clients (for example the VS Code or Cursor extensions) get a basic fallback, not the full pane experience. Cursor's own chat agent doesn't run Claude Code plugins at all.
 - Not built yet: notifications outside Claude Code, focusing the agent app when it's done, and Cursor native-agent support.
+
+## Telemetry and privacy
+
+BiteQ sends anonymous usage counts so we can see how many people use it and whether practising in AI waits sticks. It is on by default and you can turn it off.
+
+**What is sent.** Three kinds of report, each a small request to a BiteQ server:
+
+| Report | When |
+| --- | --- |
+| Open | The pane is shown in a Claude session |
+| Answer | You answer a question |
+| Prompt heartbeat | You send a prompt to Claude, whether or not you use the quiz. We never send your prompts |
+
+Every report carries the same four fields:
+
+- a random ID stored on your machine, not linked to your name, email or Claude account
+- the Claude session ID
+- `terminal` or `desktop`
+- the BiteQ version
+
+**What is never sent.** Your prompts, Claude's replies, your code, file names, which questions you saw, or whether your answers were right.
+
+**Why.** The prompt heartbeat lets us compare people who use BiteQ with people who only use Claude, which is the number we most want to know.
+
+**How long it is kept.** Reports are kept for 30 days.
+
+**Opting out.**
+
+- `/biteq telemetry off` stops all three reports. `/biteq telemetry on` turns them back on.
+- The choice is saved across sessions, and `/biteq reset --all` does not undo it.
+- We always obey Claude Code's `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` setting, whatever your BiteQ telemetry setting is. When it is set, nothing is sent, even if `/biteq telemetry` is on. It never changes your saved choice.
+- `/biteq doctor` shows `telemetry on`, `off (/biteq telemetry on to turn it back on)` or `off (Claude Code setting)`.
+- With `/biteq debug` on, each report that is sent or skipped is logged to `~/.biteq/events.log`.
+
+With telemetry off, nothing is sent and no ID is created. An ID created earlier stays on your machine, unused. The quiz works the same either way.
 
 ## Contributing
 

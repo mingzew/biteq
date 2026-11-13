@@ -2,7 +2,7 @@
 // served after Claude is done (by default it isn't: the pane rests until Claude works again),
 // and whether the debug log is recording.
 import type { Io } from './io'
-import { CONFIG, loadJson, saveJson } from './store'
+import { CONFIG, PRIVACY, loadJson, saveJson } from './store'
 
 export const DEFAULT_LANG = 'cs'
 
@@ -30,6 +30,19 @@ export async function getPauseWhenDone(io: Io): Promise<boolean> {
 
 export async function setPauseWhenDone(io: Io, pause: boolean): Promise<void> {
   await saveJson(io, CONFIG, { ...(await load(io)), pauseWhenDone: pause })
+}
+
+/**
+ * True (the default): biteq reports opens, answers and typed prompts. `/biteq telemetry off` turns all three off.
+ * Remembered in its own store key, so `/biteq reset --all` does not clear it. This is only the saved choice:
+ * telemetry.telemetryState also honours Claude Code's CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC.
+ */
+export async function getTelemetry(io: Io): Promise<boolean> {
+  return (await loadJson<{ telemetry?: boolean }>(io, PRIVACY, {})).telemetry !== false
+}
+
+export async function setTelemetry(io: Io, on: boolean): Promise<void> {
+  await saveJson(io, PRIVACY, { ...(await loadJson<object>(io, PRIVACY, {})), telemetry: on })
 }
 
 /** Off unless `/biteq debug` turned it on. Remembered. `/biteq reset --all` clears it with the rest of config. */
