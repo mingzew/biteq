@@ -58,18 +58,6 @@ In the terminal the pane takes the keyboard each time Claude starts working (nev
 - **Missed questions come back.** Light spaced repetition, and once nothing is unseen they keep coming back until you get them right. When you finish a bank the pane congratulates you, shows how many you got right in one shot, and offers **Start over** or another bank.
 - **Stats are shared by every session.** `/biteq stats` tracks the key number: how many AI waits (from one prompt to the next) you practised in while Claude worked.
 
-## Telemetry and privacy
-
-BiteQ counts how people use it, so we can tell whether it helps. It sends three kinds of report, each a small POST to our server:
-
-- **Open:** the pane was placed in a Claude session.
-- **Answer:** you answered a question.
-- **Prompt:** you typed a prompt to Claude (a heartbeat, so we can compare people who use BiteQ with people who only use Claude). It is sent even if you never open the quiz.
-
-Each report carries only four things: a random ID stored on your machine (not linked to your name, email or account), the Claude session ID, `terminal` or `desktop`, and the BiteQ version. **No prompt text, code, file names or answers are ever sent.** The quiz works the same either way.
-
-To opt out of all three, run `/biteq telemetry off` (`/biteq telemetry on` turns it back on). The choice is remembered across sessions, and `/biteq reset --all` does not undo it. Nothing is sent, and no ID is created if you have none yet. If you already have an ID it stays on your machine, unused. BiteQ also sends nothing when Claude Code's own `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` setting is on; that takes priority and never changes your saved choice. `/biteq doctor` shows `telemetry on`, `off (/biteq telemetry on to turn it back on)` or `off (Claude Code setting)`. With `/biteq debug` on, each skipped report is logged with its reason.
-
 ## Status
 
 Alpha, version 0.1.0.
@@ -77,6 +65,41 @@ Alpha, version 0.1.0.
 - Supported: the Claude CLI and the Claude desktop app's Code tab, on macOS and Windows.
 - Other clients (for example the VS Code or Cursor extensions) get a basic fallback, not the full pane experience. Cursor's own chat agent doesn't run Claude Code plugins at all.
 - Not built yet: notifications outside Claude Code, focusing the agent app when it's done, and Cursor native-agent support.
+
+## Telemetry and privacy
+
+BiteQ sends anonymous usage counts so we can see how many people use it and whether practising in AI waits sticks. It is on by default and you can turn it off.
+
+**What is sent.** Three kinds of report, each a small request to a BiteQ server:
+
+| Report | When |
+| --- | --- |
+| Open | The pane is shown in a Claude session |
+| Answer | You answer a question |
+| Prompt | You send a prompt to Claude, whether or not you use the quiz |
+
+Every report carries the same four fields:
+
+- a random ID stored on your machine, not linked to your name, email or Claude account
+- the Claude session ID
+- `terminal` or `desktop`
+- the BiteQ version
+
+**What is never sent.** Your prompts, Claude's replies, your code, file names, which questions you saw, or whether your answers were right.
+
+**Why.** The prompt report lets us compare people who use BiteQ with people who only use Claude, which is the number we most want to know.
+
+**How long it is kept.** Reports are kept for 30 days.
+
+**Opting out.**
+
+- `/biteq telemetry off` stops all three reports. `/biteq telemetry on` turns them back on.
+- The choice is saved across sessions, and `/biteq reset --all` does not undo it.
+- Claude Code's `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` setting also stops them. It takes priority and never changes your saved choice.
+- `/biteq doctor` shows `telemetry on`, `off (/biteq telemetry on to turn it back on)` or `off (Claude Code setting)`.
+- With `/biteq debug` on, each report that is sent or skipped is logged to `~/.biteq/events.log`.
+
+With telemetry off, nothing is sent and no ID is created. An ID created earlier stays on your machine, unused. The quiz works the same either way.
 
 ## Contributing
 

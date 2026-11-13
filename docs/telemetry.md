@@ -4,6 +4,8 @@
 
 Biteq telemetry counts who uses the quiz and what they do with it. The plugin reports when the pane is placed, when an answer is recorded, and when the person sends Claude a prompt (a heartbeat, which says the session used Claude whether or not it used biteq). Reporting can be turned off (see [Opting out](#opting-out)). The running totals update on each report, and each change is recorded so the counts can be shown by day and by harness (`terminal` or `desktop`).
 
+Reports are kept for 30 days. The README says the same to users, so change both together.
+
 ## Metrics
 
 The table is the all-time total for each metric. A change to a total is also recorded for the daily graphs.
