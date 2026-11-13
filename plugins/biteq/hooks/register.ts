@@ -111,6 +111,7 @@ function io($: EngineInterface): Io {
         case 'BITEQ_HOME': return $.env.get('BITEQ_HOME')
         case 'HOME': return $.env.get('HOME')
         case 'USERPROFILE': return $.env.get('USERPROFILE')
+        case 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC': return $.env.get('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')
       }
     },
     openPane: async focus =>

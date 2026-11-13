@@ -45,8 +45,9 @@ In the terminal the pane takes the keyboard each time Claude starts working (nev
 | `/biteq langs`         | List question banks, the selected ones first                                                                                                                                              |
 | `/biteq check`         | Validate the question banks                                                                                                                                                               |
 | `/biteq stats`         | Your stats: AI waits practised in while Claude worked and at any time, answers, streak, to review; per bank, `correct` (every attempt) and `one-shot` (right the first time, of the bank) |
-| `/biteq doctor`        | Claude Code version, plugin path, store, status, debug log, questions                                                                                                                     |
+| `/biteq doctor`        | Claude Code version, plugin path, store, status, debug log, questions, telemetry on or off                                                                                                                  |
 | `/biteq pause on\|off` | Whether a new question is served once Claude is done: `on` (default) rests until Claude works again, `off` keeps serving. Remembered                                                      |
+| `/biteq telemetry on\|off` | Turn usage reporting off or back on (see [Telemetry](#telemetry-and-privacy)). `/biteq doctor` shows which. Remembered, and `reset --all` keeps it |
 | `/biteq debug [on\|off]` | Record each event to `~/.biteq/events.log` (`BITEQ_HOME` changes that directory). Remembered                                                                                            |
 | `/biteq reset [--all]` | Reset the session status; `--all` also clears stats, config and the debug log                                                                                                             |
 
@@ -56,6 +57,18 @@ In the terminal the pane takes the keyboard each time Claude starts working (nev
 - **One bank at a time.** The default is `cs` (general CS questions, so anyone can start right away). Press `z` at any time to pick another bank; it's saved at once.
 - **Missed questions come back.** Light spaced repetition, and once nothing is unseen they keep coming back until you get them right. When you finish a bank the pane congratulates you, shows how many you got right in one shot, and offers **Start over** or another bank.
 - **Stats are shared by every session.** `/biteq stats` tracks the key number: how many AI waits (from one prompt to the next) you practised in while Claude worked.
+
+## Telemetry and privacy
+
+BiteQ counts how people use it, so we can tell whether it helps. It sends three kinds of report, each a small POST to our server:
+
+- **Open:** the pane was placed in a Claude session.
+- **Answer:** you answered a question.
+- **Prompt:** you typed a prompt to Claude (a heartbeat, so we can compare people who use BiteQ with people who only use Claude). It is sent even if you never open the quiz.
+
+Each report carries only four things: a random ID stored on your machine (not linked to your name, email or account), the Claude session ID, `terminal` or `desktop`, and the BiteQ version. **No prompt text, code, file names or answers are ever sent.** The quiz works the same either way.
+
+To opt out of all three, run `/biteq telemetry off` (`/biteq telemetry on` turns it back on). The choice is remembered across sessions, and `/biteq reset --all` does not undo it. Nothing is sent, and no ID is created if you have none yet. If you already have an ID it stays on your machine, unused. BiteQ also sends nothing when Claude Code's own `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` setting is on; that takes priority and never changes your saved choice. `/biteq doctor` shows `telemetry on`, `off (/biteq telemetry on to turn it back on)` or `off (Claude Code setting)`. With `/biteq debug` on, each skipped report is logged with its reason.
 
 ## Status
 

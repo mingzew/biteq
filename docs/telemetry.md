@@ -2,7 +2,7 @@
 
 ## Description
 
-Biteq telemetry counts who uses the quiz and what they do with it. The plugin reports when the pane is placed, when an answer is recorded, and when the person sends Claude a prompt (a heartbeat, which says the session used Claude whether or not it used biteq). The running totals update on each report, and each change is recorded so the counts can be shown by day and by harness (`terminal` or `desktop`).
+Biteq telemetry counts who uses the quiz and what they do with it. The plugin reports when the pane is placed, when an answer is recorded, and when the person sends Claude a prompt (a heartbeat, which says the session used Claude whether or not it used biteq). Reporting can be turned off (see [Opting out](#opting-out)). The running totals update on each report, and each change is recorded so the counts can be shown by day and by harness (`terminal` or `desktop`).
 
 ## Metrics
 
@@ -192,8 +192,18 @@ It is also added to `PluginState['biteq']` in `types/index.d.ts` and to both `ke
 - **Every typed prompt, no throttle.** Prompts come at human pace, so one small POST each is cheap. There is no atom and no clock.
 - **Independent of the pane.** It does not go through `openPane`, `onStatus` or `dismissed`, so it still goes after the person pressed `q` or closed the pane, and when the pane was never placed.
 - **Never in the way.** The POST is not awaited, and the hook always calls `next(e)` after starting it: it only observes. A report that fails is dropped.
-- **Same skip rules** as the other two: a checkout path, an unsupported client, and a thrown or non-2xx POST. Nothing about the prompt is sent, only the four payload fields.
+- **Same skip rules** as the other two: opted out (below), a checkout path, an unsupported client, and a thrown or non-2xx POST. Nothing about the prompt is sent, only the four payload fields.
 - **A blind spot.** If the plugin is disabled or not loaded, no hook runs and no heartbeat is sent.
+
+### Opting out
+
+One switch covers all three reports (opens, answers and the heartbeat). Telemetry is on by default.
+
+- **`/biteq telemetry on|off`** saves the choice in its own store key, `privacy` (`{ telemetry: boolean }`), so it lasts across sessions. It is not part of `config`, so `/biteq reset --all` (which deletes `config`) never switches reporting back on. With no argument the command shows the current state.
+- **`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`** wins over the saved choice. Any value other than empty, `0` or `false` counts as set. The plugin reads it with `$.env.get` through `io.env`, since the engine does not refuse a request without `auth`. It never changes the saved choice: unset the variable and the saved choice applies again.
+- **The check runs first in `send()`** (`telemetry.telemetryState`), before the endpoint, client and payload steps. So when reporting is off no `userId` is created or stored, and `openReported` is not set. A `userId` that already exists is left in place (not deleted, not sent), so turning telemetry back on keeps the same machine counted once.
+- **`/biteq doctor`** shows `telemetry on`, `off (/biteq telemetry on to turn it back on)` or `off (Claude Code setting)`. The Claude Code setting is shown even when the saved choice is on.
+- A report already sent before the person opts out stays counted. The first open goes at session start, before a command can run.
 
 ### Preventing duplicate opens
 
@@ -559,16 +569,16 @@ Stack outputs:
 
 ### Plugin
 
-`telemetry.ts` must not touch `$`. `httpPost` is `$.http.fetch` with method `POST`, a JSON content type, and the body string, mapped to `{ ok: response.ok }`. No `auth` field, so `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` does not refuse it. An organization web-fetch policy still can, and that refusal is a dropped event.
+`telemetry.ts` must not touch `$`. `httpPost` is `$.http.fetch` with method `POST`, a JSON content type, and the body string, mapped to `{ ok: response.ok }`. The engine only refuses a plugin's request that carries `auth`, and this one carries none, so the plugin honours `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` itself (see [Opting out](#opting-out)). An organization web-fetch policy can also refuse it, and that refusal is a dropped event.
 
-A report is skipped when `io.pluginRoot` does not contain `.claude/plugins/cache/` (`claude --plugin-dir` and `claude plugin test` both load the checkout), when `io.client()` is not `terminal` or `desktop`, or when the POST throws or returns a non-2xx.
+A report is skipped first when it is opted out (see [Opting out](#opting-out)). It is also skipped when `io.pluginRoot` does not contain `.claude/plugins/cache/` (`claude --plugin-dir` and `claude plugin test` both load the checkout), when `io.client()` is not `terminal` or `desktop`, or when the POST throws or returns a non-2xx.
 
-`/biteq debug` turns on the event log (`~/.biteq/events.log`). It does not change that cache rule. While the log is on, a POST that is sent appends one line: the path (`/v1/opens`, `/v1/answers` or `/v1/heartbeat`), whether the response was ok, and the Claude event that happened before the POST. A report skipped for a missing endpoint or a checkout path appends `Would have sent telemetry to endpoint <url> but <reason>`. `/biteq debug off` stops the log. `/biteq reset --all` clears it with the rest of config.
+`/biteq debug` turns on the event log (`~/.biteq/events.log`). It does not change that cache rule. While the log is on, a POST that is sent appends one line: the path (`/v1/opens`, `/v1/answers` or `/v1/heartbeat`), whether the response was ok, and the Claude event that happened before the POST. A report skipped because it is opted out appends `No telemetry sent to <path> because <reason>`, with the reason `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set` or `telemetry was turned off by the user`. A report skipped for a missing endpoint or a checkout path appends `Would have sent telemetry to endpoint <url> but <reason>`. `/biteq debug off` stops the log. `/biteq reset --all` clears it with the rest of config.
 
 - `types/index.d.ts`. Add `openReported: boolean` to `PluginState['biteq']`.
 - `register.ts`. Declare the `openReported` atom, default `false`, and add a case to both `io()` switches. Implement `sessionId` and `httpPost`. From `openPane`, after `isPlaced` is true, call `reportOpen` without awaiting it.
 - `io.ts`. Add `sessionId(): Promise<string>` and `httpPost(url, body): Promise<{ ok: boolean }>` to `Io`.
-- `store.ts`. Add the store key `userId`. `/biteq reset --all` keeps deleting `stats` and `config` only.
+- `store.ts`. Add the store keys `userId` and `privacy`. `/biteq reset --all` keeps deleting `stats` and `config` only.
 - `hooks/biteq/telemetry.ts`. New. Builds the two payloads, applies the skip rules above, and reads `version` from `${pluginRoot}/.claude-plugin/plugin.json`. When `userId` is missing, write it to the store before the POST. Set `openReported` only when the response is 2xx. The endpoint constant is the `BiteqTelemetryUrl` stack output.
 - `pane.tsx`. After `answer` has saved stats for a new answer, call the answer report. A repeat press already returns before that save, so it does not report.
 - `register.ts` and `telemetry.ts` (heartbeat). Add `reportPrompt`, which sends `/v1/heartbeat` through the same `send`. In the existing `on('prompt.submit')` hook, when `/biteq` is not what was typed and `e.origin.kind === 'composer'`, call it without awaiting, then `next(e)`. No new atom, `Io` member or store key.
