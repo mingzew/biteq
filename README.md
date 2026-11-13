@@ -95,7 +95,7 @@ Every report carries the same four fields:
 
 - `/biteq telemetry off` stops all three reports. `/biteq telemetry on` turns them back on.
 - The choice is saved across sessions, and `/biteq reset --all` does not undo it.
-- Claude Code's `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` setting also stops them. It takes priority and never changes your saved choice.
+- We always obey Claude Code's `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` setting, whatever your BiteQ telemetry setting is. When it is set, nothing is sent, even if `/biteq telemetry` is on. It never changes your saved choice.
 - `/biteq doctor` shows `telemetry on`, `off (/biteq telemetry on to turn it back on)` or `off (Claude Code setting)`.
 - With `/biteq debug` on, each report that is sent or skipped is logged to `~/.biteq/events.log`.
 
