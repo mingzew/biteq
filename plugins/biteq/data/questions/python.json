@@ -294,16 +294,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #28"
   },
   {
-    "id": "python-fcc-029",
-    "prompt": "What does this print?",
-    "code": "print((10, 20, 30, 40, 50, 60, 70, 80)[2:5])",
-    "options": ["(30, 40, 50)", "(30, 40, 50, 60)", "(10, 20, 30)", "(20, 30, 40)"],
-    "answer": 0,
-    "explanation": "A slice [2:5] starts at index 2 and stops before index 5, so it takes indexes 2, 3 and 4: (30, 40, 50).",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #29"
-  },
-  {
     "id": "python-fcc-030",
     "prompt": "What does this print?",
     "code": "print((100,) * 2)",
@@ -314,15 +304,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #30"
   },
   {
-    "id": "python-fcc-032",
-    "prompt": "Which Type casting method lets users convert a specific data type into a required data type?",
-    "options": ["Default Type Conversion", "Widening Type Conversion", "Explicit Type Conversion", "Implicit Type Conversion"],
-    "answer": 2,
-    "explanation": "In Explicit Type Conversion, users convert the data type of an object to the required data type.",
-    "practicality": 3,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #32"
-  },
-  {
     "id": "python-fcc-034",
     "prompt": "What do these return?",
     "code": "type(1)\ntype((1,))",
@@ -331,15 +312,6 @@
     "explanation": "type() returns the class of a value. type(1) is <class 'int'>, and type((1,)) is <class 'tuple'> because the comma makes it a one-item tuple.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #34"
-  },
-  {
-    "id": "python-fcc-036",
-    "prompt": "What is the correct way to create a function?",
-    "options": ["function function_name(parameter):", "def function_name(parameters):", "definition function_name {[parameters]}:", "create function_name(parameters):"],
-    "answer": 1,
-    "explanation": "The following snippet shows the general syntax to define a function in Python: def function_name(parameters):",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #36"
   },
   {
     "id": "python-fcc-039",
@@ -358,24 +330,6 @@
     "explanation": "Python functions return the special value of None if they do not have an explicit return statement.",
     "practicality": 8,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #58"
-  },
-  {
-    "id": "python-fcc-070",
-    "prompt": "String literals prefixed with 'f' or 'F' are commonly called...",
-    "options": ["x-string", "strings-f", "p-string", "f-strings"],
-    "answer": 3,
-    "explanation": "An f-string is a string with f in front. Anything inside {} is evaluated and put into the text, so you don't have to glue pieces together with + and str(). In a regular string, braces are just characters. (Python 3.6+)\n\nname = 'Ada'\nscore = 92.456\n'Hello, ' + name + '! Score: ' + str(round(score, 1))   # => 'Hello, Ada! Score: 92.5'  (regular string: join with + and str())\nf'Hello, {name}! Score: {score:.1f}'                    # => 'Hello, Ada! Score: 92.5'  (f-string: {} runs the code; :.1f means 1 decimal)\n'{name}'                                                # => '{name}'  (no f, so the braces stay as text)",
-    "practicality": 6,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #70"
-  },
-  {
-    "id": "python-fcc-082",
-    "prompt": "How can you check if the key \"Nora\" is in the \"names\" dictionary?",
-    "options": ["\"Nora\" in names", "names is in \"Nora\"", "names in \"Nora\"", "\"Nora\" is in names"],
-    "answer": 0,
-    "explanation": "To check if a key is in a dictionary, first we write the key followed by in and then the name of the dictionary. In this case, the correct option is \"Nora\" in names.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #82"
   },
   {
     "id": "python-fcc-083",
@@ -432,15 +386,6 @@
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #95"
   },
   {
-    "id": "python-fcc-099",
-    "prompt": "How many spaces are recommended per level of indentation?",
-    "options": ["6", "2", "8", "4"],
-    "answer": 3,
-    "explanation": "In Python, it is recommended to use 4 spaces per level of indentation.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #99"
-  },
-  {
     "id": "python-fcc-101",
     "prompt": "Are tuples mutable or immutable?",
     "options": ["Mutable", "Both Mutable and Immutable", "Neither Mutable or Immutable", "Immutable"],
@@ -448,15 +393,6 @@
     "explanation": "Tuples are immutable built-in data structures in Python. This means that you cannot add new elements to a tuple, you cannot update existing elements and you cannot remove elements from a tuple.",
     "practicality": 6,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #101"
-  },
-  {
-    "id": "python-fcc-103",
-    "prompt": "What is the name of the exception raised when the interpreter detects that the maximum recursion depth is exceeded?",
-    "options": ["IndexError", "Infinite Loop", "NameError", "RecursionError"],
-    "answer": 3,
-    "explanation": "A RecursionError occurs when the interpreter detects that the maximum recursion depth is exceeded. This usually occurs when the recursive process never reaches the base case.",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #103"
   },
   {
     "id": "python-fcc-115",
@@ -475,24 +411,6 @@
     "explanation": "__init__.py marks a directory as a regular package and runs when the package is imported. Since Python 3.3, a directory without one can still be imported as a namespace package. __main__.py is what python -m package runs.",
     "practicality": 5,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #118"
-  },
-  {
-    "id": "python-fcc-119",
-    "prompt": "What does the partition() function do?",
-    "options": ["Split the string at any occurrence of the given argument", "Splits the string at the first occurrence and returns a list", "Splits the string at the first occurrence and returns a tuple", "Splits the string equally"],
-    "answer": 2,
-    "explanation": "partition() finds the first occurrence of a separator and returns a tuple of three parts: the text before it, the separator, and the text after it.\n\n'a-b-c'.partition('-')   # => ('a', '-', 'b-c')",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #119"
-  },
-  {
-    "id": "python-fcc-121",
-    "prompt": "Function range(4) will yield an iterable sequence like:",
-    "options": ["[0, 1, 2, 3, 4]", "[4]", "[0, 1, 2, 3]", "[1, 2, 3, 4]"],
-    "answer": 2,
-    "explanation": "range(4) starts at 0 by default and stops before 4: 0, 1, 2, 3.",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #121"
   },
   {
     "id": "python-fcc-123",
@@ -568,24 +486,5 @@
     "explanation": "eval() runs whatever text it is given as Python code, so if a user can type that text, they can make your program run any code they like. Never use it on input you don't control. If you only need to read a literal such as a list or dict, use ast.literal_eval(), which refuses anything that isn't plain data.\n\ntext = input()                 # a user types: __import__('os').getcwd()\neval(text)                     # => runs the call (an attacker could just as easily delete files)\n\nimport ast\nast.literal_eval(text)         # => ValueError: malformed node or string  (code is refused)\nast.literal_eval(\"[1, 2, 3]\")  # => [1, 2, 3]  (plain data is fine)",
     "practicality": 7,
     "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #158"
-  },
-  {
-    "id": "python-fcc-159",
-    "prompt": "What does this print?",
-    "code": "print([num * num for num in range(10)])",
-    "options": ["[0, 2, 4, 6, 8, 10, 12, 14, 16, 18]", "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]", "[0, 1, 4, 9, 16, 25, 36, 49, 64, 81]", "Error"],
-    "answer": 2,
-    "explanation": "This is a list comprehension that prints a list of squares from 0 to 9. We use list comprehensions to simplify one-liner operations in a for loop",
-    "practicality": 8,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #159"
-  },
-  {
-    "id": "python-fcc-161",
-    "prompt": "Which of the following statements about decorators is false?",
-    "options": ["Decorators can be applied to classes as well as functions.", "Decorators are applied to a function at compile time.", "A decorator is a function that takes another function and extends its behavior without explicitly modifying it.", "Multiple decorators can be applied to a single function."],
-    "answer": 1,
-    "explanation": "A decorator is a function that takes a function and returns a replacement, so you can add behaviour such as caching, timing, logging or login checks without editing the function itself. The false statement is \"at compile time\": a decorator runs when the def statement runs, and the name is bound to whatever it returns.\n\n@lru_cache             # shorthand for: slow = lru_cache(slow)\ndef slow(n):           # lru_cache(slow) runs right here, when def executes\n    return n * n\n\nslow(4)                # => 16  (the result is cached, so the next slow(4) skips the work)",
-    "practicality": 5,
-    "source": "freeCodeCamp/Developer_Quiz_Site python-quiz #161"
   }
 ]

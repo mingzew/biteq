@@ -20,41 +20,9 @@ entry for each changed question whenever you import (see "Importing questions" i
 | lydiahallie/javascript-questions | a8b427b9f7f9 | `js-lydia-<n>` | 2026-10-14 |
 | freeCodeCamp/Developer_Quiz_Site | d71a60ba0811 | `python-fcc-<n>`, `cs-fcc-<n>`, `js-fcc-<n>` | 2026-10-18 |
 
-## 1. The source marked the wrong answer (7)
+## 1. The source marked the wrong answer (6)
 
 I changed which answer is correct. Check these first.
-
-### `python-fcc-121` (python-quiz.ts #121)
-
-- [ ] Checked by us
-
-*Why:* range(4) is 0, 1, 2, 3, not 1-4.
-
-*Explanation:* rewritten · *Practicality:* 8
-
-**Original**
-
-In Python, Function range(4) will yield an iterable sequence like: 
-
-- ✅ [1,2,3,4]
-- ▫️ [0,1,2,3,4]
-- ▫️ [0,1,2,3]
-- ▫️ [4]
-
-> If you don't specify the start index, the default start index of 0 is used.
-
-**Ours**
-
-Function range(4) will yield an iterable sequence like:
-
-- ▫️ [0, 1, 2, 3, 4]
-- ▫️ [4]
-- ✅ [0, 1, 2, 3]
-- ▫️ [1, 2, 3, 4]
-
-> range(4) starts at 0 by default and stops before 4: 0, 1, 2, 3.
-
----
 
 ### `cs-fcc-013` (general-cs-quiz.ts #13)
 
@@ -540,7 +508,7 @@ Which one of the following is considered a primitive value?
 
 ---
 
-## 3. Duplicate or broken options (4)
+## 3. Duplicate or broken options (3)
 
 Two options were identical, so I replaced one.
 
@@ -577,42 +545,6 @@ What does this evaluate to?
 - ▫️ 0.0
 
 > // is floor division: it divides and rounds down to a whole number. 2 / 4 is 0.5, so 2 // 4 is 0 (an int, since both operands are ints).
-
----
-
-### `python-fcc-029` (python-quiz.ts #29)
-
-- [ ] Checked by us
-
-*Why:* Options had (30, 40, 50) twice.
-
-*Explanation:* rewritten · *Practicality:* 8
-
-**Original**
-
-What is the output of the following Python code: print((10, 20, 30, 40, 50, 60, 70, 80)[2:5])?
-
-- ✅ (30, 40, 50)
-- ▫️ (10, 30 ,40, 50)
-- ▫️ (30, 40, 50)
-- ▫️ (10, 20, 30)
-
-> To get a sub tuple out of the Tuple, we need to specify the range of indexes. We need to specify where to start and where to end the range.
-
-**Ours**
-
-What does this print?
-
-```
-print((10, 20, 30, 40, 50, 60, 70, 80)[2:5])
-```
-
-- ✅ (30, 40, 50)
-- ▫️ (30, 40, 50, 60)
-- ▫️ (10, 20, 30)
-- ▫️ (20, 30, 40)
-
-> A slice [2:5] starts at index 2 and stops before index 5, so it takes indexes 2, 3 and 4: (30, 40, 50).
 
 ---
 
@@ -1438,7 +1370,7 @@ Which type of cookie is deleted when the browser session ends?
 
 ---
 
-## 5. Explanation was wrong (answer unchanged) (9)
+## 5. Explanation was wrong (answer unchanged) (8)
 
 ### `python-fcc-017` (python-quiz.ts #17)
 
@@ -1479,44 +1411,6 @@ numbers = [1, 2, 3, 4, 5]
 > numbers[len(numbers) - 1]  # => 5  (the same item, with the index spelled out)
 > numbers[len(numbers)]      # => IndexError: list index out of range  (the last index is len - 1)
 > numbers.pop()              # => 5  (but numbers is now [1, 2, 3, 4])
-
----
-
-### `python-fcc-070` (python-quiz.ts #70)
-
-- [ ] Checked by us
-
-*Why:* The explanation only repeated the question. It now says what an f-string is, why it is used, and how a regular string treats the same braces.
-
-*Explanation:* rewritten · *Practicality:* 6
-
-**Original**
-
-String literals prefixed with 'f' or 'F' are commonly called...
-
-- ▫️ x-string
-- ▫️ strings-f
-- ▫️ p-string
-- ✅ f-strings
-
-> f-strings are string literals prefixed with 'f' and 'F' in Python.
-
-**Ours**
-
-String literals prefixed with 'f' or 'F' are commonly called...
-
-- ▫️ x-string
-- ▫️ strings-f
-- ▫️ p-string
-- ✅ f-strings
-
-> An f-string is a string with f in front. Anything inside {} is evaluated and put into the text, so you don't have to glue pieces together with + and str(). In a regular string, braces are just characters. (Python 3.6+)
->
-> name = 'Ada'
-> score = 92.456
-> 'Hello, ' + name + '! Score: ' + str(round(score, 1))   # => 'Hello, Ada! Score: 92.5'  (regular string: join with + and str())
-> f'Hello, {name}! Score: {score:.1f}'                    # => 'Hello, Ada! Score: 92.5'  (f-string: {} runs the code; :.1f means 1 decimal)
-> '{name}'                                                # => '{name}'  (no f, so the braces stay as text)
 
 ---
 
@@ -2623,7 +2517,7 @@ console.log(shape.perimeter());
 
 ---
 
-## 7. Wording or typos only (11)
+## 7. Wording or typos only (10)
 
 No change in meaning; listed so nothing is hidden.
 
@@ -2656,44 +2550,6 @@ Which statement makes sure a file opened with open() gets closed?
 - ✅ with
 
 > Calling the open() function while using the with statement automatically closes a file after being processed.
-
----
-
-### `python-fcc-161` (python-quiz.ts #161)
-
-- [ ] Checked by us
-
-*Why:* Dropped "Python".
-
-*Explanation:* rewritten · *Practicality:* 5
-
-**Original**
-
-Which of the following statements about Python decorators is false?
-
-- ✅ Decorators are applied to a function at compile time.
-- ▫️ A decorator is a function that takes another function and extends its behavior without explicitly modifying it.
-- ▫️ Decorators can be applied to classes as well as functions.
-- ▫️ Multiple decorators can be applied to a single function.
-
-> Decorators in Python are applied at runtime, not at compile time. When a decorated function is defined, the decorator is executed immediately, and the result replaces the original function definition in the namespace.
-
-**Ours**
-
-Which of the following statements about decorators is false?
-
-- ▫️ Decorators can be applied to classes as well as functions.
-- ✅ Decorators are applied to a function at compile time.
-- ▫️ A decorator is a function that takes another function and extends its behavior without explicitly modifying it.
-- ▫️ Multiple decorators can be applied to a single function.
-
-> A decorator is a function that takes a function and returns a replacement, so you can add behaviour such as caching, timing, logging or login checks without editing the function itself. The false statement is "at compile time": a decorator runs when the def statement runs, and the name is bound to whatever it returns.
->
-> @lru_cache             # shorthand for: slow = lru_cache(slow)
-> def slow(n):           # lru_cache(slow) runs right here, when def executes
->     return n * n
->
-> slow(4)                # => 16  (the result is cached, so the next slow(4) skips the work)
 
 ---
 
@@ -2985,7 +2841,7 @@ Which of the following options is a web API that runs code asynchronously?
 
 ---
 
-## 8. Explanation now says what the function does (19)
+## 8. Explanation now says what the function does (18)
 
 The question depends on knowing a function, and the explanation didn't say what it does. Question text and options are unchanged.
 
@@ -3028,40 +2884,6 @@ type((1,))
 - ▫️ <class 'str'> <class 'int'>
 
 > type() returns the class of a value. type(1) is <class 'int'>, and type((1,)) is <class 'tuple'> because the comma makes it a one-item tuple.
-
----
-
-### `python-fcc-119` (freeCodeCamp/Developer_Quiz_Site python-quiz #119)
-
-- [ ] Checked by us
-
-*Why:* Added what the function does, because the question depends on knowing it.
-
-*Explanation:* rewritten · *Practicality:* 5
-
-**Original**
-
-What does the partition() function do?
-
-- ▫️ Split the string at any occurrence of the given argument
-- ▫️ Splits the string at the first occurrence and returns a list
-- ✅ Splits the string at the first occurrence and returns a tuple
-- ▫️ Splits the string equally
-
-> The partition() method searches for a specified string, and splits the string into a tuple containing three elements.
-
-**Ours**
-
-What does the partition() function do?
-
-- ▫️ Split the string at any occurrence of the given argument
-- ▫️ Splits the string at the first occurrence and returns a list
-- ✅ Splits the string at the first occurrence and returns a tuple
-- ▫️ Splits the string equally
-
-> partition() finds the first occurrence of a separator and returns a tuple of three parts: the text before it, the separator, and the text after it.
-> 
-> 'a-b-c'.partition('-')   # => ('a', '-', 'b-c')
 
 ---
 
