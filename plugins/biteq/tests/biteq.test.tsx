@@ -399,18 +399,18 @@ describe('inline CLI pane: fullscreen', () => {
     return { ui, ran }
   }
   const NOTE = /BiteQ requires fullscreen to work/
-  const fButton = (ui: Drawing) => find(ui, { type: 'Button', text: /^switch to fullscreen$/ })
 
-  test('inline in the terminal, only the title and the note: f and /tui fullscreen in the BiteQ colour', async ($, on) => {
+  test('inline in the terminal, only the title and the note: /tui fullscreen in the BiteQ colour', async ($, on) => {
     const { ui } = await pane($, on, 'terminal', INLINE)
     expect(await find(ui, { text: /^BiteQ$/ })).toBeDefined()
-    const parts = ['BiteQ requires fullscreen to work. Press ', 'f', ' to switch to fullscreen or run ', '/tui fullscreen', '.']
+    const parts = ['BiteQ requires fullscreen to work. Run ', '/tui fullscreen', '.']
     for (const part of parts) {
       const props = (await find(ui, { text: new RegExp(`^${part.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`) }))?.props
-      expect(props).toMatchObject({ bold: true, ...(part === 'f' || part === '/tui fullscreen' ? { color: '#F58700' } : {}) })
+      expect(props).toMatchObject({ bold: true, ...(part === '/tui fullscreen' ? { color: '#F58700' } : {}) })
       expect(props?.dimColor).toBeUndefined()   // never dimmed, so it stands out
     }
-    expect((await fButton(ui))?.props).toMatchObject({ hotkey: 'f' })
+    // no key to press: the person runs the command, so nothing changes their settings unseen
+    expect(await find(ui, { type: 'Button' })).toBeUndefined()
     // nothing else: no streak, no question, no hint bar
     for (const gone of [/^streak /, /^Pick /, /^skip$/, /^banks$/, /^close$/]) expect(await find(ui, { text: gone })).toBeUndefined()
   })
@@ -419,7 +419,6 @@ describe('inline CLI pane: fullscreen', () => {
     const { ui } = await pane($, on, 'terminal', PANE)
     expect(await find(ui, { text: /^Pick / })).toBeDefined()
     expect(await find(ui, { text: NOTE })).toBeUndefined()
-    expect(await fButton(ui)).toBeUndefined()
   })
 
   // VS Code shares the CLI's drawing (no Client module): the offersFullscreen trait keeps the quiz there
@@ -435,20 +434,6 @@ describe('inline CLI pane: fullscreen', () => {
     expect(traitsOf(Client.ClaudeCli).offersFullscreen).toBe(true)
     expect(traitsOf(Client.ClaudeDesktop).offersFullscreen).toBe(false)
     expect(traitsOf(null).offersFullscreen).toBe(false)
-  })
-
-  test("f runs Claude Code's /tui fullscreen, once however often it is pressed", async ($, on) => {
-    const { ui, ran } = await pane($, on, 'terminal', INLINE)
-    await click(ui, /^switch to fullscreen$/)
-    await click(ui, /^switch to fullscreen$/)
-    await $.turn.complete(DONE)   // the command waits for the session to be idle
-    await new Promise<void>(resolve => setTimeout(() => resolve(), 20))
-    expect(ran).toEqual(['tui fullscreen'])
-  })
-
-  test("f stays out of the arrow keys' focus ring, like the hint bar", async ($, on) => {
-    await pane($, on, 'terminal', INLINE)
-    expect(await $.ui.focus({ requestId: 'biteq', element: keys.fullscreen, origin: { kind: 'person' } } as never)).toMatchObject({ deny: expect.stringContaining('hint bar') } as never)
   })
 })
 

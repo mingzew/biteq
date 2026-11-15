@@ -123,7 +123,6 @@ function io($: EngineInterface): Io {
       try { await $.ui.focus({ requestId: PANE, key }) } catch { /* deny, or a surface with no ring */ }
       finally { ownFocus = null }
     },
-    switchToFullscreen: async () => { await $.command.run({ command: 'tui', args: 'fullscreen' }) },
     client: async () => toClient(await $.session.surface()),
     traits: async () => traitsOf(toClient(await $.session.surface()), windows),
     version: async () => (await $.session.version()).version,

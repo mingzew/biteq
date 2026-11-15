@@ -40,7 +40,7 @@ Then start a new session. Check it worked with `claude plugin list` (it shows `b
 
 ## First run
 
-1. The pane opens with your session. In the terminal it needs Claude Code's fullscreen layout: if it says "BiteQ requires fullscreen to work", press `f` (or run `/tui fullscreen`) and it docks beside the chat. In a terminal narrower than 144 columns, type `/biteq` to open it.
+1. The pane opens with your session. In the terminal it needs Claude Code's fullscreen layout: if it says "BiteQ requires fullscreen to work", run `/tui fullscreen` and it docks beside the chat. In a terminal narrower than 144 columns, type `/biteq` to open it.
 2. Prompt Claude. A question appears while Claude works.
 3. Answer it, then move on.
 
