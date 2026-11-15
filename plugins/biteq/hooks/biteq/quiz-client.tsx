@@ -45,7 +45,6 @@ export const keys = {
   restart: 'restart', // every selected question answered: serve them again
   banks: 'banks',     // z: open the bank screen, or go back to the quiz
   bank: (lang: string) => `bank:${lang}`,   // practise this bank
-  fullscreen: 'fullscreen',     // f, inline CLI pane: switch Claude Code to fullscreen (/tui fullscreen)
 }
 
 /**
@@ -84,7 +83,7 @@ function hintBar(v: PaneView, el: QuizElements, traits: ClientTraits, onPress: (
 
 /** The pane keys the terminal's hint bar presses: never in the arrow keys' focus ring. */
 export function isHintKey(key: string): boolean {
-  return key === keys.fullscreen || key === keys.close || key === keys.serve || key === keys.always || key === keys.restart || key === keys.banks || key.startsWith('next:') || key.startsWith('skip:')
+  return key === keys.close || key === keys.serve || key === keys.always || key === keys.restart || key === keys.banks || key.startsWith('next:') || key.startsWith('skip:')
 }
 
 export type PaneView = {
@@ -179,7 +178,7 @@ export function drawQuiz(
     </Box>
   )
   // Inline, the CLI pane can't dock or take clicks, so it shows nothing but the way to fullscreen
-  if (traits.offersFullscreen && v.inline) return needsFullscreen(title, el, onPress)
+  if (traits.offersFullscreen && v.inline) return needsFullscreen(title, el)
 
   return (
     <Box flexDirection="column" gap={1} alignItems={align} flexGrow={hints ? 1 : undefined} minHeight={fill}>
@@ -286,26 +285,20 @@ export function drawQuiz(
 }
 
 /**
- * The inline CLI pane: the title and how to switch to fullscreen, nothing else. Inline it can't dock or take
- * clicks, and Claude Code's fullscreen layout does both. f is the person's yes: Claude Code's own /tui fullscreen
- * saves it and switches (at once, or once Claude is idle), and the pane redraws docked with the quiz. The note is
- * bold and never dimmed, the keys in the BiteQ colour. f presses a Button clipped out of sight, as the hint bar's n.
+ * The inline CLI pane: the title and the command that switches to fullscreen, nothing else. Inline it can't dock
+ * or take clicks, and Claude Code's fullscreen layout does both. The person runs /tui fullscreen themselves (Claude
+ * Code saves it), and the pane redraws docked with the quiz. The note is bold and never dimmed, the command in the
+ * BiteQ colour.
  */
-function needsFullscreen(title: false | RenderElement, el: QuizElements, onPress: (key: string) => void) {
-  const { Box, Text, Button } = el
-  const key = (text: string) => <Text bold color={TITLE_COLOR}>{text}</Text>
+function needsFullscreen(title: false | RenderElement, el: QuizElements) {
+  const { Box, Text } = el
   return (
     <Box flexDirection="column" gap={1}>
       {title}
       <Box flexWrap="wrap">
-        <Text bold>BiteQ requires fullscreen to work. Press </Text>
-        {key('f')}
-        <Text bold> to switch to fullscreen or run </Text>
-        {key('/tui fullscreen')}
+        <Text bold>BiteQ requires fullscreen to work. Run </Text>
+        <Text bold color={TITLE_COLOR}>/tui fullscreen</Text>
         <Text bold>.</Text>
-      </Box>
-      <Box key="hidden-fullscreen" position="absolute" width={0} height={0} overflow="hidden">
-        <Button key={keys.fullscreen} label="switch to fullscreen" hotkey="f" plain onPress={() => onPress(keys.fullscreen)} />
       </Box>
     </Box>
   )

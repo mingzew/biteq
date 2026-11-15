@@ -61,8 +61,8 @@ export type ClientTraits = {
   /** A wrapped Button label comes out centered, so a long answer is drawn as one Button per word. */
   wordButtons: boolean
   /**
-   * Drawn inline (the terminal's classic layout), the pane shows only how to switch Claude Code to fullscreen, where
-   * it docks beside the chat and takes clicks. The person's f is the yes; Claude Code's own /tui makes the change.
+   * Drawn inline (the terminal's classic layout), the pane shows only the command that switches Claude Code to
+   * fullscreen (/tui fullscreen), where it docks beside the chat and takes clicks. The person runs it themselves.
    */
   offersFullscreen: boolean
 }
