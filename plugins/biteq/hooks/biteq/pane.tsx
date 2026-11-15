@@ -330,6 +330,20 @@ export async function press(io: Io, pressed: string): Promise<void> {
   else if (action === 'restart') await restart(io)
   else if (action === 'always') await always(io)
   else if (action === 'close') await close(io)
+  else if (action === 'fullscreen') await fullscreen(io)
+}
+
+// The switch asked for this session: the command waits until Claude is idle, and a second f meanwhile would queue another
+let switching = false
+
+/**
+ * f on the inline CLI pane: Claude Code's own /tui fullscreen. Not awaited: it runs once the session is idle, and
+ * this press shouldn't wait for Claude. Once it runs the pane redraws docked, with the quiz.
+ */
+async function fullscreen(io: Io): Promise<void> {
+  if (switching || !(await io.traits()).offersFullscreen) return
+  switching = true
+  void io.switchToFullscreen().catch(() => { switching = false })   // refused: f can try again
 }
 
 // ---------------------------------------------------------------- drawing

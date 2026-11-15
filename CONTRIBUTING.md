@@ -112,7 +112,7 @@ The question banks have their own check, `/biteq check`, which is separate from 
 
 The test kit can't reproduce everything, such as a click from a stale drawing, real focus or layout. For pane layout and keys, also try a real session with `claude --plugin-dir ./plugins/biteq`.
 
-- Exit with `/exit`, never kill `claude`. Killed sessions make Claude Code turn fullscreen off by itself, after which the pane can't dock. If that happens, remove `"fullscreenAutoDisabled"` from `~/.claude.json` and restart.
+- Exit with `/exit`, never kill `claude`. Killed sessions make Claude Code turn fullscreen off by itself, after which the pane can't dock. If that happens, remove `"fullscreenAutoDisabled"` from `~/.claude.json` and restart. Without fullscreen the CLI pane shows only "BiteQ requires fullscreen to work"; `f` on the pane, or `/tui fullscreen`, switches.
 - Press Esc and confirm the prompt has the keyboard before you type a prompt, or your letters land on pane hotkeys.
 - Desktop app sessions load the plugin when they start, so open a new Code session to see a change. The pane title shows the version from `.claude-plugin/plugin.json`; bump it to confirm a new session picked your change up.
 - Stats and config live in `~/.claude/plugins/store/biteq_*.json`, shared by every session. Don't leave test runs' changes in your real store.

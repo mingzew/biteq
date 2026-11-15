@@ -27,6 +27,10 @@ between Claude Code releases; the engine's own declarations are the authority (s
   bottom row (`n: skip · z: banks · q: close`, `⏎ next` after answering) and are never in the focus ring.
   The pane asks for the keyboard each time Claude starts working (the engine refuses over a half-typed prompt),
   so `a`-`d` answer without `ctrl+x tab`; Esc hands it back to the prompt.
+- **The CLI quiz needs fullscreen:** the CLI pane only docks and takes clicks in Claude Code's fullscreen layout.
+  Inline, it shows only the title and "BiteQ requires fullscreen to work. Press f to switch to fullscreen or run
+  /tui fullscreen." `f` runs Claude Code's own `/tui fullscreen` (the person's press is the consent; Claude Code
+  saves it). Never change the setting without that press. A plugin can't run a command from a `command.run` hook.
 - **Banks are switched in the pane** (`z`, any time): a screen where picking a bank replaces the last, digits `1`-`9` in the CLI, saved
   as it changes. `z` again goes back to the quiz.
 - **Closing:** the CLI keeps `q: close` in its hint bar; the desktop pane has no Close button (its own X closes it).

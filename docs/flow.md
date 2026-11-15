@@ -130,6 +130,11 @@ once Claude was done; the difference between the two is those waits.
 - **`classic.Notification` with `permission_prompt`** sets `waiting`. The `tool.call` "after" step flips it back
   to `thinking`.
 - **`classic.Notification` with `idle_prompt`** sets `done`.
+- **`f` on an inline CLI pane.** When the render hook's `placement` is `inline`, the CLI pane draws only its title and
+  "BiteQ requires fullscreen to work. Press f to switch to fullscreen or run /tui fullscreen." (questions are still
+  served underneath). `f` calls `pane.fullscreen()`, which starts `io.switchToFullscreen()` (`$.command.run` of
+  `/tui fullscreen`) without awaiting it: the command runs once the session is idle. Claude Code saves
+  `"tui": "fullscreen"` and switches, and the pane redraws docked, with the quiz.
 - **`z` (desktop: Switch Q banks)** calls `pane.banks()`: it reads the bank counts and the saved selection, freezes the
   rows' order (selected first, then A-Z), and writes `picker` `{ open: true }`, so the pane draws the bank
   screen over the quiz. Each row's key names its bank (`bank:ruby`), so a repeated click from an
