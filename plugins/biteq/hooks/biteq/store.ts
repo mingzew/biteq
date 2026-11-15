@@ -14,6 +14,9 @@ export const STATS = 'stats'
 export const CONFIG = 'config'
 // The machine id telemetry sends. /biteq reset --all does not delete this key.
 export const USER_ID = 'userId'
+// The telemetry opt-out. Its own key, not part of `config`, so /biteq reset --all (which deletes config)
+// can never switch reporting back on.
+export const PRIVACY = 'privacy'
 
 /** The debug log is a real file, under ~/.biteq (or BITEQ_HOME). */
 export async function eventsLog(io: Io): Promise<string> {

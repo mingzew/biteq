@@ -112,6 +112,7 @@ function io($: EngineInterface): Io {
         case 'BITEQ_HOME': return $.env.get('BITEQ_HOME')
         case 'HOME': return $.env.get('HOME')
         case 'USERPROFILE': return $.env.get('USERPROFILE')
+        case 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC': return $.env.get('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')
       }
     },
     openPane: async focus =>
@@ -153,13 +154,14 @@ async function claudeEvent($: EngineInterface, e: ClaudeEvent): Promise<void> {
   await signal(it, parse(e))
 }
 
+// `placement` is a string: newer engines add values ('widget') that are neither docked nor inline
 /** A docked pane's body rows (the hint bar goes on the last); none inline, where it fits its content. */
-function fillRows(props: { placement: 'dock' | 'inline'; scroll: { bodyRows: number } }): number | undefined {
+function fillRows(props: { placement: string; scroll: { bodyRows: number } }): number | undefined {
   return props.placement === 'dock' && props.scroll.bodyRows > 0 ? props.scroll.bodyRows : undefined
 }
 
 /** What only the hook's own drawing knows: whether the pane has the keyboard, and whether it is inline. */
-function paneView(quiz: PaneView, props: { isFocused: boolean; placement: 'dock' | 'inline' }, traits: ClientTraits): PaneView {
+function paneView(quiz: PaneView, props: { isFocused: boolean; placement: string }, traits: ClientTraits): PaneView {
   return { ...quiz, ...(traits.dimsWhenUnfocused ? { focused: props.isFocused } : {}), inline: props.placement === 'inline' }
 }
 

@@ -1,19 +1,20 @@
-// biteq commands: /biteq [pane] [--lang bank] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset [--all] | start | stop
+// biteq commands: /biteq [pane] [--lang bank] | langs | check | stats | doctor | pause on|off | telemetry on|off | debug [on|off] | reset [--all] | start | stop
 //
 // `/biteq` alone opens the pane. `signal` is the path every status takes: register.ts hands
 // engine events to claude.parse, and the status goes to store.setStatus, then pane.onStatus.
 import type { Status } from '../../types'
-import { getDebug, getLang, getPauseWhenDone, setDebug, setLang, setPauseWhenDone } from './config'
+import { getDebug, getLang, getPauseWhenDone, getTelemetry, setDebug, setLang, setPauseWhenDone, setTelemetry } from './config'
 import { enabled as debugEnabled } from './debug'
 import type { Io } from './io'
 import { boot as bootPane, onStatus, open as openPane } from './pane'
 import { languageCounts, languageOrder, loadQuestions, loadStats, validate } from './quiz'
 import { CONFIG, STATS, eventsLog, setStatus } from './store'
+import { telemetryState } from './telemetry'
 
 export const COMMAND = {
   name: 'biteq',
-  description: 'biteq quiz pane: /biteq [--lang bank] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset',
-  argumentHint: '[pane|langs|check|stats|doctor|pause|debug|reset] [--lang bank]',
+  description: 'biteq quiz pane: /biteq [--lang bank] | langs | check | stats | doctor | pause on|off | telemetry on|off | debug [on|off] | reset',
+  argumentHint: '[pane|langs|check|stats|doctor|pause|telemetry|debug|reset] [--lang bank]',
 }
 
 /** Record a status and let the pane react (count the wait, serve a question, flash). */
@@ -127,7 +128,15 @@ async function cmdDoctor(io: Io): Promise<string> {
     `questions     ${total} (${Object.entries(counts).sort().map(([k, n]) => `${k} ${n}`).join(', ')})`,
     `selected      ${await getLang(io)}`,
     `when done     ${(await getPauseWhenDone(io)) ? 'pause (no new question until Claude works again)' : 'keep serving'}`,
+    `telemetry     ${await telemetryLine(io)}`,
   ].join('\n')
+}
+
+/** on, or off and why. Claude Code's setting wins over the saved choice, which it never changes. */
+async function telemetryLine(io: Io): Promise<string> {
+  const state = await telemetryState(io)
+  if (state.on) return 'on (/biteq telemetry off to stop it)'
+  return state.why === 'claude' ? 'off (Claude Code setting)' : 'off (/biteq telemetry on to turn it back on)'
 }
 
 async function cmdReset(io: Io, all: boolean): Promise<string> {
@@ -135,7 +144,7 @@ async function cmdReset(io: Io, all: boolean): Promise<string> {
   await setStatus(io, 'idle')
   if (all) {
     await io.storeDelete(STATS)
-    await io.storeDelete(CONFIG)   // userId stays: it is the machine the users total counts
+    await io.storeDelete(CONFIG)   // userId stays (it is the machine the users total counts), and so does the telemetry opt-out
     removed.push('stats', 'config')
     const log = await eventsLog(io)
     for (const path of [log, `${log}.1`]) {
@@ -168,6 +177,17 @@ async function cmdPause(io: Io, value: string | undefined): Promise<string> {
     : 'biteq: pause when Claude is done: off (questions keep coming)'
 }
 
+/** `telemetry on|off`: reports of opens, answers and typed prompts. Remembered; no value shows the state. */
+async function cmdTelemetry(io: Io, value: string | undefined): Promise<string> {
+  if (value === 'on' || value === 'off') await setTelemetry(io, value === 'on')
+  else if (value !== undefined) return 'usage: /biteq telemetry on|off'
+  const saved = (await getTelemetry(io)) ? 'on' : 'off'
+  const state = await telemetryState(io)
+  return !state.on && state.why === 'claude'
+    ? `biteq: telemetry: off (Claude Code setting; your BiteQ choice is ${saved})`
+    : `biteq: telemetry: ${saved}`
+}
+
 /** /biteq <args>, from the command (terminal) or a typed prompt (desktop); returns the reply. */
 export async function run(io: Io, args: string): Promise<string> {
   const words = args.trim().split(/\s+/).filter(Boolean)
@@ -186,10 +206,11 @@ export async function run(io: Io, args: string): Promise<string> {
     case 'doctor': return cmdDoctor(io)
     case 'reset': return cmdReset(io, words.includes('--all'))
     case 'pause': return cmdPause(io, words[1])
+    case 'telemetry': return cmdTelemetry(io, words[1])
     case 'debug': return cmdDebug(io, words[1])
     case 'start': await signal(io, 'thinking'); return 'biteq: marked thinking'
     case 'stop': await signal(io, 'done'); return 'biteq: marked done'
     default:
-      return 'usage: /biteq [pane] [--lang bank] | langs | check | stats | doctor | pause on|off | debug [on|off] | reset [--all] | start | stop'
+      return 'usage: /biteq [pane] [--lang bank] | langs | check | stats | doctor | pause on|off | telemetry on|off | debug [on|off] | reset [--all] | start | stop'
   }
 }
