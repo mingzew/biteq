@@ -10,11 +10,25 @@ BiteQ is a plugin for [Claude Code](https://code.claude.com) (it uses function-h
 
 **In a Claude Code session (terminal or desktop app)**
 
-```
-/plugin marketplace add mingzew/biteq
-/plugin install biteq@biteq
-/reload-plugins
-```
+Run these one at a time. Claude Code can't take them pasted together.
+
+1. Add the marketplace:
+
+   ```
+   /plugin marketplace add mingzew/biteq
+   ```
+
+2. Install the plugin:
+
+   ```
+   /plugin install biteq@biteq
+   ```
+
+3. Reload plugins:
+
+   ```
+   /reload-plugins
+   ```
 
 **Or from your terminal, as one line**
 
